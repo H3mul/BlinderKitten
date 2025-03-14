@@ -29,12 +29,12 @@ jobs:
         with:
           submodules: 'recursive'
 #
-      - name: Checkout JUCE
-        uses: actions/checkout@v2
-        with:
-          repository: norbertrostaing/JUCE
-          ref: develop-local
-          path: JUCE
+      # - name: Checkout JUCE
+      #   uses: actions/checkout@v2
+      #   with:
+      #     repository: norbertrostaing/JUCE
+      #     ref: develop-local
+      #     path: JUCE
 #
       - name: Set Variables
         id: set_variables
@@ -122,12 +122,12 @@ jobs:
         with:
           submodules: 'recursive'
 
-      - name: Checkout JUCE
-        uses: actions/checkout@v2
-        with:
-          repository: norbertrostaing/JUCE
-          ref: develop-local
-          path: JUCE
+      # - name: Checkout JUCE
+      #   uses: actions/checkout@v2
+      #   with:
+      #     repository: norbertrostaing/JUCE
+      #     ref: develop-local
+      #     path: JUCE
 
       - name: Set Suffix
         id: set_variables
@@ -186,12 +186,12 @@ jobs:
         with:
           submodules: 'recursive'
 
-      - name: Checkout JUCE
-        uses: actions/checkout@v2
-        with:
-          repository: norbertrostaing/JUCE
-          ref: develop-local
-          path: JUCE
+      # - name: Checkout JUCE
+      #   uses: actions/checkout@v2
+      #   with:
+      #     repository: norbertrostaing/JUCE
+      #     ref: develop-local
+      #     path: JUCE
 
       - name: Set Suffix
         id: set_variables
@@ -281,12 +281,12 @@ jobs:
         with:
           submodules: 'recursive'
 
-      - name: Checkout JUCE
-        uses: actions/checkout@v2
-        with:
-          repository: norbertrostaing/JUCE
-          ref: develop-local
-          path: JUCE
+      # - name: Checkout JUCE
+      #   uses: actions/checkout@v2
+      #   with:
+      #     repository: norbertrostaing/JUCE
+      #     ref: develop-local
+      #     path: JUCE
 
       - name: Set Suffix
         id: set_variables
