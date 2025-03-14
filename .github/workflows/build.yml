@@ -1,4 +1,7 @@
-on: [push]
+on:
+  push:
+    tags:        
+      - '*'
 
 env:
   ProjectName: BlinderKitten
@@ -70,7 +73,6 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
           files: ./Binaries/CI/App/${{ steps.create_package.outputs.pkg-name }}
 
 #
@@ -99,7 +101,7 @@ jobs:
 #
 
   osx:
-    if: false # tmp disable
+    # if: false # tmp disable
     name: OSX
     runs-on: macos-latest
     
@@ -167,15 +169,21 @@ jobs:
           echo "pkg-name=$PKGNAME" >> $GITHUB_OUTPUT
         working-directory: ./Package
 
-      - name: Upload
-        uses: ./.github/actions/upload
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
         with:
-          pkg-name: ./Package/${{ steps.create_package.outputs.pkg-name }}
-          url: ${{ secrets.UPLOADURL }}
-          pass: ${{ secrets.UPLOADPASS }}
+          files: ./Package/${{ steps.create_package.outputs.pkg-name }}
+
+      # - name: Upload
+      #   uses: ./.github/actions/upload
+      #   with:
+      #     pkg-name: ./Package/${{ steps.create_package.outputs.pkg-name }}
+      #     url: ${{ secrets.UPLOADURL }}
+      #     pass: ${{ secrets.UPLOADPASS }}
           
   linux:
-    if: false # tmp disable
+    # if: false # tmp disable
 
     name: Linux
     runs-on: ubuntu-22.04
@@ -243,16 +251,23 @@ jobs:
           echo "pkg-name=$PKGNAME" >> $GITHUB_OUTPUT
           ${{ github.workspace }}/appimagetool-x86_64.AppImage ${{ env.ProjectName }}.AppDir $PKGNAME
         working-directory: ./Builds/LinuxMakefile
-#
-      - name: Upload
-        uses: ./.github/actions/upload
+
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
         with:
-          pkg-name: ./Builds/LinuxMakefile/${{ steps.create_package.outputs.pkg-name }}
-          url: ${{ secrets.UPLOADURL }}
-          pass: ${{ secrets.UPLOADPASS }}
+          files: ./Builds/LinuxMakefile/${{ steps.create_package.outputs.pkg-name }}
+
+      # - name: Upload
+      #   uses: ./.github/actions/upload
+      #   with:
+      #     pkg-name: ./Builds/LinuxMakefile/${{ steps.create_package.outputs.pkg-name }}
+      #     url: ${{ secrets.UPLOADURL }}
+      #     pass: ${{ secrets.UPLOADPASS }}
 
   raspberrypi:
-    if: false # tmp disable
+    # if: false # tmp disable
 
     name: Raspberry Pi
     runs-on: ubuntu-22.04
@@ -334,9 +349,15 @@ jobs:
           ARCH=x86_64 ${{ github.workspace }}/appimagetool-x86_64.AppImage --runtime-file ${{ github.workspace }}/runtime-${{ matrix.arch }} ${{ env.ProjectName }}.AppDir $PKGNAME
         working-directory: ./Builds/${{ matrix.buildFolder }}
 
-      - name: Upload
-        uses: ./.github/actions/upload
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
         with:
-          pkg-name: ./Builds/${{ matrix.buildFolder }}/${{ steps.create_package.outputs.pkg-name }}
-          url: ${{ secrets.UPLOADURL }}
-          pass: ${{ secrets.UPLOADPASS }}
+          files: ./Builds/${{ matrix.buildFolder }}/${{ steps.create_package.outputs.pkg-name }}
+
+      # - name: Upload
+      #   uses: ./.github/actions/upload
+      #   with:
+      #     pkg-name: ./Builds/${{ matrix.buildFolder }}/${{ steps.create_package.outputs.pkg-name }}
+      #     url: ${{ secrets.UPLOADURL }}
+      #     pass: ${{ secrets.UPLOADPASS }}
