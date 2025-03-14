@@ -3,7 +3,7 @@ on: [push]
 env:
   ProjectName: BlinderKitten
   PackagesVersion: 1.2.10
-  DepDirUrl: http://benjamin.kuperberg.fr/chataigne/user/data/
+  DepUrl: http://benjamin.kuperberg.fr/chataigne/user/data/Chataigne
 #
 jobs:
   windows:
@@ -59,7 +59,7 @@ jobs:
         shell: powershell
         run: |
           Set-Variable -Name "PKGNAME" -Value "${{ env.ProjectName }}-${{ steps.set_variables.outputs.suffix }}"
-          Invoke-WebRequest "${{ env.DepDirUrl }}${{ env.ProjectName }}-win-x64-${{ steps.set_variables.outputs.dep }}-dependencies.zip" -OutFile ./deps.zip
+          Invoke-WebRequest "${{ env.DepUrl }}-win-x64-${{ steps.set_variables.outputs.dep }}-dependencies.zip" -OutFile ./deps.zip
           7z e deps.zip -aoa
           &"C:/Program Files (x86)/Inno Setup 6/ISCC.exe" "${{ github.workspace }}/${{ matrix.installerName }}.iss" /O. /F$PKGNAME
           echo "pkg-name=$PKGNAME.exe" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
