@@ -175,7 +175,7 @@ jobs:
           pass: ${{ secrets.UPLOADPASS }}
           
   linux:
-    # if: false # tmp disable
+    if: false # tmp disable
 
     name: Linux
     runs-on: ubuntu-22.04
