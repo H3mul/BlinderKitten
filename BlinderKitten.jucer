@@ -3,8 +3,8 @@
 <JUCERPROJECT id="e7FbaJ" name="BlinderKitten" projectType="guiapp" useAppConfig="1"
               addUsingNamespaceToJuceHeader="1" displaySplashScreen="0" jucerFormatVersion="1"
               compilerFlagSchemes="NewScheme" headerPath="../../Source&#10;../../Source/Definitions&#10;../../External/serial/include&#10;../../External/servus/include&#10;../../External/dnssd/include&#10;../../External/ois/include&#10;../../External/sdl/include&#10;../../External/libusb/include/libusb-1.0"
-              defines="JUCE_MODAL_LOOPS_PERMITTED=1&#10;&#10;_ITERATOR_DEBUG_LEVEL=1"
-              version="1.0.1b77" companyName="Norbert Rostaing" companyCopyright="Norbert Rostaing"
+              defines="JUCE_MODAL_LOOPS_PERMITTED=1&#10;_ITERATOR_DEBUG_LEVEL=1&#10;"
+              version="1.0.1b82" companyName="Norbert Rostaing" companyCopyright="Norbert Rostaing"
               companyWebsite="http://blinderkitten.lighting" companyEmail="blinderkitten@gmail.com"
               bundleIdentifier="norbertrostaing.BlinderKitten">
   <MAINGROUP id="K7UlHD" name="BlinderKitten">
@@ -807,7 +807,9 @@
             file="Source/UserInputManager.h"/>
     </GROUP>
   </MAINGROUP>
-  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_FLOAT_COLOURS="1"/>
+  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_FLOAT_COLOURS="1" ORGANICUI_USE_SERVUS="0"
+               ORGANICUI_USE_WEBSERVER="1" JUCE_IP_AND_PORT_DETECTION="1" JUCE_EXCLUSIVE_BINDING_BY_DEFAULT="1"
+               JUCE_ENABLE_BROADCAST_BY_DEFAULT="1" JUCE_ALLOW_SPECIAL_CHARS_IN_ADDRESS="1"/>
   <EXPORTFORMATS>
     <VS2019 targetFolder="Builds/VisualStudio2019" externalLibraries="Setupapi.lib&#10;Servus.lib&#10;dnssd.lib"
             smallIcon="qTJiMk" bigIcon="qTJiMk">
@@ -836,6 +838,7 @@
         <MODULEPATH id="juce_opengl" path="../JUCE/modules"/>
         <MODULEPATH id="juce_osc" path="../JUCE/modules"/>
         <MODULEPATH id="juce_cryptography" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_simpleweb" path="Modules"/>
       </MODULEPATHS>
     </VS2019>
     <VS2022 targetFolder="Builds/VisualStudio2022" smallIcon="qTJiMk" bigIcon="qTJiMk"
@@ -866,6 +869,7 @@
         <MODULEPATH id="juce_organicui" path="Modules\"/>
         <MODULEPATH id="juce_osc" path="C:\repos\JUCE\modules"/>
         <MODULEPATH id="juce_cryptography" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_simpleweb" path="Modules"/>
       </MODULEPATHS>
     </VS2022>
     <VS2022 targetFolder="Builds/VisualStudio2022_CI" externalLibraries="Setupapi.lib&#10;Servus.lib&#10;dnssd.lib"
@@ -893,6 +897,7 @@
         <MODULEPATH id="juce_opengl" path="JUCE/modules"/>
         <MODULEPATH id="juce_organicui" path="Modules\"/>
         <MODULEPATH id="juce_osc" path="JUCE/modules"/>
+        <MODULEPATH id="juce_simpleweb" path="Modules"/>
       </MODULEPATHS>
     </VS2022>
     <XCODE_MAC targetFolder="Builds/MacOSX_CI" extraDefs="JUCE_SUPPORT_CARBON=0&#10;JUCE_COREGRAPHICS_DRAW_ASYNC=1&#10;LINK_PLATFORM_MACOSX=1"
@@ -928,6 +933,7 @@
         <MODULEPATH id="juce_opengl" path="JUCE/modules"/>
         <MODULEPATH id="juce_organicui" path="Modules\"/>
         <MODULEPATH id="juce_osc" path="JUCE/modules"/>
+        <MODULEPATH id="juce_simpleweb" path="Modules"/>
       </MODULEPATHS>
     </XCODE_MAC>
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile" extraDefs="USE_ABLETONLINK=1&#10;LINK_PLATFORM_LINUX=1&#10;GDK_BACKEND=x11"
@@ -956,6 +962,7 @@
         <MODULEPATH id="juce_opengl" path="JUCE/modules"/>
         <MODULEPATH id="juce_organicui" path="Modules\"/>
         <MODULEPATH id="juce_osc" path="JUCE/modules"/>
+        <MODULEPATH id="juce_simpleweb" path="Modules"/>
       </MODULEPATHS>
     </LINUX_MAKE>
     <LINUX_MAKE targetFolder="Builds/Raspberry" extraDefs="LINK_PLATFORM_LINUX=1"
@@ -984,6 +991,7 @@
         <MODULEPATH id="juce_opengl" path="JUCE/modules"/>
         <MODULEPATH id="juce_organicui" path="Modules\"/>
         <MODULEPATH id="juce_osc" path="JUCE/modules"/>
+        <MODULEPATH id="juce_simpleweb" path="Modules"/>
       </MODULEPATHS>
     </LINUX_MAKE>
     <LINUX_MAKE targetFolder="Builds/Raspberry64" extraDefs="LINK_PLATFORM_LINUX=1"
@@ -1011,6 +1019,7 @@
         <MODULEPATH id="juce_opengl" path="JUCE/modules"/>
         <MODULEPATH id="juce_organicui" path="Modules\"/>
         <MODULEPATH id="juce_osc" path="JUCE/modules"/>
+        <MODULEPATH id="juce_simpleweb" path="Modules"/>
       </MODULEPATHS>
     </LINUX_MAKE>
     <VS2022 targetFolder="Builds/VisualStudio2022_Win7CI" extraCompilerFlags="/Zm1000 /bigobj"
@@ -1037,6 +1046,7 @@
         <MODULEPATH id="juce_opengl" path="JUCE/modules"/>
         <MODULEPATH id="juce_organicui" path="Modules\"/>
         <MODULEPATH id="juce_osc" path="JUCE/modules"/>
+        <MODULEPATH id="juce_simpleweb" path="Modules"/>
       </MODULEPATHS>
     </VS2022>
   </EXPORTFORMATS>
@@ -1056,5 +1066,6 @@
     <MODULE id="juce_opengl" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
     <MODULE id="juce_organicui" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
     <MODULE id="juce_osc" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_simpleweb" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
   </MODULES>
 </JUCERPROJECT>

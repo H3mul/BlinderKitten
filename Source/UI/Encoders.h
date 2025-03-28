@@ -31,6 +31,7 @@ public:
 
 
 class Encoders : 
+    public ControllableContainer,
     public juce::Component,
     juce::Slider::Listener,
     juce::TextButton::Listener
@@ -46,29 +47,30 @@ public:
     OwnedArray<Label> labels;
 
     HashMap<ChannelType*, String> lastOrigin;
-    Label commandLine;
+
+    StringParameter* paramCommandLine; StringParameterUI* uiCommandLine;
+    StringParameter* paramCommandNumber; StringParameterUI* uiCommandNumber;
 
     OwnedArray<TextButton> filterBtns;
     Array<ChannelFamily*> availableFilters;
     Array<ChannelFamily*> selectedFilters;
     Array<ChannelType*> channels;
 
-    TextButton HLBtn;
-    TextButton blindBtn;
-    TextButton btnMode;
-    TextButton encoderRangeBtn;
-    TextButton numbersOrNamesBtn;
+    Trigger* paramHighLight; TriggerUI* btnHighLight;
+    Trigger* paramBlind; TriggerUI* btnBlind;
+    Trigger* paramMode; TriggerUI* btnMode;
+    Trigger* paramEncoderRange; TriggerUI* btnEncoderRange;
+    Trigger* paramNumbersOrNames; TriggerUI* btnNumbersOrNames;
 
-    TextButton littleMoveLeftBtn;
-    TextButton littleMoveRightBtn;
-    TextButton bigMoveLeftBtn;
-    TextButton bigMoveRightBtn;
+    Trigger* paramLittleMoveLeft; TriggerUI* btnLittleMoveLeft;
+    Trigger* paramLittleMoveRight; TriggerUI* btnLittleMoveRight;
+    Trigger* paramBigMoveLeft; TriggerUI* btnBigMoveLeft;
+    Trigger* paramBigMoveRight; TriggerUI* btnBigMoveRight;
 
-    TextButton commandDownBtn;
-    TextButton commandUpBtn;
-    TextButton explodeCommandBtn;
+    Trigger* paramCommandDown; TriggerUI* btnCommandDown;
+    Trigger* paramCommandUp; TriggerUI* btnCommandUp;
+    Trigger* paramExplodeCommand; TriggerUI* btnExplodeCommand;
 
-    Label commandNumber;
 
     int nEncoders = 10;
     int encodersOffset = 0;
@@ -80,6 +82,7 @@ public:
     void resized() override;
     void sliderValueChanged(Slider* slider) override;
     void buttonClicked (Button*);
+    void triggerTriggered(Trigger* t) override;
     void updateFilterBtns();
     void updateEncoders();
     void updateChannels();
@@ -90,8 +93,8 @@ public:
     void updateRangeButton();
     void updateEncodersValues();
     void updateCommandLine();
-    void mouseDoubleClick(const MouseEvent &e) override;
-    void mouseUp(const MouseEvent &e) override;
+    void mouseDoubleClick(const MouseEvent &e);
+    void mouseUp(const MouseEvent &e);
     void clearFilters();
     void toggleFilter(ChannelFamily* cf, bool forceSolo = false);
 

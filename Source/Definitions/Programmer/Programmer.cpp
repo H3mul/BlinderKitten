@@ -62,6 +62,7 @@ Programmer::Programmer(var params) :
 	releaseBtn = addTrigger("Release", "release this programmer");
 	recBtn = addTrigger("Record", "Record the content of this programmer in something");
 	clearAllBtn = addTrigger("Clear All", "Clear and reset this programmer");
+	cleanUnusedCommandsBtn = addTrigger("Clean", "Clean the duplicates commands in this cue.");
 
 	highlightCurrentCommand = addBoolParameter("Highlight", "Highlite the current command", false);
 
@@ -155,18 +156,23 @@ Programmer::~Programmer()
 void Programmer::triggerTriggered(Trigger* t) {
 	if (t == goBtn) {
 		go();
-	}
-	if (t == releaseBtn) {
+	}  
+	else if (t == releaseBtn) {
 		release();
 	}
-	if (t == clearAllBtn) {
+	else if (t == clearAllBtn) {
 		clearAll();
 	}
-	if (t == recBtn) {
+	else if (t == recBtn) {
 		DataTransferManager::getInstance()->sourceId->setValue(id->getValue());
 		DataTransferManager::getInstance()->sourceType->setValue("Programmer");
 		DataTransferManager::getInstance()->selectThis();
 	}
+	else if (t == cleanUnusedCommandsBtn) {
+		computeValues();
+		cleanUnused();
+	}
+
 }
 
 void Programmer::onContainerParameterChangedInternal(Parameter* p) {
@@ -214,6 +220,7 @@ void Programmer::computeValues() {
 			SubFixtureChannel* fc = it.getKey();
 			if (fc != nullptr) {
 				computedValues.set(fc, it.getValue());
+				channelToCommand.set(fc, cs[i]);
 			}
 		}
 		cs[i]->isComputing.exit();
@@ -230,7 +237,7 @@ void Programmer::computeValues() {
 						cv = std::make_shared<ChannelValue>();
 						computedValues.set(sfc, cv);
 					}
-					cv->endValue = sfc->highlightValue;
+					cv->values.set(0,sfc->highlightValue);
 				}
 			}
 		}
@@ -273,10 +280,10 @@ void Programmer::render(double now) {
 		for (auto it = computedValues.begin(); it != computedValues.end(); it.next()) {
 			std::shared_ptr<ChannelValue> temp = it.getValue();
 			if (activeValues.contains(it.getKey())) {
-				temp->startValue = it.getKey()->currentValue;
+				temp->values.set(0, it.getKey()->currentValue);
 			}
 			else {
-				temp->startValue = -1;
+				temp->values.set(0, -1);
 			}
 			temp->TSInit = now;
 			if (mode == "timed") {
@@ -305,7 +312,7 @@ void Programmer::release(double now) {
 	computing.enter();
 	Array<SubFixtureChannel*> toUpdate;
 	for (auto it = activeValues.begin(); it != activeValues.end(); it.next()) {
-		if (it.getValue()->endValue != -1) {
+		if (it.getValue()->endValue() != -1) {
 			std::shared_ptr<ChannelValue> temp = std::make_shared<ChannelValue>();
 			float fadeTime = releaseTime->floatValue() * 1000.0f;
 
@@ -313,8 +320,8 @@ void Programmer::release(double now) {
 			temp->TSStart = now;
 			temp->TSEnd = now + fadeTime;
 
-			temp->endValue = -1;
-			temp->startValue = it.getValue()->value;
+			temp->values.set(1, -1);
+			temp->values.set(0, it.getValue()->value);
 			temp->isEnded = false;
 
 			temp->fadeCurve = nullptr;
@@ -345,11 +352,11 @@ float Programmer::applyToChannel(SubFixtureChannel* fc, float currentVal, double
 	float outIsOff = false;
 	// comportement OK, calcul de valeurs nok
 
-	if (cv->startValue >= 0) {
-		valueFrom = cv->startValue;
+	if (cv->startValue() >= 0) {
+		valueFrom = cv->startValue();
 	}
-	if (cv->endValue >= 0) {
-		valueTo = cv->endValue;
+	if (cv->endValue() >= 0) {
+		valueTo = cv->endValue();
 	}
 	else {
 		outIsOff = true;
@@ -462,10 +469,7 @@ void Programmer::selectNextCommand()
 		else {
 			index = 0;
 		}
-		currentUserCommand = commands.items[index];
-		if (highlightCurrentCommand->boolValue()) {
-			go();
-		}
+		selectCommand(commands.items[index]);
 	}
 }
 
@@ -480,21 +484,21 @@ void Programmer::selectPrevCommand()
 		else {
 			index = 0;
 		}
-		currentUserCommand = commands.items[index];
-		if (highlightCurrentCommand->boolValue()) {
-			go();
-		}
+		selectCommand(commands.items[index]);
 	}
 }
 
 void Programmer::selectCommand(Command* c)
 {
 	checkCurrentUserCommand();
-	if (commands.items.size() > 1) {
+	if (commands.items.size() > 0) {
 		if (commands.items.indexOf(c) >= 0) {
 			currentUserCommand = c;
 			if (highlightCurrentCommand->boolValue()) {
 				go();
+			}
+			if (UserInputManager::getInstance()->currentProgrammer == this) {
+				Encoders::getInstance()->updateEncoders();
 			}
 		}
 	}
@@ -838,5 +842,32 @@ void Programmer::checkCurrentUserCommand() {
 	}
 	if (UserInputManager::getInstance()->getProgrammer(false) == this) {
 		UserInputManager::getInstance()->targetCommand = currentUserCommand;
+	}
+}
+
+void Programmer::cleanUnused()
+{
+	Array<Command*> usedCommands;
+	computeValues();
+	computing.enter();
+
+	for (int i = 0; i < commands.items.size(); i++) {
+		commands.items[i]->cleanUnused();
+	}
+
+	for (auto it = channelToCommand.begin(); it != channelToCommand.end(); it.next()) {
+		usedCommands.addIfNotAlreadyThere(it.getValue());
+	}
+
+	for (int i = commands.items.size() - 1; i >= 0; i--) {
+		Command* c = commands.items[i];
+		if (!usedCommands.contains(c)) {
+			commands.removeItem(c);
+		}
+	}
+
+	computing.exit();
+	if (commands.items.size()>0 &&  UserInputManager::getInstance()->currentProgrammer == this) {
+		selectCommand(commands.items[0]);
 	}
 }

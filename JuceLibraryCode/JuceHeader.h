@@ -29,6 +29,7 @@
 #include <juce_opengl/juce_opengl.h>
 #include <juce_organicui/juce_organicui.h>
 #include <juce_osc/juce_osc.h>
+#include <juce_simpleweb/juce_simpleweb.h>
 
 #include "BinaryData.h"
 
@@ -52,7 +53,7 @@ namespace ProjectInfo
 {
     const char* const  projectName    = "BlinderKitten";
     const char* const  companyName    = "Norbert Rostaing";
-    const char* const  versionString  = "1.0.1b77";
+    const char* const  versionString  = "1.0.1b82";
     const int          versionNumber  = 0x10001;
 }
 #endif
