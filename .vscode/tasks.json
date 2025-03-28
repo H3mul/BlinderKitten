@@ -12,6 +12,14 @@
             ]
         },
         {
+            "label": "Set up win64 Release build",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Build Win64 Release",
+                "Download Release Dependencies",
+            ]
+        },
+        {
             "label": "Build Win64 Debug",
             "type": "shell",
             "command": "msbuild",
@@ -41,6 +49,32 @@
             "label": "Download Debug Dependencies",
             "type": "shell",
             "command": "if (!(Test-Path ${workspaceFolder}/Binaries/CI/App/Debug/dependencies.zip)) { wget http://benjamin.kuperberg.fr/chataigne/user/data/Chataigne-win-x64-debug-dependencies.zip -O ${workspaceFolder}/Binaries/CI/App/Debug/dependencies.zip; tar -xf ${workspaceFolder}/Binaries/CI/App/Debug/dependencies.zip -C ${workspaceFolder}/Binaries/CI/App/Debug }",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "Build Win64 Release",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "./Builds/VisualStudio2022_CI/BlinderKitten.sln",
+                "/p:PreferredToolArchitecture=x64",
+                "/m",
+                "/verbosity:normal",
+                "/p:Configuration=Release",
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": true,
+            },
             "group": {
                 "kind": "build",
                 "isDefault": true

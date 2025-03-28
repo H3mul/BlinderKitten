@@ -8,12 +8,12 @@
             "name": "(Windows) Launch Blinderkitten",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Binaries/CI/App/Debug/BlinderKitten.exe",
+            "program": "${workspaceFolder}/Binaries/CI/App/Release/BlinderKitten.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "preLaunchTask": "Set up win64 Debug build"
+            "preLaunchTask": "Set up win64 Release build"
         },
     ]
 }
