@@ -1,0 +1,10 @@
+[
+  {
+    "label": "(Windows) Launch Blinderkitten",
+    "program": "${ZED_WORKTREE_ROOT}/Binaries/CI/App/BlinderKitten.exe",
+    "adapter": "CodeLLDB",
+    "request": "launch",
+    "args": [],
+    "build": "build-win64-debug - Build Win64 Debug",
+  }
+]

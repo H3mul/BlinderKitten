@@ -3474,7 +3474,9 @@
     </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_gui_extra.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_opengl.cpp"/>
-    <ClCompile Include="..\..\JuceLibraryCode\include_juce_organicui.cpp"/>
+    <ClCompile Include="..\..\JuceLibraryCode\include_juce_organicui.cpp">
+      <AdditionalOptions> /bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_organicui2.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_organicui2b.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_organicui3.cpp"/>

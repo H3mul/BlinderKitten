@@ -1,0 +1,42 @@
+version: '3'
+
+tasks:
+  setup-win64-debug:
+    deps:
+      - build-win64-debug
+      - download-debug-dependencies
+    desc: "Set up win64 Debug build"
+
+  setup-win64-release:
+    deps:
+      - build-win64-release
+      - download-release-dependencies
+    desc: "Set up win64 Release build"
+
+  build-win64-debug:
+    desc: "Build Win64 Debug"
+    cmds:
+      - msbuild ./Builds/VisualStudio2022_CI/BlinderKitten.sln /p:PreferredToolArchitecture=x64 /m /verbosity:normal /p:Configuration=Debug
+
+  download-debug-dependencies:
+    desc: "Download Debug Dependencies"
+    cmds:
+      - powershell -Command "Invoke-WebRequest -Uri 'http://benjamin.kuperberg.fr/chataigne/user/data/Chataigne-win-x64-debug-dependencies.zip' -OutFile './Binaries/CI/App/Debug/dependencies.zip'"
+      - powershell -Command "Expand-Archive -Path './Binaries/CI/App/Debug/dependencies.zip' -DestinationPath './Binaries/CI/App/Debug/'"
+    preconditions:
+      - sh: "test ! -f ./Binaries/CI/App/Debug/dependencies.zip"
+        msg: "Debug dependencies already downloaded."
+
+  build-win64-release:
+    desc: "Build Win64 Release"
+    cmds:
+      - msbuild ./Builds/VisualStudio2022_CI/BlinderKitten.sln /p:PreferredToolArchitecture=x64 /m /verbosity:normal /p:Configuration=Release
+
+  download-release-dependencies:
+    desc: "Download Release Dependencies"
+    cmds:
+      - powershell -Command "Invoke-WebRequest -Uri 'http://benjamin.kuperberg.fr/chataigne/user/data/Chataigne-win-x64-release-dependencies.zip' -OutFile './Binaries/CI/App/dependencies.zip'"
+      - powershell -Command "Expand-Archive -Path './Binaries/CI/App/dependencies.zip' -DestinationPath './Binaries/CI/App/'"
+    preconditions:
+      - sh: "test ! -f ./Binaries/CI/App/dependencies.zip"
+        msg: "Release dependencies already downloaded."

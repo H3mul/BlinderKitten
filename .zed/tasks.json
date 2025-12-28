@@ -1,0 +1,50 @@
+[
+  {
+    "label": "build-win64-debug - Build Win64 Debug",
+    "command": "task",
+    "args": [
+      "build-win64-debug"
+    ],
+    "use_new_terminal": true
+  },
+  {
+    "label": "build-win64-release - Build Win64 Release",
+    "command": "task",
+    "args": [
+      "build-win64-release"
+    ],
+    "use_new_terminal": true
+  },
+  {
+    "label": "download-debug-dependencies - Download Debug Dependencies",
+    "command": "task",
+    "args": [
+      "download-debug-dependencies"
+    ],
+    "use_new_terminal": true
+  },
+  {
+    "label": "download-release-dependencies - Download Release Dependencies",
+    "command": "task",
+    "args": [
+      "download-release-dependencies"
+    ],
+    "use_new_terminal": true
+  },
+  {
+    "label": "setup-win64-debug - Set up win64 Debug build",
+    "command": "task",
+    "args": [
+      "setup-win64-debug"
+    ],
+    "use_new_terminal": true
+  },
+  {
+    "label": "setup-win64-release - Set up win64 Release build",
+    "command": "task",
+    "args": [
+      "setup-win64-release"
+    ],
+    "use_new_terminal": true
+  }
+]
