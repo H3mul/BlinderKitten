@@ -45,10 +45,11 @@ public:
     void loadCuelist(Cuelist * c, bool triggerGoWhenSelected = false);
     void buttonClicked(Button*);
     bool triggerGo = false;
-    Cuelist* currentCuelist = nullptr;
 
     int posX = 0;
     int posY = 0;
+
+    juce::CriticalSection buttonsLock;
 
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CuelistLoadWindow)

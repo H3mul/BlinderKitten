@@ -23,6 +23,7 @@
 #include "../ChannelValue.h"
 #include "UI/InputPanel.h"
 #include "Command/Command.h"
+#include "ChannelValue.h"
 
 SubFixtureChannel::SubFixtureChannel():
 	virtualChildren()
@@ -95,6 +96,12 @@ SubFixtureChannel::~SubFixtureChannel()
 		Tracker* c = it.getValue();
 		c->isComputing.enter();
 		if (c->chanToVal.contains(this)) c->chanToVal.remove(this);
+		c->isComputing.exit();
+	}
+	for (auto it = Brain::getInstance()->selectionMasters.begin(); it != Brain::getInstance()->selectionMasters.end(); it.next()) {
+		SelectionMaster* c = it.getValue();
+		c->isComputing.enter();
+		if (c->channels.contains(this)) c->channels.removeAllInstancesOf(this);
 		c->isComputing.exit();
 	}
 
@@ -207,6 +214,8 @@ void SubFixtureChannel::updateVal(double now) {
 	postCuelistValue = newValue;
 
 	cs.enter();
+	liveCV.clear();
+
 	Array<int> layers;
 
 	for (int i = 0; i < cuelistStack.size(); i++) {
@@ -226,6 +235,9 @@ void SubFixtureChannel::updateVal(double now) {
 	}
 	for (int i = 0; i < effectStack.size(); i++) {
 		layers.addIfNotAlreadyThere(effectStack[i]->layerId->intValue());
+	}
+	for (int i = 0; i < selectionMasterStack.size(); i++) {
+		layers.addIfNotAlreadyThere(selectionMasterStack[i]->layerId->intValue());
 	}
 
 	layers.sort();
@@ -305,6 +317,12 @@ void SubFixtureChannel::updateVal(double now) {
 					newValue = effectStack[i]->applyToChannel(this, newValue, now);
 					isDirty = isDirty || effectStack[i]->isOn;
 				}
+			}
+		}
+
+		for (int i = 0; i < selectionMasterStack.size(); i++) {
+			if (selectionMasterStack[i]->layerId->intValue() == currentLayer) {
+				newValue = selectionMasterStack[i]->applyToChannel(this, newValue, now);
 			}
 		}
 
@@ -414,6 +432,19 @@ void SubFixtureChannel::trackerOutOfStack(Tracker* f) {
 	cs.enter();
 	while (trackerStack.indexOf(f) >= 0) {
 		trackerStack.removeAllInstancesOf(f);
+	}
+	cs.exit();
+}
+
+void SubFixtureChannel::selectionMasterOnTopOfStack(SelectionMaster* f) {
+	selectionMasterOutOfStack(f);
+	selectionMasterStack.add(f);
+}
+
+void SubFixtureChannel::selectionMasterOutOfStack(SelectionMaster* f) {
+	cs.enter();
+	while (selectionMasterStack.indexOf(f) >= 0) {
+		selectionMasterStack.removeAllInstancesOf(f);
 	}
 	cs.exit();
 }

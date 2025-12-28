@@ -10,6 +10,7 @@
 
 #include "CommandSelection.h"
 #include "ChannelFamily/ChannelFamilyManager.h"
+#include "Brain.h"
 
 CommandSelection::CommandSelection(var params) :
     BaseItem(params.getProperty("name", "Selection")),
@@ -33,18 +34,24 @@ CommandSelection::CommandSelection(var params) :
     subThru = addBoolParameter("SubFixtures Thru", "select multiple subfixture ?",false);
     subTo = addIntParameter("SubFixtures To", "Last id of subFixture", 0, 0);
 
-    filter = addEnumParameter("Filter", "What kind of filter do yuo want to apply to selection ?");
+    filter = addEnumParameter("Filter", "What kind of filter do you want to apply to selection ?");
     filter->addOption("None", "none");
     filter->addOption("Reverse", "reverse");
     filter->addOption("Divide", "divide");
     filter->addOption("Pattern", "pattern");
     filter->addOption("Shuffle", "shuffle");
     filter->addOption("Pick Random", "random");
+    filter->addOption("Pick at begin", "begin");
+    filter->addOption("Pick at end", "end");
+    filter->addOption("Buddy Block Wing", "bbw");
     filter->addOption("Output Condition", "outcondition");
     filter->addOption("Layout Direction", "layoutdir");
+    filter->addOption("Layout Wake", "layoutwake");
     filter->addOption("Layout Circle", "layoutcircle");
     filter->addOption("Layout Droplet wave", "layoutpoint");
     filter->addOption("Layout Perlin", "layoutperlin");
+
+
     pattern = addStringParameter("Pattern", "type 1 to select SubFixtures and 0 to skip them, for example, 100 will select every first SubFixture of three in pattern mode, and the first third of all SubFixtures in divide mode", "");
     symmetry = addBoolParameter("Symmetry", "Apply this pattern with symmetry", false);
     randomSeed = addIntParameter("Seed", "Seed used to generate random, if 0, selection will change each call, if not, the random selection will alway be the same", 0, 0);
@@ -56,17 +63,19 @@ CommandSelection::CommandSelection(var params) :
     conditionChannel = addTargetParameter("Channel type", "Type of Channel", ChannelFamilyManager::getInstance());
     conditionChannel->maxDefaultSearchLevel = 2;
     conditionChannel->targetType = TargetParameter::CONTAINER;
+    conditionChannel->typesFilter.add("ChannelType");
+
 
     conditionTest = addEnumParameter("Test", "");
     conditionTest->addOption("equal to", EQUAL);
-    conditionTest->addOption("defferent than", DIFFERENT);
+    conditionTest->addOption("different than", DIFFERENT);
     conditionTest->addOption("less than", LESS);
     conditionTest->addOption("greater than", MORE);
     conditionTest->addOption("less or equal to", LESSEQ);
     conditionTest->addOption("greater or equal to", MOREEQ);
     conditionValue = addFloatParameter("Value","",0,0,1);
 
-
+ 
     layoutId = addIntParameter("Layout ID", "Id ot desired layout", 0, 0);
     layoutDirection = addFloatParameter("Direction angle", "angle of selection direction", 0, -360, 360);
     //layoutUseOnlySelection = addBoolParameter("Use selected only", "If checked, the min and max indexes will be contrained on selection and not on all elements of the layout", true);
@@ -78,11 +87,17 @@ CommandSelection::CommandSelection(var params) :
     layoutPerlinSeed = addIntParameter("Perlin Seed", "If 0, a new seed will be generated each time", 0, 0);
     layoutPerlinScale = addFloatParameter("Perlin scale", "", 1, 0);
 
+    layoutWakeAnchor = addPoint2DParameter("Wake anchor", "");
+    layoutWakeAngle = addFloatParameter("Wake angle","",45,1,179);
+
+    Brain::getInstance()->allCommandSelections.add(this);
+
     updateDisplay();
 };
 
 CommandSelection::~CommandSelection()
 {
+    Brain::getInstance()->allCommandSelections.removeAllInstancesOf(this);
 };
 
 void CommandSelection::updateDisplay()
@@ -93,11 +108,14 @@ void CommandSelection::updateDisplay()
     bool cond = filter->getValue() == "outcondition";
     bool randSeed = filter->getValue() == "shuffle" || filter->getValue() == "random";
     bool randNum = filter->getValue() == "random";
-    bool layout = filter->getValue() == "layoutdir" || filter->getValue() == "layoutcircle" || filter->getValue() == "layoutpoint" || filter->getValue() == "layoutperlin";
+    bool layout = filter->getValue() == "layoutdir" || filter->getValue() == "layoutcircle" || filter->getValue() == "layoutpoint" || filter->getValue() == "layoutperlin" || filter->getValue() == "layoutwake";
+    bool beginOrEnd = filter->getValue() == "begin" || filter->getValue() == "end";
     bool layoutDir = filter->getValue() == "layoutdir";
     bool layoutCir = filter->getValue() == "layoutcircle";
     bool layoutPnt = filter->getValue() == "layoutpoint";
     bool layoutPerl = filter->getValue() == "layoutperlin";
+    bool layoutWake = filter->getValue() == "layoutwake";
+    bool bbw = filter->getValue() == "bbw";
 
 
     randSeed = randSeed && mult;
@@ -116,13 +134,13 @@ void CommandSelection::updateDisplay()
     subTo->hideInEditor = !(sub && subTh);
 
     randomSeed -> hideInEditor = !randSeed;
-    randomNumber->hideInEditor = !randNum;
-    randomBuddy->hideInEditor = !randNum;
-    randomBlock->hideInEditor = !randNum;
-    randomWing->hideInEditor = !randNum;
+    randomNumber->hideInEditor = !randNum && !beginOrEnd;
+    randomBuddy->hideInEditor = !randNum && !bbw;
+    randomBlock->hideInEditor = !randNum && !bbw;
+    randomWing->hideInEditor = !randNum && !bbw;
 
     layoutId->hideInEditor = !layout;
-    layoutDirection->hideInEditor = !layoutDir;
+    layoutDirection->hideInEditor = !layoutDir && !layoutWake;
 
     layoutCircleOrigin->hideInEditor = !layoutCir && !layoutPnt;
     layoutCircleStartAngle->hideInEditor = !layoutCir;
@@ -134,6 +152,9 @@ void CommandSelection::updateDisplay()
     conditionChannel->hideInEditor = !cond;
     conditionTest->hideInEditor = !cond;
     conditionValue->hideInEditor = !cond;
+
+    layoutWakeAnchor->hideInEditor = !layoutWake;
+    layoutWakeAngle->hideInEditor = !layoutWake;
     //layoutUseOnlySelection->hideInEditor = !layout || layoutPerl;
 
     queuedNotifier.addMessage(new ContainerAsyncEvent(ContainerAsyncEvent::ControllableContainerNeedsRebuild, this));

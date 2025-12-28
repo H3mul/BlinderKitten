@@ -22,7 +22,9 @@ class Effect;
 class Carousel;
 class Mapper;
 class Tracker;
+class SelectionMaster;
 class Command;
+class ChannelValue;
 
 class SubFixtureChannel{
 public:
@@ -57,7 +59,9 @@ public:
 
     void writeValue(float v);
 
-    SpinLock cs;
+    Array<std::shared_ptr<ChannelValue>> liveCV;
+
+    CriticalSection cs;
     Array<SubFixtureChannel*> virtualChildren;
     SubFixtureChannel* virtualMaster = nullptr;
 
@@ -67,6 +71,7 @@ public:
     Array<Carousel*> carouselStack;
     Array<Mapper*> mapperStack;
     Array<Tracker*> trackerStack;
+    Array<SelectionMaster*> selectionMasterStack;
     Array<Cuelist*> cuelistFlashStack;
 
     Command* activeCommand = nullptr;
@@ -87,5 +92,7 @@ public:
     void mapperOutOfStack(Mapper* f);
     void trackerOnTopOfStack(Tracker* f);
     void trackerOutOfStack(Tracker* f);
+    void selectionMasterOnTopOfStack(SelectionMaster* f);
+    void selectionMasterOutOfStack(SelectionMaster* f);
 
 };

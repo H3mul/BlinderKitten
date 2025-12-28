@@ -57,6 +57,7 @@ Preset::Preset(var params) :
 	//loadToProgrammerBtn = addTrigger("Load", "Load fixtures values in the programmer (values with fixture ID 0 are not called)");
 	testMeButton = addTrigger("Test me", "call any fixture possible with this preset");
 	reOrderButton = addTrigger("Reorder Data", "Re arrange preset data");
+	removeProgContentBtn = addTrigger("Remove Prog Content", "remove all channels that are present in programmer in this preset");
 
 	presetType = addEnumParameter("Type", presetExplain);
 	presetType->addOption("SubFixture", 1);
@@ -79,18 +80,6 @@ Preset::Preset(var params) :
 Preset::~Preset()
 {
 	Brain::getInstance()->unregisterPreset(this);
-	for (auto it = computedSubFixtureValues.begin(); it != computedSubFixtureValues.end(); it.next()) {
-		//it.getValue()->~HashMap();
-	}
-	for (auto it = computedFixtureTypeValues.begin(); it != computedFixtureTypeValues.end(); it.next()) {
-		//it.getValue()->~HashMap();
-	}
-	for (auto it = computedSubFixtureTypeValues.begin(); it != computedSubFixtureTypeValues.end(); it.next()) {
-		for (auto it2 = it.getValue()->begin(); it2 != it.getValue()->end(); it2.next()) {
-			//it2.getValue()->~HashMap();
-		}
-		//it.getValue()->~HashMap();
-	}
 	int defaultPresetId = dynamic_cast<BKEngine*>(Engine::mainEngine)->defaultPresetId->intValue();
 	if (defaultPresetId == id->intValue()) {
 		Brain::getInstance()->defaultValuesNeedRefresh = true;
@@ -99,7 +88,7 @@ Preset::~Preset()
 
 void Preset::onContainerParameterChangedInternal(Parameter* p) {
 	if (p == id) {
-		Brain::getInstance()->registerPreset(this, id->getValue(), true);
+		Brain::getInstance()->registerPreset(this, id->getValue());
 	}
 	if (p == userName || p == id) {
 		updateName();
@@ -249,6 +238,15 @@ void Preset::triggerTriggered(Trigger* t)
 		ChannelFamilyManager::getInstance()->updateOrderedElements();
 		reorderPresetContent();
 	}
+	if (t == removeProgContentBtn) {
+		DataTransferManager::getInstance()->sourceType->setValueWithData("programmer");
+		DataTransferManager::getInstance()->sourceId->setValue(1);
+		DataTransferManager::getInstance()->targetType->setValueWithData("preset");
+		DataTransferManager::getInstance()->targetUserId->setValue(id->getValue());
+		DataTransferManager::getInstance()->presetCopyMode->setValueWithData("remove");
+		DataTransferManager::getInstance()->execute();
+	}
+
 }
 
 
@@ -272,4 +270,11 @@ void Preset::reorderPresetContent() {
 	for (int i = 0; i < subFixtureValues.items.size(); i++) {
 		subFixtureValues.items[i]->values.reorderItems();
 	}
+}
+
+void Preset::removeProgContent()
+{
+	Programmer* p = UserInputManager::getInstance()->getProgrammer(false);
+	if (p == nullptr) return;
+	
 }

@@ -49,6 +49,9 @@ Fixture::Fixture(var params) :
 	devTypeParam -> targetType = TargetParameter::CONTAINER;
 	devTypeParam -> maxDefaultSearchLevel = 0;
 	
+	infos = addStringParameter("Infos", "Note informations about your fixture here.", "");
+	infos->multiline = true;
+
 	useCustomLayoutStrokeColor = addBoolParameter("Custom stroke Color", "", false);
 	layoutStrokeColor = addColorParameter("Stroke Color", "", Colours::orange);
 	useCustomLayoutFillColor = addBoolParameter("Custom fill Color", "", false);
@@ -115,7 +118,7 @@ void Fixture::onContainerParameterChangedInternal(Parameter* p)
 	}
 	else if(p == id) 
 	{
-		Brain::getInstance()->registerFixture(this, id->getValue(), true);
+		Brain::getInstance()->registerFixture(this, id->getValue());
 	}
 	else if (p == position || p == rotation) {
 		TrackerManager::getInstance()->recomputeAllTrackers();
@@ -193,7 +196,7 @@ void Fixture::checkChildrenSubFixtures() {
 				subFixt->channelsContainer.add(chan);
 				subFixt->channelsMap.set(param, chan);
 				chan->defaultValue = c->defaultValue->getValue();
-				chan->highlightValue = c->highlightValue->getValue();
+				chan->highlightValue = c->highlightValue->enabled ? c->highlightValue->floatValue() : -1;
 				chan->isHTP = param->priority->getValue() == "HTP";
 				chan->channelType = dynamic_cast<ChannelType*>(c->channelType->targetContainer.get());
 				chan->parentParamDefinition = param;
@@ -257,7 +260,7 @@ void Fixture::checkChildrenSubFixtures() {
 					subFixt->channelsContainer.add(chan);
 					subFixt->channelsMap.set(param, chan);
 					chan->defaultValue = c->defaultValue->getValue();
-					chan->highlightValue = c->highlightValue->getValue();
+					chan->highlightValue = c->highlightValue->enabled ? c->highlightValue->floatValue() : -1;
 					chan->isHTP = param->priority->getValue() == "HTP";
 					chan->resolution = c->resolution->getValue();
 					if (chan->resolution == "16bits") {

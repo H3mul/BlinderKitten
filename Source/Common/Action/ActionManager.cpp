@@ -17,6 +17,7 @@ juce_ImplementSingleton(ActionFactory);
 #include "Definitions/Actions/CarouselAction.h"
 #include "Definitions/Actions/MapperAction.h"
 #include "Definitions/Actions/TrackerAction.h"
+#include "Definitions/Actions/SelectionMasterAction.h"
 #include "Definitions/Actions/VirtualButtonAction.h"
 #include "Definitions/Actions/VirtualFaderAction.h"
 #include "Definitions/Actions/InputPanelAction.h"
@@ -73,6 +74,7 @@ ActionFactory::ActionFactory()
     defs.add(Factory<Action>::Definition::createDef("Cuelist", "Load content", &CuelistAction::create)->addParam("actionType", CuelistAction::CL_LOADCONTENT));
     defs.add(Factory<Action>::Definition::createDef("Cuelist", "Insert before", &CuelistAction::create)->addParam("actionType", CuelistAction::CL_INSERTBEFORE));
     defs.add(Factory<Action>::Definition::createDef("Cuelist", "Insert after", &CuelistAction::create)->addParam("actionType", CuelistAction::CL_INSERTAFTER));
+    defs.add(Factory<Action>::Definition::createDef("Cuelist", "Take selection", &CuelistAction::create)->addParam("actionType", CuelistAction::CL_TAKESELECTION));
 
     defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Start", &EffectAction::create)->addParam("actionType", EffectAction::FX_START));
     defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Stop", &EffectAction::create)->addParam("actionType", EffectAction::FX_STOP));
@@ -85,6 +87,8 @@ ActionFactory::ActionFactory()
     defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Double Speed", &EffectAction::create)->addParam("actionType", EffectAction::FX_DOUBLESPEED));
     defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Half Speed", &EffectAction::create)->addParam("actionType", EffectAction::FX_HALFSPEED));
     defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Buddy Block Wing", &EffectAction::create)->addParam("actionType", EffectAction::FX_BBW));
+    defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Set Seek", &EffectAction::create)->addParam("actionType", EffectAction::FX_SET_SEEK));
+    defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Add Seek", &EffectAction::create)->addParam("actionType", EffectAction::FX_ADD_SEEK));
 
     defs.add(Factory<Action>::Definition::createDef("Carousel", "Carousel Start", &CarouselAction::create)->addParam("actionType", CarouselAction::CAR_START));
     defs.add(Factory<Action>::Definition::createDef("Carousel", "Carousel Stop", &CarouselAction::create)->addParam("actionType", CarouselAction::CAR_STOP));
@@ -97,6 +101,8 @@ ActionFactory::ActionFactory()
     defs.add(Factory<Action>::Definition::createDef("Carousel", "Carousel Double Speed", &CarouselAction::create)->addParam("actionType", CarouselAction::CAR_DOUBLESPEED));
     defs.add(Factory<Action>::Definition::createDef("Carousel", "Carousel Half Speed", &CarouselAction::create)->addParam("actionType", CarouselAction::CAR_HALFSPEED));
     defs.add(Factory<Action>::Definition::createDef("Carousel", "Carousel Buddy Block Wing", &CarouselAction::create)->addParam("actionType", CarouselAction::CAR_BBW));
+    defs.add(Factory<Action>::Definition::createDef("Carousel", "Carousel Set Seek", &CarouselAction::create)->addParam("actionType", CarouselAction::CAR_SET_SEEK));
+    defs.add(Factory<Action>::Definition::createDef("Carousel", "Carousel Add Seek", &CarouselAction::create)->addParam("actionType", CarouselAction::CAR_ADD_SEEK));
 
     defs.add(Factory<Action>::Definition::createDef("Mapper", "Mapper Start", &MapperAction::create)->addParam("actionType", MapperAction::TRK_START));
     defs.add(Factory<Action>::Definition::createDef("Mapper", "Mapper Stop", &MapperAction::create)->addParam("actionType", MapperAction::TRK_STOP));
@@ -107,6 +113,13 @@ ActionFactory::ActionFactory()
     defs.add(Factory<Action>::Definition::createDef("Tracker", "Tracker Stop", &TrackerAction::create)->addParam("actionType", TrackerAction::TRK_STOP));
     defs.add(Factory<Action>::Definition::createDef("Tracker", "Tracker Toggle", &TrackerAction::create)->addParam("actionType", TrackerAction::TRK_TOGGLE));
     defs.add(Factory<Action>::Definition::createDef("Tracker", "Tracker Size", &TrackerAction::create)->addParam("actionType", TrackerAction::TRK_SIZE));
+    defs.add(Factory<Action>::Definition::createDef("Tracker", "Tracker Axis", &TrackerAction::create)->addParam("actionType", TrackerAction::TRK_AXIS));
+
+    defs.add(Factory<Action>::Definition::createDef("Selection Master", "Selection Master Start", &SelectionMasterAction::create)->addParam("actionType", SelectionMasterAction::SELM_START));
+    defs.add(Factory<Action>::Definition::createDef("Selection Master", "Selection Master Stop", &SelectionMasterAction::create)->addParam("actionType", SelectionMasterAction::SELM_STOP));
+    defs.add(Factory<Action>::Definition::createDef("Selection Master", "Selection Master Toggle", &SelectionMasterAction::create)->addParam("actionType", SelectionMasterAction::SELM_TOGGLE));
+    defs.add(Factory<Action>::Definition::createDef("Selection Master", "Selection Master Size", &SelectionMasterAction::create)->addParam("actionType", SelectionMasterAction::SELM_SIZE));
+    defs.add(Factory<Action>::Definition::createDef("Selection Master", "Selection Master Fixed Size", &SelectionMasterAction::create)->addParam("actionType", SelectionMasterAction::SELM_STATIC_SIZE));
 
     defs.add(Factory<Action>::Definition::createDef("Bundle", "Bundle Start", &BundleAction::create)->addParam("actionType", BundleAction::BUN_START));
     defs.add(Factory<Action>::Definition::createDef("Bundle", "Bundle Stop", &BundleAction::create)->addParam("actionType", BundleAction::BUN_STOP));
@@ -159,6 +172,7 @@ ActionFactory::ActionFactory()
 
     defs.add(Factory<Action>::Definition::createDef("Encoder", "Encoder Value", &EncoderAction::create)->addParam("actionType", EncoderAction::ENC_VALUE));
     defs.add(Factory<Action>::Definition::createDef("Encoder", "Encoder Value Parameter", &EncoderAction::create)->addParam("actionType", EncoderAction::ENC_TYPE));
+    defs.add(Factory<Action>::Definition::createDef("Encoder", "Encoder Reset", &EncoderAction::create)->addParam("actionType", EncoderAction::ENC_RESET));
     defs.add(Factory<Action>::Definition::createDef("Encoder", "Encoder Select", &EncoderAction::create)->addParam("actionType", EncoderAction::ENC_SELECT));
     defs.add(Factory<Action>::Definition::createDef("Encoder", "Encoder select next command", &EncoderAction::create)->addParam("actionType", EncoderAction::ENC_NEXTCOMMAND));
     defs.add(Factory<Action>::Definition::createDef("Encoder", "Encoder select previous command", &EncoderAction::create)->addParam("actionType", EncoderAction::ENC_PREVCOMMAND));

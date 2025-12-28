@@ -33,6 +33,9 @@
 #include "DMX/device/DMXEnttecProDevice.h"
 #include "DMX/device/DMXOpenUSBDevice.h"
 #include "DMX/device/DMXEuroliteDevice.h"
+#include "DMX/device/DMXSACNDevice.h"
+#include "DMX/device/DMXKingManager.h"
+#include "DMX/device/DMXKingDevice.h"
 
 #include "Helpers/SceneHelpers.h"
 

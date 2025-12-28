@@ -59,8 +59,8 @@ Carousel::Carousel(var params) :
 	fadeInTime = addFloatParameter("Fade in", "Fade in time in seconds", 0, 0);
 	fadeOutTime = addFloatParameter("Fade out", "Fade out time in seconds", 0, 0);
 
-	beatPerCycle = addIntParameter("Beat by cycles", "Number of tap tempo beats by cycle", 1, 1);
-	tapTempoBtn = addTrigger("Tap tempo", "");
+	beatPerCycle = addFloatParameter("Beat by cycles", "Number of tap tempo beats by cycle", 1, 1);
+	tapTempoBtn = addTrigger("Tap tempo", "Hit me at least twice to se tempo");
 
 	soloPool = addIntParameter("Solo pool", "If greater than zero, only one element can be activated at a time with this number", 0,0);
 
@@ -100,7 +100,7 @@ Carousel::~Carousel()
 			rows.items[i]->paramContainer.items[j]->parentCarousel = nullptr;
 		}
 	}
-	isComputing.enter();
+	isComputing.exit();
 }
 
 void Carousel::onControllableFeedbackUpdateInternal(ControllableContainer* cc, Controllable* c) {
@@ -359,7 +359,7 @@ void Carousel::tapTempo() {
 	if (delta < 3000) {
 		BKEngine* e = dynamic_cast<BKEngine*>(BKEngine::mainEngine);
 		int historySize = e->tapTempoHistory->intValue();
-		delta = delta * beatPerCycle->intValue();
+		delta = delta * beatPerCycle->floatValue();
 		tapTempoHistory.add(delta);
 		while (tapTempoHistory.size() > historySize) tapTempoHistory.remove(0);
 		delta = 0;

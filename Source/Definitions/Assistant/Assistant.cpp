@@ -30,6 +30,7 @@
 #include "Definitions/Actions/EffectAction.h"
 #include "Definitions/Actions/CarouselAction.h"
 #include "Definitions/ChannelFamily/ChannelFamilyManager.h"
+#include "BKEngine.h"
 
 juce_ImplementSingleton(Assistant)
 
@@ -95,7 +96,7 @@ Assistant::Assistant() :
     swapperBtn = fixtureSwapperCC.addTrigger("Change fixtures", "Replace all fixtures of first type with the second one");
     addChildControllableContainer(&fixtureSwapperCC);
 
-
+    userCanRemove = false;
     /*
     midiMapperTargetInterface = midiMapperCC.addTargetParameter("Midi interface", "Midi interface to connect your new mapping, let empty to create a new one", InterfaceManager::getInstance());
     midiMapperTargetInterface->maxDefaultSearchLevel = 0;
@@ -121,12 +122,16 @@ Assistant::Assistant() :
     asciiCues = asciiCC.addBoolParameter("Cues", "Do you want to import or export cues ?", true);
     asciiSubs = asciiCC.addBoolParameter("Subs", "Do you want to import or export subs ?", true);
     asciiRespectCueNumbers = asciiCC.addBoolParameter("Respect cue number", "If checked, the cues will be ordered by cue ID, if not, they will be ordered by step number", true);
+    asciiEraseCuelist = asciiCC.addBoolParameter("Erase main cuelist", "If not checked, the current cuelist will be updated with ascii values", false);
     asciiChannelFixtureType = asciiCC.addTargetParameter("Channel Fixture type", "Fixture used for ascii import/export", FixtureTypeManager::getInstance());
     asciiChannelFixtureType->targetType = TargetParameter::CONTAINER;
     asciiChannelFixtureType->maxDefaultSearchLevel = 0;
+    asciiChannelFixtureType->typesFilter.add("FixtureType");
     asciiDimmerChannel = asciiCC.addTargetParameter("Intensity Channel", "Channel used as intensity for ascii import/export", ChannelFamilyManager::getInstance());
     asciiDimmerChannel->targetType = TargetParameter::CONTAINER;
     asciiDimmerChannel->maxDefaultSearchLevel = 2;
+    asciiDimmerChannel->typesFilter.add("ChannelType");
+
     asciiCuelistId = asciiCC.addIntParameter("Main Sequence ID", "Sequence to export or to import in", 1, 1);
     importAsciiBtn = asciiCC.addTrigger("Import", "Click to import a file");
     //exportAsciiBtn = asciiCC.addTrigger("Export", "Click to export selected cuelist in file");
@@ -312,7 +317,7 @@ void Assistant::patchFixtures()
             f->userName->setValue(name);
         }
         f->devTypeParam->setValueFromTarget(fixtureType);
-        if (targetInterface != nullptr) {
+        if (targetInterface != nullptr && firstAddress > 0) {
             FixturePatch* p = f->patchs.addItem();
             p->targetInterface->setValueFromTarget(targetInterface);
             p->address->setValue(currentAdress);
@@ -750,22 +755,52 @@ void Assistant::importAscii()
         cuelist = Brain::getInstance()->getCuelistById(mainCuelistId);
         if (cuelist == nullptr) {
             cuelist = CuelistManager::getInstance()->addItem();
+            cuelist->userName->setValue("ASCII Cuelist");
         }
         cuelist->kill();
-        cuelist->cues.clear();
-        cuelist->userName->setValue("ASCII Cuelist");
+        if (asciiEraseCuelist->boolValue()) {
+            cuelist->cues.clear();
+        }
     }
+
+    HashMap<int, Cue*> idToCue;
+    if (!asciiEraseCuelist->boolValue()) {
+        for (Cue* c : cuelist->cues.items) {
+            idToCue.set(c->id->floatValue()*100000, c);
+        }
+    }
+
     Cue* currentCue = nullptr;
+    Cue* previousCue = nullptr;
     Group* currentGroup = nullptr;
     Preset* currentPreset = nullptr;
     Cuelist* currentSub = nullptr;
     Cue* currentSubCue = nullptr;
+    FixtureType* currentFixtureType = nullptr;
+    Fixture* currentFixture = nullptr;
 
     Array<Cue*> cuesToAdd;
     Array<Cuelist*> cuelistsToAdd;
     Array<Group*> groupsToAdd;
     Array<Preset*> presetsToAdd;
     Array<Fixture*> fixturesToAdd;
+    
+    HashMap<int, String> intToChannelFam;
+    intToChannelFam.set(1, "Dimmer");
+    intToChannelFam.set(2, "Position");
+    intToChannelFam.set(3, "Color");
+    intToChannelFam.set(4, "Gobo");
+    intToChannelFam.set(5, "Beam");
+    intToChannelFam.set(6, "Focus");
+    intToChannelFam.set(7, "Control");
+
+    HashMap<String, String> newChannelTypeNames;
+    newChannelTypeNames.set("Intens", "Intensity");
+
+    HashMap<int, ChannelType*> idToChannelType;
+    HashMap<int, FixtureType*> idToFixtureType;
+
+    HashMap<String, Preset*> idToPreset;
 
     FixtureType* ft = dynamic_cast<FixtureType*>(asciiChannelFixtureType->targetContainer.get());
     for (int i = 0; i < lines.size(); i++) {
@@ -784,6 +819,7 @@ void Assistant::importAscii()
         }
         else {
             StringArray words = StringArray::fromTokens(line.toUpperCase(), " ", "");
+            StringArray wordsOriginal = StringArray::fromTokens(line, " ", "");
             //int currentWord = 1;
             if (words[0] == "ENDDATA") {
                 //return;
@@ -799,10 +835,123 @@ void Assistant::importAscii()
                 currentPrimary = words[0];
                 currentSecondary = words[0];
             }
-            else if (words[0] == "CHAN" || words[0] == "DOWN" || words[0] == "FOLLOWON" || words[0] == "LINK" || words[0] == "PART" || words[0] == "TEXT" || words[0] == "UP") 
+            else if (words[0] == "CHAN" || words[0] == "DOWN" || words[0] == "FOLLOWON" || words[0] == "LINK" || words[0] == "PART" || words[0] == "TEXT" || words[0] == "UP" || words[0] == "$$WAIT")
             {
                 currentSecondary = words[0];
             }
+            else if (words[0] == "$PERSONALITY")
+            {
+                currentPrimary = words[0];
+                currentSecondary = words[0];
+                currentFixtureType = FixtureTypeManager::getInstance()->addItem();
+                idToFixtureType.set(words[1].getIntValue(), currentFixtureType);
+            }
+            else if (words[0] == "$PARAMTYPE")
+            {
+                String famName = intToChannelFam.contains(words[2].getIntValue()) ? intToChannelFam.getReference(words[2].getIntValue()) : "Control";
+                ChannelFamily* fam = nullptr;
+                for (ChannelFamily* f : ChannelFamilyManager::getInstance()->items) {
+                    if (fam == nullptr && f->niceName == famName) {
+                        fam = f;
+                    }
+                }
+                if (fam == nullptr) {
+                    fam = ChannelFamilyManager::getInstance()->addItem();
+                    fam->setNiceName(famName);
+                }
+
+                String ctName = newChannelTypeNames.contains(wordsOriginal[3]) ? newChannelTypeNames.getReference(wordsOriginal[3]) : wordsOriginal[3];
+                ChannelType* channelType = nullptr;
+                for (ChannelType* ct : fam->definitions.items) {
+                    if (channelType == nullptr && ct->niceName == ctName) {
+                        channelType = ct;
+                    }
+                }
+
+                if (channelType == nullptr) {
+                    channelType = fam->definitions.addItem();
+                    channelType->setNiceName(ctName);
+                }
+                idToChannelType.set(words[1].getIntValue(), channelType);
+
+            }
+            else if (words[0] == "$PATCH") {
+                int id = words[1].getIntValue();
+                int ftid = words[2].getIntValue();
+                int address = words[3].getIntValue();
+                int universe = address / 512;
+                address = address % 512;
+                Fixture * f = Brain::getInstance()->getFixtureById(id);
+                if (f == nullptr) {
+                    f = FixtureManager::getInstance()->addItem();
+                    f->id->setValue(id);
+                    if (idToFixtureType.contains(ftid)) {
+                        f->devTypeParam->setValueFromTarget(idToFixtureType.getReference(ftid));
+                    }
+                }
+                currentFixture = f;
+                while (universes.size() <= universe) {
+                    InterfaceManager::getInstance()->addItem(new DMXInterface());
+                    universes = InterfaceManager::getInstance()->getItemsWithType<DMXInterface>();
+                }
+                DMXInterface* targetInterface = universes[universe];
+                if (targetInterface->channelToFixturePatch[address] == nullptr) {
+                    FixturePatch* p = f->patchs.addItem();
+                    p->targetInterface->setTarget(targetInterface);
+                    p->address->setValue(address);
+                }
+                currentPrimary = words[0];
+                currentSecondary = words[0];
+            }
+            else if (words[0] == "$INTENSITYPALETTE") {
+                if (idToPreset.contains("IP" + words[1])) {
+                    currentPreset = idToPreset.getReference("IP" + words[1]);
+                }
+                else {
+                    currentPreset = PresetManager::getInstance()->addItem();
+                    currentPreset->subFixtureValues.clear();
+
+                }
+                currentPrimary = "$PALETTE";
+                currentSecondary = "$PALETTE";
+            }
+            else if (words[0] == "$FOCUSPALETTE") {
+                if (idToPreset.contains("FP" + words[1])) {
+                    currentPreset = idToPreset.getReference("FP" + words[1]);
+                }
+                else {
+                    currentPreset = PresetManager::getInstance()->addItem();
+                    currentPreset->subFixtureValues.clear();
+
+                }
+                currentPrimary = "$PALETTE";
+                currentSecondary = "$PALETTE";
+            }
+            else if (words[0] == "$COLORPALETTE") {
+                if (idToPreset.contains("CP" + words[1])) {
+                    currentPreset = idToPreset.getReference("CP" + words[1]);
+                }
+                else {
+                    currentPreset = PresetManager::getInstance()->addItem();
+                    currentPreset->subFixtureValues.clear();
+
+                }
+                currentPrimary = "$PALETTE";
+                currentSecondary = "$PALETTE";
+            }
+            else if (words[0] == "$BEAMPALETTE") {
+                if (idToPreset.contains("BP" + words[1])) {
+                    currentPreset = idToPreset.getReference("BP" + words[1]);
+                }
+                else {
+                    currentPreset = PresetManager::getInstance()->addItem();
+                    currentPreset->subFixtureValues.clear();
+
+                }
+                currentPrimary = "$PALETTE";
+                currentSecondary = "$PALETTE";
+            }
+
             else if (words[0].startsWith("$$"))
             {
                 currentSecondary = words[0];
@@ -850,28 +999,55 @@ void Assistant::importAscii()
                     if (words.size() == 1) {
                         LOGERROR("invalid file, CUE word must have an id in parameter");
                     }
-                    currentCue = new Cue();
-                    cuesToAdd.add(currentCue);
-                    currentCue->editorIsCollapsed = true;
-                    String cueName = "Cue " + words[1];
-                    currentCue->setNiceName(cueName);
-                    currentCue->commands.clear();
-                    if (asciiRespectCueNumbers->boolValue()) {
-                        currentCue->id->setValue(words[1].getFloatValue());
+                    previousCue = currentCue;
+                    int cueId = words[1].getFloatValue() * 100000;
+
+                    if (!asciiEraseCuelist->boolValue() && idToCue.contains(cueId)) {
+                        currentCue = idToCue.getReference(cueId);
+                        currentCue->commands.clear();
+                    } else {
+                        currentCue = new Cue();
+                        cuesToAdd.add(currentCue);
+                        currentCue->editorIsCollapsed = true;
+                        String cueName = "Cue " + words[1];
+                        currentCue->setNiceName(cueName);
+                        currentCue->commands.clear();
+                        if (asciiRespectCueNumbers->boolValue()) {
+                            currentCue->id->setValue(words[1].getFloatValue());
+                        }
+                        idToCue.set(currentCue->id->floatValue() * 100000, currentCue);
                     }
                 }
                 else if (currentSecondary == "TEXT") {
-                    String text = originalLine.trim().substring(5);
-                    currentCue->cueText->setValue(text);
-                    currentCue->goText->setValue(text);
-                    currentCue->setNiceName(text);
+                    if (cuesToAdd.contains(currentCue)) {
+                        String text = currentCue->cueText->stringValue() + originalLine.trim().substring(5);
+                        currentCue->cueText->setValue(text);
+                        currentCue->goText->setValue(text);
+                        currentCue->setNiceName(text);
+                    }
+                }
+                else if (currentSecondary == "$$CUENOTES") {
+                    if (cuesToAdd.contains(currentCue)) {
+                        String text = originalLine.trim().substring(11);
+                        currentCue->cueText->setValue(text);
+                        currentCue->setNiceName(text);
+                    }
                 }
                 else if (currentSecondary == "FOLLOWON") {
                     if (words.size() == 1) {
-                        LOGERROR("invalid file, UP word must have at least one parameter");
+                        LOGERROR("invalid file, FOLLOWON word must have at least one parameter");
                     }
-                    currentCue->autoFollow->setValueWithData("Immediate");
+                    currentCue->autoFollow->setValueWithKey("Immediate");
                     currentCue->autoFollowTiming->setValue(words[1].getFloatValue());
+                }
+                else if (currentSecondary == "$$WAIT") {
+                    if (words.size() == 1) {
+                        LOGERROR("invalid file, WAIT word must have at least one parameter");
+                    }
+                    if (previousCue != nullptr && words[1].getFloatValue()>0) {
+                        previousCue->autoFollow->setValueWithKey("End of transitions");
+                        previousCue->autoFollowTiming->setValue(words[1].getFloatValue());
+                    }
                 }
                 else if (currentSecondary == "UP") {
                     if (words.size() == 1) {
@@ -907,6 +1083,66 @@ void Assistant::importAscii()
                         com->values.items[0]->valueFrom->setValue(level);
                     }
                 }
+                else if (currentSecondary == "$$CHANMOVE") {
+                    for (int iChan = 1; iChan < words.size() - 1; iChan += 2) {
+                        int fixt = words[iChan].getIntValue();
+                        float level = asciiLevelToFloat(words[iChan + 1]);
+                        Array<String> starts = { "IP", "FP", "CP", "BP", "PR" };
+                        String begin = words[iChan + 1].substring(0, 2);
+                        Command* com = currentCue->commands.addItem();
+                        com->selection.items[0]->valueFrom->setValue(fixt);
+                        if (starts.contains(begin)) {
+                            com->values.items[0]->presetOrValue->setValueWithData("preset");
+                            if (!idToPreset.contains(words[iChan + 1])) {
+                                Preset* p = PresetManager::getInstance()->addItem();
+                                p->userName->setValue(words[iChan + 1]);
+                            }
+                            Preset* target = idToPreset.getReference(words[iChan + 1]);
+                            com->values.items[0]->channelType->setValue(asciiDimmerChannel->getValue());
+                            com->values.items[0]->presetIdFrom->setValue(target->id->intValue());
+                        }
+                        else {
+                            com->values.items[0]->channelType->setValue(asciiDimmerChannel->getValue());
+                            com->values.items[0]->valueFrom->setValue(level);
+                        }
+                    }
+                }
+                else if (currentSecondary == "$$PARAM") {
+                    Fixture* fixt = Brain::getInstance()->getFixtureById(words[1].getIntValue());
+                    Command* fixtCommand = nullptr;
+                    if (fixt != nullptr) {
+                        for (int iChan = 2; iChan < words.size() - 1; iChan += 2) {
+                            int paramId = words[iChan].getIntValue();
+                            ChannelType* param = idToChannelType.getReference(paramId);
+                            float level = asciiLevelToFloat(words[iChan + 1]);
+                            Array<String> starts = { "IP", "FP", "CP", "BP", "PR" };
+                            String begin = words[iChan + 1].substring(0, 2);
+                            if (fixtCommand == nullptr) {
+                                fixtCommand = currentCue->commands.addItem();
+                                fixtCommand->selection.items[0]->valueFrom->setValue(fixt->id->intValue());
+                                fixtCommand->values.clear();
+                                fixtCommand->editorIsCollapsed = true;
+                            }
+                            CommandValue* commandValue = fixtCommand->values.addItem();
+                            if (starts.contains(begin)) {
+                                commandValue->presetOrValue->setValueWithData("preset");
+                                if (!idToPreset.contains(words[iChan + 1])) {
+                                    Preset* p = PresetManager::getInstance()->addItem();
+                                    p->userName->setValue(words[iChan + 1]);
+                                    idToPreset.set(words[iChan + 1], p);
+                                }
+                                Preset* target = idToPreset.getReference(words[iChan + 1]);
+                                commandValue->channelType->setValueFromTarget(param);
+                                commandValue->presetIdFrom->setValue(target->id->intValue());
+                            }
+                            else {
+                                commandValue->channelType->setValueFromTarget(param);
+                                commandValue->valueFrom->setValue(level);
+                            }
+                        }
+                    }
+                }
+
             }
             else if (currentPrimary == "SUB" && asciiSubs->boolValue()) {
                 if (currentSecondary == "SUB") {
@@ -1014,6 +1250,123 @@ void Assistant::importAscii()
                             v->targetFixtureId->setValue(fixt);
                             v->values.items[0]->param->setValue(asciiDimmerChannel->getValue());
                             v->values.items[0]->paramValue->setValue(level);
+                        }
+                    }
+                }
+                else if (currentSecondary == "$$PARAM") {
+                    Fixture* fixt = Brain::getInstance()->getFixtureById(words[1].getIntValue());
+
+                    if (fixt != nullptr) {
+                        for (int iChan = 2; iChan < words.size() - 1; iChan += 2) {
+                            int paramId = words[iChan].getIntValue();
+                            float level = words[iChan + 1].getFloatValue();
+                            float div = level > 255 ? 65535 : 255;
+                            ChannelType* param = nullptr;
+                            if (idToChannelType.contains(paramId)) {
+                                param = idToChannelType.getReference(paramId);
+                            }
+                            if (div == 255 && fixt->subFixtures.contains(0)) {
+                                if (fixt->subFixtures.getReference(0)->channelsMap.contains(param)) {
+                                    auto c = fixt->subFixtures.getReference(0)->channelsMap.getReference(param);
+                                    if (c->resolution == "16bits") {
+                                        div = 65535;
+                                    }
+                                }
+                            }
+                            level = level / div;
+                            PresetSubFixtureValues* com = nullptr;
+                            for (PresetSubFixtureValues* psfv : currentPreset->subFixtureValues.items) {
+                                if (psfv->targetFixtureId->intValue() == fixt->id->intValue()) {
+                                    com = psfv;
+                                }
+                            }
+                            if (com == nullptr) {
+                                com = currentPreset->subFixtureValues.addItem();
+                                com->targetFixtureId->setValue(fixt->id->intValue());
+                                com->values.clear();
+                            }
+                            PresetValue* pv = com->values.addItem();
+                            pv->param->setValueFromTarget(param);
+                            pv->paramValue->setValue(level);
+                        }
+                    }
+                }
+            }
+            else if (currentPrimary == "$PERSONALITY") {
+                if (currentSecondary == "$$MODEL") {
+                    currentFixtureType->setNiceName(wordsOriginal[1]);
+                }
+                else if (currentSecondary == "$$PERSCHAN") {
+                    FixtureTypeChannel* ftc = currentFixtureType->chansManager.addItem();
+                    if (idToChannelType.contains(words[1].getIntValue())) {
+                        ftc->channelType->setValueFromTarget(idToChannelType.getReference(words[1].getIntValue()));
+                    }
+                    if (words[2] == "2") {
+                        ftc->resolution->setValueWithData("16bits");
+                    }
+                }
+            }
+            else if (currentPrimary == "$PATCH") {
+                if (currentSecondary == "TEXT") {
+                    String text = originalLine.trim().substring(5);
+                    currentFixture->userName->setValue(text);
+                }
+                else if (currentSecondary == "$$OPTIONS") {
+                    if (words[1].contains("P")) {
+                        auto c = currentFixture->patchs.items[0]->corrections.addItem();
+                        BKEngine* engine = dynamic_cast<BKEngine*>(BKEngine::mainEngine);
+                        ChannelType* panChanType = dynamic_cast<ChannelType*>(engine->TPanChannel->targetContainer.get());
+                        c->channelType->setValueFromTarget(panChanType);
+                        c->invertChannel->setValue(true);
+                    }
+                    if (words[1].contains("T")) {
+                        auto c = currentFixture->patchs.items[0]->corrections.addItem();
+                        BKEngine* engine = dynamic_cast<BKEngine*>(BKEngine::mainEngine);
+                        ChannelType* tiltChanType = dynamic_cast<ChannelType*>(engine->TTiltChannel->targetContainer.get());
+                        c->channelType->setValueFromTarget(tiltChanType);
+                        c->invertChannel->setValue(true);
+                    }
+                }
+            }
+            else if (currentPrimary == "$PALETTE") {
+                if (currentSecondary == "TEXT") {
+                    String text = originalLine.trim().substring(5);
+                    currentPreset->userName->setValue(text);
+                }
+                else if (currentSecondary == "$$PARAM") {
+                    Fixture * fixt = Brain::getInstance()->getFixtureById(words[1].getIntValue());
+                    if (fixt != nullptr) {
+                        for (int iChan = 2; iChan < words.size() - 1; iChan += 2) {
+                            int paramId = words[iChan].getIntValue();
+                            float level = words[iChan + 1].getFloatValue();
+                            float div = level > 255 ? 65535 : 255;
+                            ChannelType* param = nullptr;
+                            if (idToChannelType.contains(paramId)) {
+                                param = idToChannelType.getReference(paramId);
+                            }
+                            if (div == 255 && fixt->subFixtures.contains(0)) {
+                                if (fixt->subFixtures.getReference(0)->channelsMap.contains(param)) {
+                                    auto c = fixt->subFixtures.getReference(0)->channelsMap.getReference(param);
+                                    if (c->resolution == "16bits") {
+                                        div = 65535;
+                                    }
+                                }
+                            }
+                            level = level/div;
+                            PresetSubFixtureValues* com = nullptr;
+                            for (PresetSubFixtureValues* psfv : currentPreset->subFixtureValues.items) {
+                                if (psfv->targetFixtureId->intValue() == fixt->id->intValue()) {
+                                    com = psfv;
+                                }
+                            }
+                            if (com == nullptr) {
+                                com = currentPreset->subFixtureValues.addItem();
+                                com->targetFixtureId->setValue(fixt->id->intValue());
+                                com->values.clear();
+                            }
+                            PresetValue* pv = com->values.addItem();
+                            pv->param->setValueFromTarget(param);
+                            pv->paramValue->setValue(level);
                         }
                     }
                 }

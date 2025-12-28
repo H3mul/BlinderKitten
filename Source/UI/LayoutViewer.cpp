@@ -31,6 +31,11 @@ LayoutViewer::LayoutViewer() :
 	viewPaths.addListener(this);
 	addAndMakeVisible(&viewPaths);
 
+	viewCoords.setButtonText("Mouse coords");
+	viewCoords.setWantsKeyboardFocus(false);
+	viewCoords.addListener(this);
+	addAndMakeVisible(&viewCoords);
+
 	exportBtn.setButtonText("Export");
 	exportBtn.setWantsKeyboardFocus(false);
 	addAndMakeVisible(exportBtn);
@@ -197,6 +202,7 @@ void LayoutViewer::resized()
 	layoutsList.setBounds(hr.removeFromLeft(80).reduced(2));
 	viewPaths.setBounds(hr.removeFromLeft(80).reduced(2));
 	editMode.setBounds(hr.removeFromLeft(80).reduced(2));
+	viewCoords.setBounds(hr.removeFromLeft(80).reduced(2));
 	exportBtn.setBounds(hr.removeFromLeft(80).reduced(2));
 
 	if (selectedLayout != nullptr) {
@@ -210,6 +216,8 @@ void LayoutViewer::mouseExit(const MouseEvent& e)
 	currentMouseAction = CLIC_NOACTION;
 	currentMousePath = nullptr;
 	hoveredPath = nullptr;
+	mouseInLayout = false;
+	repaint();
 }
 
 void LayoutViewer::mouseDown(const MouseEvent& e)
@@ -440,6 +448,21 @@ void LayoutViewer::mouseMove(const MouseEvent& e)
 		}
 
 	}
+
+	if (selectedLayout != nullptr)
+	{
+		float layoutX = jmap(float(e.position.getX()), topLeftX, bottomRightX,
+			(float)selectedLayout->dimensionsX->getValue()[0],
+			(float)selectedLayout->dimensionsX->getValue()[1]);
+		float layoutY = jmap(float(e.position.getY()), topLeftY, bottomRightY,
+			(float)selectedLayout->dimensionsY->getValue()[1],
+			(float)selectedLayout->dimensionsY->getValue()[0]);
+		mouseLayoutX = layoutX;
+		mouseLayoutY = layoutY;
+		mouseInLayout = (e.position.getX() >= topLeftX && e.position.getX() <= bottomRightX &&
+			e.position.getY() >= topLeftY && e.position.getY() <= bottomRightY);
+		repaint();
+	}
 }
 
 void LayoutViewer::clickTracker(const MouseEvent& e)
@@ -452,15 +475,21 @@ void LayoutViewer::clickTracker(const MouseEvent& e)
 	float layoutX = jmap(float(e.position.getX()), topLeftX, bottomRightX, (float)selectedLayout->dimensionsX->getValue()[0], (float)selectedLayout->dimensionsX->getValue()[1]);
 	float layoutY = jmap(float(e.position.getY()), topLeftY, bottomRightY, (float)selectedLayout->dimensionsY->getValue()[1], (float)selectedLayout->dimensionsY->getValue()[0]);
 	float third = selectedLayout->trackerThirdValue->floatValue();
+	Vector3D<float> currentVal = t->targetPosition->getVector();
+	if (selectedLayout->trackerThirdValue->enabled) {
+		currentVal.x = third;
+		currentVal.y = third;
+		currentVal.z = third;
+	}
 	String plane = selectedLayout->trackerPlane->getValue();
 	if (plane == "XY") {
-		t->targetPosition->setVector(layoutX, layoutY, third);
+		t->targetPosition->setVector(layoutX, layoutY, currentVal.z);
 	}
 	else if (plane == "XZ") {
-		t->targetPosition->setVector(layoutX, third, layoutY);
+		t->targetPosition->setVector(layoutX, currentVal.y, layoutY);
 	}
 	else if (plane == "YZ") {
-		t->targetPosition->setVector(third, layoutX, layoutY);
+		t->targetPosition->setVector(currentVal.x, layoutX, layoutY);
 	}
 	
 }
@@ -647,6 +676,9 @@ void LayoutViewer::paint(Graphics& g)
 		bool drawPaths = viewPaths.getToggleState();
 		bool edit = editMode.getToggleState();
 
+		p->isComputing.enter(); // lock here
+		p->selection.computing.enter();
+
 		if (type == BKPath::PATH_POINT) {
 			float fromX = jmap((float)p->position->getValue()[0], (float)dimensionX[0], (float)dimensionX[1], (float)0, width);
 			float fromY = jmap((float)p->position->getValue()[1], (float)dimensionY[1], (float)dimensionY[0], (float)0, height);
@@ -691,8 +723,7 @@ void LayoutViewer::paint(Graphics& g)
 				if (p->customText->stringValue() != "") {
 					name = p->customText->stringValue().trim();
 				}
-				g.drawText(name, fromX - halfTileWidth, fromY - halfTileHeight, tileWidth, tileHeight, juce::Justification::centred);
-
+				drawName(g, name, fromX - halfTileWidth, fromY - halfTileHeight, tileWidth, tileHeight, drawColor, labelPos);
 			}
 			if (p == hoveredPath) {
 				g.setColour(handleColour);
@@ -723,7 +754,6 @@ void LayoutViewer::paint(Graphics& g)
 			float currentArrowX = -1;
 			float currentArrowY = -1;
 			if (p->spreadSubFixtures->boolValue()) {
-				p->isComputing.enter();
 				for (int iFixt = 0; iFixt < p->selection.computedSelectedSubFixtures.size(); iFixt++) {
 					SubFixture* sf = p->selection.computedSelectedSubFixtures[iFixt];
 					if (p->subFixtToPos.contains(sf)) {
@@ -748,10 +778,8 @@ void LayoutViewer::paint(Graphics& g)
 						}
 					}
 				}
-				p->isComputing.exit();
 			}
 			if (!p->spreadSubFixtures->boolValue()) {
-				p->isComputing.enter();
 				Array<Fixture*> drawedFixtures;
 				for (int iFixt = 0; iFixt < p->selection.computedSelectedSubFixtures.size(); iFixt++) {
 					SubFixture* sf = p->selection.computedSelectedSubFixtures[iFixt];
@@ -778,7 +806,6 @@ void LayoutViewer::paint(Graphics& g)
 						}
 					}
 				}
-				p->isComputing.exit();
 			}
 
 			if (p == hoveredPath) {
@@ -809,7 +836,6 @@ void LayoutViewer::paint(Graphics& g)
 			float currentArrowX = -1;
 			float currentArrowY = -1;
 			if (p->spreadSubFixtures->boolValue()) {
-				p->isComputing.enter();
 				for (int iFixt = 0; iFixt < p->selection.computedSelectedSubFixtures.size(); iFixt++) {
 					SubFixture* sf = p->selection.computedSelectedSubFixtures[iFixt];
 					if (p->subFixtToPos.contains(sf)) {
@@ -834,10 +860,8 @@ void LayoutViewer::paint(Graphics& g)
 						}
 					}
 				}
-				p->isComputing.exit();
 			}
 			if (!p->spreadSubFixtures->boolValue()) {
-				p->isComputing.enter();
 				Array<Fixture*> drawedFixtures;
 				for (int iFixt = 0; iFixt < p->selection.computedSelectedSubFixtures.size(); iFixt++) {
 					SubFixture* sf = p->selection.computedSelectedSubFixtures[iFixt];
@@ -864,7 +888,6 @@ void LayoutViewer::paint(Graphics& g)
 						}
 					}
 				}
-				p->isComputing.exit();
 			}
 
 			if (p == hoveredPath) {
@@ -901,7 +924,6 @@ void LayoutViewer::paint(Graphics& g)
 
 			//g.setColour(juce::Colours::orange);
 			if (p->spreadSubFixtures->boolValue()) {
-				p->isComputing.enter();
 				for (auto it = p->subFixtToPos.begin(); it != p->subFixtToPos.end(); it.next()) {
 					float X = jmap((float)it.getValue()->x, (float)dimensionX[0], (float)dimensionX[1], (float)0, width);
 					float Y = jmap((float)it.getValue()->y, (float)dimensionY[1], (float)dimensionY[0], (float)0, height);
@@ -916,10 +938,8 @@ void LayoutViewer::paint(Graphics& g)
 						clicg.fillRect(X - halfTileWidth, Y - halfTileHeight, tileWidth, tileHeight);
 					}
 				}
-				p->isComputing.exit();
 			}
-			if (!p->spreadSubFixtures->boolValue()) {
-				p->isComputing.enter();
+			if (!p->spreadSubFixtures->boolValue()) { 
 				int iFixt = 0;
 				for (auto it = p->fixtToPos.begin(); it != p->fixtToPos.end(); it.next()) {
 					float X = jmap((float)it.getValue()->x, (float)dimensionX[0], (float)dimensionX[1], (float)0, width);
@@ -937,7 +957,6 @@ void LayoutViewer::paint(Graphics& g)
 						clicg.fillRect(X - halfTileWidth, Y - halfTileHeight, tileWidth, tileHeight);
 					}
 				}
-				p->isComputing.exit();
 			}
 
 			if (edit) {
@@ -1000,7 +1019,6 @@ void LayoutViewer::paint(Graphics& g)
 
 			//g.setColour(juce::Colours::orange);
 			if (p->spreadSubFixtures->boolValue()) {
-				p->isComputing.enter();
 				for (auto it = p->subFixtToPos.begin(); it != p->subFixtToPos.end(); it.next()) {
 					float XFixt = jmap((float)it.getValue()->x, (float)dimensionX[0], (float)dimensionX[1], (float)0, width);
 					float YFixt = jmap((float)it.getValue()->y, (float)dimensionY[1], (float)dimensionY[0], (float)0, height);
@@ -1015,10 +1033,8 @@ void LayoutViewer::paint(Graphics& g)
 						clicg.fillRect(XFixt - halfTileWidth, YFixt - halfTileHeight, tileWidth, tileHeight);
 					}
 				}
-				p->isComputing.exit();
 			}
 			if (!p->spreadSubFixtures->boolValue()) {
-				p->isComputing.enter();
 				int iFixt = 0;
 				for (auto it = p->fixtToPos.begin(); it != p->fixtToPos.end(); it.next()) {
 					float XFixt = jmap((float)it.getValue()->x, (float)dimensionX[0], (float)dimensionX[1], (float)0, width);
@@ -1037,7 +1053,6 @@ void LayoutViewer::paint(Graphics& g)
 					}
 					iFixt++;
 				}
-				p->isComputing.exit();
 			}
 		}
 		if (type == BKPath::PATH_PRESET) {
@@ -1077,7 +1092,6 @@ void LayoutViewer::paint(Graphics& g)
 			}
 
 			if (p->spreadSubFixtures->boolValue()) {
-				p->isComputing.enter();
 				for (auto it = p->subFixtToPos.begin(); it != p->subFixtToPos.end(); it.next()) {
 					float XFixt = jmap((float)it.getValue()->x, (float)dimensionX[0], (float)dimensionX[1], (float)0, width);
 					float YFixt = jmap((float)it.getValue()->y, (float)dimensionY[1], (float)dimensionY[0], (float)0, height);
@@ -1092,10 +1106,8 @@ void LayoutViewer::paint(Graphics& g)
 						clicg.fillRect(XFixt - halfTileWidth, YFixt - halfTileHeight, tileWidth, tileHeight);
 					}
 				}
-				p->isComputing.exit();
 			}
 			if (!p->spreadSubFixtures->boolValue()) {
-				p->isComputing.enter();
 				int iFixt = 0;
 				for (auto it = p->fixtToPos.begin(); it != p->fixtToPos.end(); it.next()) {
 					float XFixt = jmap((float)it.getValue()->x, (float)dimensionX[0], (float)dimensionX[1], (float)0, width);
@@ -1114,10 +1126,48 @@ void LayoutViewer::paint(Graphics& g)
 					}
 					iFixt++;
 				}
-				p->isComputing.exit();
 			}
 		}
+
+		p->selection.computing.exit();
+		p->isComputing.exit();
 	}
+
+	if (mouseInLayout && viewCoords.getToggleState())
+	{
+		g.setFont(10.0f);
+		g.setColour(Colours::white.darker());
+		g.drawText("" + String(mouseLayoutX, 2) + ", " + String(mouseLayoutY, 2),
+			0, 0, getWidth(), 20,
+			Justification::centredLeft);
+	}
+
+	if (selectedLayout->controlTracker->boolValue() && selectedLayout->trackerId->intValue() > 0) {
+		Tracker* t = Brain::getInstance()->getTrackerById(selectedLayout->trackerId->intValue());
+		if (t != nullptr) {
+			float tx = 0;
+			float ty = 0;
+			String plane = selectedLayout->trackerPlane->getValue();
+			if (plane == "XY") {
+				tx = t->targetPosition->x;
+				ty = t->targetPosition->y;
+			}
+			else if (plane == "XZ") {
+				tx = t->targetPosition->x;
+				ty = t->targetPosition->z;
+			}
+			else if (plane == "YZ") {
+				tx = t->targetPosition->y;
+				ty = t->targetPosition->z;
+			}
+			tx = jmap(tx, (float)selectedLayout->dimensionsX->getValue()[0], (float)selectedLayout->dimensionsX->getValue()[1], 0.f, width);
+			ty = jmap(ty, (float)selectedLayout->dimensionsY->getValue()[1], (float)selectedLayout->dimensionsY->getValue()[0], 0.f, height);
+			g.setColour(juce::Colours::lightgrey);
+			g.drawLine(tx - 10, ty - 10, tx + 10, ty + 10);
+			g.drawLine(tx - 10, ty + 10, tx + 10, ty - 10);
+		}
+	}
+
 }
 
 void LayoutViewer::stopAndCheckTimer()

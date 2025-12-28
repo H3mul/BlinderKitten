@@ -91,6 +91,7 @@ public:
     Trigger* loadAndGoBtn;
     Trigger* loadRandomBtn;
     Trigger* cleanAllBtn;
+    Trigger* regroupAllBtn;
 
     Trigger* selectAsMainConductorBtn;
 
@@ -262,6 +263,8 @@ public:
     void replaceWithProgrammer(Programmer* p);
 
     void exportInTextFile();
+
+    void takeSelection(Programmer* p);
 
     static Cuelist* create(var params) { return new Cuelist(params); }
 

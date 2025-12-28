@@ -4,7 +4,7 @@
               addUsingNamespaceToJuceHeader="1" displaySplashScreen="0" jucerFormatVersion="1"
               compilerFlagSchemes="NewScheme" headerPath="../../Source&#10;../../Source/Definitions&#10;../../External/serial/include&#10;../../External/servus/include&#10;../../External/dnssd/include&#10;../../External/ois/include&#10;../../External/sdl/include&#10;../../External/libusb/include/libusb-1.0"
               defines="JUCE_MODAL_LOOPS_PERMITTED=1&#10;_ITERATOR_DEBUG_LEVEL=1&#10;"
-              version="1.0.1b84" companyName="Norbert Rostaing" companyCopyright="Norbert Rostaing"
+              version="1.0.1b92" companyName="Norbert Rostaing" companyCopyright="Norbert Rostaing"
               companyWebsite="http://blinderkitten.lighting" companyEmail="blinderkitten@gmail.com"
               bundleIdentifier="norbertrostaing.BlinderKitten">
   <MAINGROUP id="K7UlHD" name="BlinderKitten">
@@ -181,6 +181,10 @@
         </GROUP>
         <GROUP id="{0043DA5B-3310-403C-3BE0-130CE23DD1DA}" name="DMX">
           <GROUP id="{91C545DA-A48D-57A6-B384-1C4519922732}" name="device">
+            <GROUP id="{72F48E22-6516-3633-CE95-172924652A53}" name="sacn">
+              <FILE id="qver9Z" name="e131.c" compile="0" resource="0" file="Source/Common/DMX/device/sacn/e131.c"/>
+              <FILE id="yXkEO9" name="e131.h" compile="0" resource="0" file="Source/Common/DMX/device/sacn/e131.h"/>
+            </GROUP>
             <FILE id="jJgUKn" name="DMXArtNetDevice.cpp" compile="0" resource="0"
                   file="Source/Common/DMX/device/DMXArtNetDevice.cpp"/>
             <FILE id="te1zwv" name="DMXArtNetDevice.h" compile="0" resource="0"
@@ -191,6 +195,14 @@
                   file="Source/Common/DMX/device/DMXEnttecProDevice.cpp"/>
             <FILE id="QS0L0n" name="DMXEnttecProDevice.h" compile="0" resource="0"
                   file="Source/Common/DMX/device/DMXEnttecProDevice.h"/>
+            <FILE id="DMXKng1" name="DMXKingDevice.cpp" compile="0" resource="0"
+                  file="Source/Common/DMX/device/DMXKingDevice.cpp"/>
+            <FILE id="DMXKng2" name="DMXKingDevice.h" compile="0" resource="0"
+                  file="Source/Common/DMX/device/DMXKingDevice.h"/>
+            <FILE id="DMXKngM1" name="DMXKingManager.cpp" compile="0" resource="0"
+                  file="Source/Common/DMX/device/DMXKingManager.cpp"/>
+            <FILE id="DMXKngM2" name="DMXKingManager.h" compile="0" resource="0"
+                  file="Source/Common/DMX/device/DMXKingManager.h"/>
             <FILE id="lNcEcE" name="DMXEuroliteDevice.cpp" compile="0" resource="0"
                   file="Source/Common/DMX/device/DMXEuroliteDevice.cpp"/>
             <FILE id="eEhRpL" name="DMXEuroliteDevice.h" compile="0" resource="0"
@@ -199,6 +211,9 @@
                   file="Source/Common/DMX/device/DMXOpenUSBDevice.cpp"/>
             <FILE id="WuC6ul" name="DMXOpenUSBDevice.h" compile="0" resource="0"
                   file="Source/Common/DMX/device/DMXOpenUSBDevice.h"/>
+            <FILE id="NzSayL" name="DMXSACNDevice.cpp" compile="0" resource="0"
+                  file="Source/Common/DMX/device/DMXSACNDevice.cpp"/>
+            <FILE id="vRdL5M" name="DMXSACNDevice.h" compile="0" resource="0" file="Source/Common/DMX/device/DMXSACNDevice.h"/>
             <FILE id="Z4LqhJ" name="DMXSerialDevice.cpp" compile="0" resource="0"
                   file="Source/Common/DMX/device/DMXSerialDevice.cpp"/>
             <FILE id="YA224Q" name="DMXSerialDevice.h" compile="0" resource="0"
@@ -319,6 +334,10 @@
           <FILE id="onIrJC" name="PresetAction.cpp" compile="1" resource="0"
                 file="Source/Definitions/Actions/PresetAction.cpp"/>
           <FILE id="pWJqFW" name="PresetAction.h" compile="0" resource="0" file="Source/Definitions/Actions/PresetAction.h"/>
+          <FILE id="EgwWfJ" name="SelectionMasterAction.cpp" compile="1" resource="0"
+                file="Source/Definitions/Actions/SelectionMasterAction.cpp"/>
+          <FILE id="EGc2wx" name="SelectionMasterAction.h" compile="0" resource="0"
+                file="Source/Definitions/Actions/SelectionMasterAction.h"/>
           <FILE id="ogmjMd" name="SoloPoolAction.cpp" compile="1" resource="0"
                 file="Source/Definitions/Actions/SoloPoolAction.cpp"/>
           <FILE id="LZgVMq" name="SoloPoolAction.h" compile="0" resource="0"
@@ -542,6 +561,18 @@
                 file="Source/Definitions/FixtureType/FixtureTypeManagerUI.cpp"/>
           <FILE id="NzoqJA" name="FixtureTypeManagerUI.h" compile="0" resource="0"
                 file="Source/Definitions/FixtureType/FixtureTypeManagerUI.h"/>
+          <FILE id="vRXKu0" name="FixtureTypePreset.cpp" compile="1" resource="0"
+                file="Source/Definitions/FixtureType/FixtureTypePreset.cpp"/>
+          <FILE id="lUHIKc" name="FixtureTypePreset.h" compile="0" resource="0"
+                file="Source/Definitions/FixtureType/FixtureTypePreset.h"/>
+          <FILE id="IxrVop" name="FixtureTypePresetManager.cpp" compile="1" resource="0"
+                file="Source/Definitions/FixtureType/FixtureTypePresetManager.cpp"/>
+          <FILE id="ZySobF" name="FixtureTypePresetManager.h" compile="0" resource="0"
+                file="Source/Definitions/FixtureType/FixtureTypePresetManager.h"/>
+          <FILE id="H4DV1O" name="FixtureTypePresetValues.cpp" compile="1" resource="0"
+                file="Source/Definitions/FixtureType/FixtureTypePresetValues.cpp"/>
+          <FILE id="kvJFCE" name="FixtureTypePresetValues.h" compile="0" resource="0"
+                file="Source/Definitions/FixtureType/FixtureTypePresetValues.h"/>
           <FILE id="JXp7CW" name="FixtureTypeVirtualChannel.cpp" compile="1"
                 resource="0" file="Source/Definitions/FixtureType/FixtureTypeVirtualChannel.cpp"/>
           <FILE id="YRt4Hn" name="FixtureTypeVirtualChannel.h" compile="0" resource="0"
@@ -747,6 +778,20 @@
                 file="Source/Definitions/Programmer/ProgrammerManagerUI.cpp"/>
           <FILE id="cVpv9b" name="ProgrammerManagerUI.h" compile="0" resource="0"
                 file="Source/Definitions/Programmer/ProgrammerManagerUI.h"/>
+        </GROUP>
+        <GROUP id="{7ABAACF7-D27C-A93F-AB78-620D203811F3}" name="SelectionMaster">
+          <FILE id="ERVQLC" name="SelectionMaster.cpp" compile="1" resource="0"
+                file="Source/Definitions/SelectionMaster/SelectionMaster.cpp"/>
+          <FILE id="XyKfoL" name="SelectionMaster.h" compile="0" resource="0"
+                file="Source/Definitions/SelectionMaster/SelectionMaster.h"/>
+          <FILE id="hFCTgu" name="SelectionMasterManager.cpp" compile="1" resource="0"
+                file="Source/Definitions/SelectionMaster/SelectionMasterManager.cpp"/>
+          <FILE id="jFBh2M" name="SelectionMasterManager.h" compile="0" resource="0"
+                file="Source/Definitions/SelectionMaster/SelectionMasterManager.h"/>
+          <FILE id="hS1Hn3" name="SelectionMasterManagerUI.cpp" compile="1" resource="0"
+                file="Source/Definitions/SelectionMaster/SelectionMasterManagerUI.cpp"/>
+          <FILE id="nKgJLB" name="SelectionMasterManagerUI.h" compile="0" resource="0"
+                file="Source/Definitions/SelectionMaster/SelectionMasterManagerUI.h"/>
         </GROUP>
         <GROUP id="{7FB4DF5D-8DCA-AC2D-DD2C-F67ECA24743D}" name="SubFixture">
           <FILE id="jbO0qH" name="SubFixture.cpp" compile="1" resource="0" file="Source/Definitions/SubFixture/SubFixture.cpp"/>

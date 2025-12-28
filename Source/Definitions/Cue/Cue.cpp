@@ -16,6 +16,7 @@
 #include "BKEngine.h"
 #include "UI/CuelistSheet/CuelistSheet.h"
 #include "Cuelist/CuelistManager.h"
+#include "ChannelValue.h"
 
 Cue::Cue(var params) :
 	BaseItem(params.getProperty("name", "Cue 1")),
@@ -52,13 +53,15 @@ Cue::Cue(var params) :
 	autoFollow->addOption("End of transitions", "auto");
 	autoFollow->addOption("Immediate", "immediate");
 	autoFollowTiming = addFloatParameter("Auto Follow delay", "Number of seconds before trigger the auto go ", 0, 0);
-	autoFollowCountDown = addFloatParameter("Auto Follow CountdDown", "Triggers next cue when arrives to 0", 0, 0);
+	autoFollowCountDown = addFloatParameter("Auto Follow Countdown", "Triggers next cue when arrives to 0", 0, 0);
 	autoFollowCountDown->isControllableFeedbackOnly = true;
 
 	canBeRandomlyCalled = addBoolParameter("Random callable", "Can this cue be called by the randomGo of its cuelist ?", true);
 	loadWindowBreakLine = addBoolParameter("New line load window", "If checked, this element will force a new line in the cuelist window", false);
 	goBtn = actionsContainer.addTrigger("GO", "trigger this cue");
 	cleanUnusedCommandsBtn = actionsContainer.addTrigger("Clean", "Clean the duplicates commands in this cue.");
+	regroupCommandsBtn = actionsContainer.addTrigger("Regroup", "Regroup similar commands on fixtures to corresponding group.");
+	takeSelectionBtn = actionsContainer.addTrigger("Take Selection", "Get this cue's selections in the programmer.");
 	loadBtn = actionsContainer.addTrigger("Load content", "load the content of this cue in programmer");
 	replaceBtn = actionsContainer.addTrigger("Replace", "The content of this cue is deleted and replaced with actual content of programmer");
 	mergeBtn = actionsContainer.addTrigger("Merge", "The content of the programmer is added to this cue");
@@ -147,6 +150,12 @@ void Cue::onControllableFeedbackUpdate(ControllableContainer* cc, Controllable* 
 	else if (c == cleanUnusedCommandsBtn) {
 		computeValues();
 		cleanUnused();
+	}
+	else if (c == regroupCommandsBtn) {
+		regroupCommands();
+	}
+	else if (c == takeSelectionBtn) {
+		takeSelection(nullptr);
 	}
 	else if (c == loadBtn) {
 		Programmer* p = UserInputManager::getInstance()->getProgrammer(false);
@@ -331,6 +340,153 @@ void Cue::cleanUnused()
 	csComputing.exit();
 }
 
+void Cue::regroupCommands()
+{
+	computeValues();
+
+	for (auto it = Brain::getInstance()->groups.begin(); it != Brain::getInstance()->groups.end(); it.next()) {
+		it.getValue()->selection.computeSelection();
+	}
+	
+	Array<int> dontProcess;
+	Array<Command*> toDelete;
+
+	for (int i = 0; i < commands.items.size(); i++) {
+		if (dontProcess.contains(i)) continue;
+		Command* cmdOrigin = commands.items[i];
+		if (cmdOrigin->selection.items.size() != 1) continue;
+		if (cmdOrigin->selection.items[0]->targetType->getValueData() != "fixture") continue;
+		if (cmdOrigin->values.items.size() != 1) continue;
+		if (cmdOrigin->values.items[0]->thru->boolValue()) continue;
+
+		for (int j = i + 1; j < commands.items.size(); j++) {
+			Command* cmdTest = commands.items[j];
+			if (cmdTest->selection.items.size() != 1) continue;
+			if (cmdTest->selection.items[0]->targetType->getValueData() != "fixture") continue;
+			if (cmdTest->values.items.size() != 1) continue;
+			if (cmdTest->values.items[0]->thru->boolValue()) continue;
+
+			if (cmdOrigin->values.items[0]->presetOrValue->getValue() != cmdTest->values.items[0]->presetOrValue->getValue()) continue;
+			if (cmdOrigin->values.items[0]->presetOrValue->getValue() == "preset") {
+				if (cmdOrigin->values.items[0]->presetIdFrom->getValue() != cmdTest->values.items[0]->presetIdFrom->getValue()) continue;
+			}
+			else if (cmdOrigin->values.items[0]->presetOrValue->getValue() == "value") {
+				if (cmdOrigin->values.items[0]->valueFrom->getValue() != cmdTest->values.items[0]->valueFrom->getValue()) continue;
+			}
+
+			cmdOrigin->selection.addItemFromData(cmdTest->selection.items[0]->getJSONData());
+			dontProcess.add(j);
+			toDelete.add(cmdTest);
+		}
+
+	}
+	commands.removeItems(toDelete);
+
+	toDelete.clear();
+	Array<var> toAdd;
+
+	for (Command* cmd : commands.items) {
+		if (cmd->selection.items.size() > 1) {
+			cmd->selection.computeSelection();
+			bool replaced = false;
+
+			// check for one corresponding group
+			for (auto it = Brain::getInstance()->groups.begin(); it != Brain::getInstance()->groups.end() && !replaced; it.next()) {
+				Group* g = it.getValue();
+				if (g->selection.computedSelectedSubFixtures.size() != cmd->selection.computedSelectedFixtures.size()) continue;
+				bool valid = true;
+				for (SubFixture* sf : g->selection.computedSelectedSubFixtures) {
+					valid = valid && cmd->selection.computedSelectedSubFixtures.contains(sf);
+				}
+				if (valid) {
+					cmd->selection.clear();
+					CommandSelection* cs = cmd->selection.addItem();
+					cs->targetType->setValueWithData("group");
+					cs->valueFrom->setValue(g->id->intValue());
+					replaced = true;
+				}
+			}
+
+			if (!replaced) {
+				Array<Group*> allGroups;
+				for (auto it = Brain::getInstance()->groups.begin(); it != Brain::getInstance()->groups.end(); it.next()) {
+					allGroups.add(it.getValue());
+				}
+				Array<Group*> selectedGroups;
+				for (int i = 0; i < allGroups.size() && !replaced; i++) {
+					selectedGroups.clear();
+					Group* firstGroup = allGroups[i];
+					Array<SubFixture*> remainingSelection;
+					remainingSelection.addArray(cmd->selection.computedSelectedSubFixtures);
+
+					bool valid = true;
+					for (SubFixture* sf : firstGroup->selection.computedSelectedSubFixtures) {
+						valid = valid && remainingSelection.contains(sf);
+						remainingSelection.removeAllInstancesOf(sf);
+					}
+					if (!valid) continue;
+					selectedGroups.add(firstGroup);
+
+					for (int j = i + 1; j < allGroups.size(); j++) {
+						Group* secondGroup = allGroups[j];
+						for (SubFixture* sf : secondGroup->selection.computedSelectedSubFixtures) {
+							valid = valid && remainingSelection.contains(sf);
+						}
+						if (valid) {
+							selectedGroups.add(secondGroup);
+							for (SubFixture* sf : secondGroup->selection.computedSelectedSubFixtures) {
+								remainingSelection.removeAllInstancesOf(sf);
+							}
+						}
+					}
+
+					if (remainingSelection.size() == 0) {
+						replaced = true;
+						toDelete.add(cmd);
+						cmd->selection.clear();
+						CommandSelection* cs = cmd->selection.addItem();
+						cs->targetType->setValueWithData("group");
+
+						for (Group* g : selectedGroups) {
+							cs->valueFrom->setValue(g->id->intValue());
+							toAdd.add(cmd->getJSONData());
+						}
+					}
+				}
+
+			}
+		}
+	}
+
+	commands.removeItems(toDelete);
+	for (var v : toAdd) {
+		commands.addItemFromData(v);
+	}
+
+}
+
+void Cue::takeSelection(Programmer* p)
+{
+	if (p == nullptr) p = UserInputManager::getInstance()->getProgrammer(true);
+	MessageManager::callAsync([this, p]() {
+		Command* cmd = p->currentUserCommand;
+		if (cmd == nullptr || !cmd -> userCanPressSelectionType) {
+			cmd = p->commands.addItem();
+			cmd->selection.clear();
+		}
+		for (Command* c : commands.items) {
+			for (CommandSelection* cs : c->selection.items) {
+				CommandSelection* newCs  = cmd->selection.addItem();
+				newCs->loadJSONData(cs->getJSONData());
+			}
+		}
+		p->checkCurrentUserCommand();
+		p->selectCommand(cmd);
+		UserInputManager::getInstance()->programmerCommandStructureChanged(p);
+		UserInputManager::getInstance()->commandSelectionChanged(cmd);
+		});
+}
+
 void Cue::loadContent(Programmer* p)
 {
 	MessageManager::callAsync([this, p](){
@@ -443,13 +599,21 @@ void Cue::runOffTasks(float forcedDelay, float forcedFade)
 
 String Cue::getCommandsText(bool useName)
 {
+	Array<Cue*> histo;
+	return getCommandsText(useName, histo);
+}
+
+String Cue::getCommandsText(bool useName, Array<Cue*> history)
+{
 	String ret = "";
+	if (history.contains(this)) { return ret; }
+	history.add(this);
 	Cue* original = dynamic_cast<Cue*>(reuseCue->targetContainer.get());
 	if (original != nullptr) {
-		ret += original->getCommandsText(useName);
+		ret += original->getCommandsText(useName, history);
 	}
 	for (int i = 0; i < commands.items.size(); i++) {
-		if (ret != "") {ret += "\n"; }
+		if (ret != "") { ret += "\n"; }
 		ret += commands.items[i]->getCommandAsTexts(useName).joinIntoString(" ");
 	}
 	return ret;

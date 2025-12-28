@@ -147,7 +147,7 @@ jobs:
       - name: Setup XCode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '15.3'
+          xcode-version: '16.4.0'
           
       - name: Build
         uses: sersoft-gmbh/xcodebuild-action@v2.0.1
@@ -217,7 +217,7 @@ jobs:
           sudo apt-get install -qy curl
 
           cd ${{ github.workspace }}
-          wget "https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage"
+          wget "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
           chmod a+x appimagetool-x86_64.AppImage
 #
       # - name: Start SSH via ngrok
@@ -249,7 +249,7 @@ jobs:
 
           PKGNAME=${{ env.ProjectName }}-linux-${{ steps.set_variables.outputs.suffix }}.AppImage
           echo "pkg-name=$PKGNAME" >> $GITHUB_OUTPUT
-          ${{ github.workspace }}/appimagetool-x86_64.AppImage ${{ env.ProjectName }}.AppDir $PKGNAME
+          ARCH=x86_64 $GITHUB_WORKSPACE/appimagetool-x86_64.AppImage --appimage-extract-and-run ${{ env.ProjectName }}.AppDir $PKGNAME
         working-directory: ./Builds/LinuxMakefile
 
 
@@ -276,14 +276,14 @@ jobs:
         include:
         - arch: armhf
           cpu: arm1176 #suitable for all Pi versions
-          base_image: raspios_lite:2021-05-07 
+          base_image: raspios_lite:2023-05-03 
           cpu_info: raspberrypi_zero_w
           buildFolder: "Raspberry"
           buildConfig: "Release"
           
         - arch: aarch64
           cpu: cortex-a53
-          base_image: raspios_lite_arm64:2022-04-04
+          base_image: raspios_lite_arm64:2023-05-03
           cpu_info: raspberrypi_zero2_w_arm64_w
           buildFolder: "Raspberry64"
           buildConfig: "Release"
@@ -311,14 +311,8 @@ jobs:
 
       - name: Download and prepare AppImage
         run: |
-          sudo apt-get update
-          sudo apt-get install libfuse2 # required on ubuntu 22.04
-
-          wget "https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage"
+          wget "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
           chmod a+x appimagetool-x86_64.AppImage
-
-          echo "Downloading AppImage runtime for ${{ matrix.arch }}"
-          wget "https://github.com/AppImage/AppImageKit/releases/download/13/runtime-${{ matrix.arch }}"
 
           mkdir -p ./Builds/${{ matrix.buildFolder }}/${{ env.ProjectName }}.AppDir/usr/bin/
         working-directory: ${{ github.workspace }}
@@ -346,7 +340,7 @@ jobs:
         run: |
           PKGNAME=${{ env.ProjectName }}-linux-${{ steps.set_variables.outputs.suffix }}.AppImage
           echo "pkg-name=$PKGNAME" >> $GITHUB_OUTPUT
-          ARCH=x86_64 ${{ github.workspace }}/appimagetool-x86_64.AppImage --runtime-file ${{ github.workspace }}/runtime-${{ matrix.arch }} ${{ env.ProjectName }}.AppDir $PKGNAME
+          ARCH=${{ matrix.arch }} ${{ github.workspace }}/appimagetool-x86_64.AppImage --appimage-extract-and-run ${{ env.ProjectName }}.AppDir $PKGNAME
         working-directory: ./Builds/${{ matrix.buildFolder }}
 
       - name: Create Release

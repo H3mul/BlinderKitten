@@ -10,6 +10,7 @@
 
 #include "CommandValue.h"
 #include "../ChannelFamily/ChannelFamilyManager.h"
+#include "Brain.h"
 
 CommandValue::CommandValue(var params) :
     BaseItem(params.getProperty("name", "Value")),
@@ -25,6 +26,7 @@ CommandValue::CommandValue(var params) :
     channelType = addTargetParameter("Channel type", "Type of Channel", ChannelFamilyManager::getInstance());
     channelType->maxDefaultSearchLevel = 2;
     channelType->targetType = TargetParameter::CONTAINER;
+    channelType->typesFilter.add("ChannelType");
 
     // release = addBoolParameter("Release value", "release tracked values", false);
     valueFrom = addFloatParameter("Value", "Value of the first element", 0, 0, 1);
@@ -36,16 +38,22 @@ CommandValue::CommandValue(var params) :
     presetIdTo = addIntParameter("ID To", "ID of the preset for the last element", 0, 0);
 
     symmetry = addBoolParameter("Symmetry", "Apply value with symmetry ?", false);
+    randomize = addBoolParameter("Randomize", "Randomize values", false);
 
     HTPOverride = addBoolParameter("HTP Override", "If checked, HTP channels will be computed as LTP.", false);
 
     stepSize = addFloatParameter("Step size", "Size of the step",1,0);
     stepSize-> hideInEditor = true;
+
+    Brain::getInstance()->allCommandValues.add(this);
+
     updateDisplay();
 };
 
 CommandValue::~CommandValue()
 {
+    Brain::getInstance()->allCommandValues.removeAllInstancesOf(this);
+
 };
 
 void CommandValue::updateDisplay() 
@@ -62,7 +70,8 @@ void CommandValue::updateDisplay()
     presetIdFrom->hideInEditor = !(prst);
     presetIdTo->hideInEditor = !(th && prst);
 
-    symmetry->hideInEditor = !th;
+    symmetry->hideInEditor = !th || randomize->boolValue();
+    randomize->hideInEditor = !th;
 
     stepSize->hideInEditor = !shouldShowStepSize;
 

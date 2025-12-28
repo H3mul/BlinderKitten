@@ -39,7 +39,7 @@ ifeq ($(CONFIG),Debug)
     TARGET_ARCH := 
   endif
 
-  JUCE_CPPFLAGS := $(DEPFLAGS) "-DLINUX=1" "-DDEBUG=1" "-D_DEBUG=1" "-DJUCE_MODAL_LOOPS_PERMITTED=1" "-D_ITERATOR_DEBUG_LEVEL=1" "-DLINK_PLATFORM_LINUX=1" "-DJUCER_LINUX_MAKE_9C1B7400=1" "-DJUCE_APP_VERSION=1.0.1b84" "-DJUCE_APP_VERSION_HEX=0x10001" $(shell $(PKG_CONFIG) --cflags alsa freetype2 gl libcurl webkit2gtk-4.0 gtk+-x11-3.0) -pthread -I../../JuceLibraryCode -I../../JUCE/modules -I../../Modules -I../../Source -I../../Source/Definitions -I../../External/serial/include -I../../External/servus/include -I../../External/dnssd/include -I../../External/ois/include -I../../External/sdl/include -I../../External/libusb/include/libusb-1.0 $(CPPFLAGS)
+  JUCE_CPPFLAGS := $(DEPFLAGS) "-DLINUX=1" "-DDEBUG=1" "-D_DEBUG=1" "-DJUCE_MODAL_LOOPS_PERMITTED=1" "-D_ITERATOR_DEBUG_LEVEL=1" "-DLINK_PLATFORM_LINUX=1" "-DJUCER_LINUX_MAKE_9C1B7400=1" "-DJUCE_APP_VERSION=1.0.1b92" "-DJUCE_APP_VERSION_HEX=0x10001" $(shell $(PKG_CONFIG) --cflags alsa freetype2 gl libcurl webkit2gtk-4.0 gtk+-x11-3.0) -pthread -I../../JuceLibraryCode -I../../JUCE/modules -I../../Modules -I../../Source -I../../Source/Definitions -I../../External/serial/include -I../../External/servus/include -I../../External/dnssd/include -I../../External/ois/include -I../../External/sdl/include -I../../External/libusb/include/libusb-1.0 $(CPPFLAGS)
   JUCE_CPPFLAGS_APP :=  "-DJucePlugin_Build_VST=0" "-DJucePlugin_Build_VST3=0" "-DJucePlugin_Build_AU=0" "-DJucePlugin_Build_AUv3=0" "-DJucePlugin_Build_AAX=0" "-DJucePlugin_Build_Standalone=0" "-DJucePlugin_Build_Unity=0" "-DJucePlugin_Build_LV2=0"
   JUCE_TARGET_APP := BlinderKitten
 
@@ -60,7 +60,7 @@ ifeq ($(CONFIG),Release)
     TARGET_ARCH := -march=armv8-a
   endif
 
-  JUCE_CPPFLAGS := $(DEPFLAGS) "-DLINUX=1" "-DNDEBUG=1" "-DJUCE_MODAL_LOOPS_PERMITTED=1" "-D_ITERATOR_DEBUG_LEVEL=1" "-DLINK_PLATFORM_LINUX=1" "-DJUCER_LINUX_MAKE_9C1B7400=1" "-DJUCE_APP_VERSION=1.0.1b84" "-DJUCE_APP_VERSION_HEX=0x10001" $(shell $(PKG_CONFIG) --cflags alsa freetype2 gl libcurl webkit2gtk-4.0 gtk+-x11-3.0) -pthread -I../../JuceLibraryCode -I../../JUCE/modules -I../../Modules -I/usr/include/freetype2 -I../../Source -I../../Source/Definitions -I../../External/serial/include -I../../External/servus/include -I../../External/dnssd/include -I../../External/ois/include -I../../External/sdl/include -I../../External/libusb/include/libusb-1.0 $(CPPFLAGS)
+  JUCE_CPPFLAGS := $(DEPFLAGS) "-DLINUX=1" "-DNDEBUG=1" "-DJUCE_MODAL_LOOPS_PERMITTED=1" "-D_ITERATOR_DEBUG_LEVEL=1" "-DLINK_PLATFORM_LINUX=1" "-DJUCER_LINUX_MAKE_9C1B7400=1" "-DJUCE_APP_VERSION=1.0.1b92" "-DJUCE_APP_VERSION_HEX=0x10001" $(shell $(PKG_CONFIG) --cflags alsa freetype2 gl libcurl webkit2gtk-4.0 gtk+-x11-3.0) -pthread -I../../JuceLibraryCode -I../../JUCE/modules -I../../Modules -I/usr/include/freetype2 -I../../Source -I../../Source/Definitions -I../../External/serial/include -I../../External/servus/include -I../../External/dnssd/include -I../../External/ois/include -I../../External/sdl/include -I../../External/libusb/include/libusb-1.0 $(CPPFLAGS)
   JUCE_CPPFLAGS_APP :=  "-DJucePlugin_Build_VST=0" "-DJucePlugin_Build_VST3=0" "-DJucePlugin_Build_AU=0" "-DJucePlugin_Build_AUv3=0" "-DJucePlugin_Build_AAX=0" "-DJucePlugin_Build_Standalone=0" "-DJucePlugin_Build_Unity=0" "-DJucePlugin_Build_LV2=0"
   JUCE_TARGET_APP := BlinderKitten
 
@@ -124,6 +124,7 @@ OBJECTS_APP := \
   $(JUCE_OBJDIR)/MapperAction_7d027a1.o \
   $(JUCE_OBJDIR)/MultiplicatorAction_f579383b.o \
   $(JUCE_OBJDIR)/PresetAction_e4e29ebf.o \
+  $(JUCE_OBJDIR)/SelectionMasterAction_222c7aa4.o \
   $(JUCE_OBJDIR)/SoloPoolAction_e45293b.o \
   $(JUCE_OBJDIR)/TapTempoMultiple_3a521832.o \
   $(JUCE_OBJDIR)/TrackerAction_c5bb14e.o \
@@ -183,6 +184,9 @@ OBJECTS_APP := \
   $(JUCE_OBJDIR)/FixtureTypeChannelManager_c4b6993.o \
   $(JUCE_OBJDIR)/FixtureTypeManager_e71c2bae.o \
   $(JUCE_OBJDIR)/FixtureTypeManagerUI_d1c07202.o \
+  $(JUCE_OBJDIR)/FixtureTypePreset_c32b4cc8.o \
+  $(JUCE_OBJDIR)/FixtureTypePresetManager_436eb64f.o \
+  $(JUCE_OBJDIR)/FixtureTypePresetValues_43104aca.o \
   $(JUCE_OBJDIR)/FixtureTypeVirtualChannel_8aa184e1.o \
   $(JUCE_OBJDIR)/FixtureTypeVirtualChannelManager_b206e016.o \
   $(JUCE_OBJDIR)/Group_3d0e0901.o \
@@ -211,6 +215,9 @@ OBJECTS_APP := \
   $(JUCE_OBJDIR)/Programmer_37f4f5c1.o \
   $(JUCE_OBJDIR)/ProgrammerManager_59fcb336.o \
   $(JUCE_OBJDIR)/ProgrammerManagerUI_e9d378a.o \
+  $(JUCE_OBJDIR)/SelectionMaster_68a389f.o \
+  $(JUCE_OBJDIR)/SelectionMasterManager_c9e1a98.o \
+  $(JUCE_OBJDIR)/SelectionMasterManagerUI_9e824e6c.o \
   $(JUCE_OBJDIR)/SubFixture_8e66f3e1.o \
   $(JUCE_OBJDIR)/SubFixtureChannel_8716636c.o \
   $(JUCE_OBJDIR)/TimingPreset_47a547e1.o \
@@ -526,6 +533,11 @@ $(JUCE_OBJDIR)/PresetAction_e4e29ebf.o: ../../Source/Definitions/Actions/PresetA
 	@echo "Compiling PresetAction.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_APP) $(JUCE_CFLAGS_APP) -o "$@" -c "$<"
 
+$(JUCE_OBJDIR)/SelectionMasterAction_222c7aa4.o: ../../Source/Definitions/Actions/SelectionMasterAction.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling SelectionMasterAction.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_APP) $(JUCE_CFLAGS_APP) -o "$@" -c "$<"
+
 $(JUCE_OBJDIR)/SoloPoolAction_e45293b.o: ../../Source/Definitions/Actions/SoloPoolAction.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling SoloPoolAction.cpp"
@@ -821,6 +833,21 @@ $(JUCE_OBJDIR)/FixtureTypeManagerUI_d1c07202.o: ../../Source/Definitions/Fixture
 	@echo "Compiling FixtureTypeManagerUI.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_APP) $(JUCE_CFLAGS_APP) -o "$@" -c "$<"
 
+$(JUCE_OBJDIR)/FixtureTypePreset_c32b4cc8.o: ../../Source/Definitions/FixtureType/FixtureTypePreset.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling FixtureTypePreset.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_APP) $(JUCE_CFLAGS_APP) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/FixtureTypePresetManager_436eb64f.o: ../../Source/Definitions/FixtureType/FixtureTypePresetManager.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling FixtureTypePresetManager.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_APP) $(JUCE_CFLAGS_APP) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/FixtureTypePresetValues_43104aca.o: ../../Source/Definitions/FixtureType/FixtureTypePresetValues.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling FixtureTypePresetValues.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_APP) $(JUCE_CFLAGS_APP) -o "$@" -c "$<"
+
 $(JUCE_OBJDIR)/FixtureTypeVirtualChannel_8aa184e1.o: ../../Source/Definitions/FixtureType/FixtureTypeVirtualChannel.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling FixtureTypeVirtualChannel.cpp"
@@ -959,6 +986,21 @@ $(JUCE_OBJDIR)/ProgrammerManager_59fcb336.o: ../../Source/Definitions/Programmer
 $(JUCE_OBJDIR)/ProgrammerManagerUI_e9d378a.o: ../../Source/Definitions/Programmer/ProgrammerManagerUI.cpp
 	-$(V_AT)mkdir -p $(@D)
 	@echo "Compiling ProgrammerManagerUI.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_APP) $(JUCE_CFLAGS_APP) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/SelectionMaster_68a389f.o: ../../Source/Definitions/SelectionMaster/SelectionMaster.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling SelectionMaster.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_APP) $(JUCE_CFLAGS_APP) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/SelectionMasterManager_c9e1a98.o: ../../Source/Definitions/SelectionMaster/SelectionMasterManager.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling SelectionMasterManager.cpp"
+	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_APP) $(JUCE_CFLAGS_APP) -o "$@" -c "$<"
+
+$(JUCE_OBJDIR)/SelectionMasterManagerUI_9e824e6c.o: ../../Source/Definitions/SelectionMaster/SelectionMasterManagerUI.cpp
+	-$(V_AT)mkdir -p $(@D)
+	@echo "Compiling SelectionMasterManagerUI.cpp"
 	$(V_AT)$(CXX) $(JUCE_CXXFLAGS) $(JUCE_CPPFLAGS_APP) $(JUCE_CFLAGS_APP) -o "$@" -c "$<"
 
 $(JUCE_OBJDIR)/SubFixture_8e66f3e1.o: ../../Source/Definitions/SubFixture/SubFixture.cpp

@@ -14,12 +14,9 @@
 
 ChannelFamily::ChannelFamily(var params) :
 	BaseItem(params.getProperty("name", "Channel Family")),
-	objectType(params.getProperty("Channel types", "ChannelFamily").toString()),
-	// parameters("Parameters"),
+	objectType(params.getProperty("type", "ChannelFamily").toString()),
 	definitions("Channel Types"),
 	objectData(params)
-	// previousID(-1),
-	// slideManipParameter(nullptr)
 {
 	saveAndLoadRecursiveData = true;
 	
@@ -28,13 +25,8 @@ ChannelFamily::ChannelFamily(var params) :
 	itemDataType = "ChannelFamily";
 	canBeDisabled = false;
 	
-	// definitions->addBaseManagerListener(this);
-
 	addChildControllableContainer(&definitions);
 	definitions.selectItemWhenCreated = false;
-
-	var objectsData = params.getProperty("objects", var());
-
 }
 
 ChannelFamily::~ChannelFamily()
@@ -44,11 +36,6 @@ ChannelFamily::~ChannelFamily()
 void ChannelFamily::onContainerParameterChangedInternal(Parameter* p)
 {
 	BaseItem::onContainerParameterChangedInternal(p);
-	//if (p == targetInterface)
-	//{
-	//	rebuildInterfaceParams();
-	//}
-	
 }
 
 void ChannelFamily::onControllableFeedbackUpdateInternal(ControllableContainer* cc, Controllable* c)
@@ -57,17 +44,6 @@ void ChannelFamily::onControllableFeedbackUpdateInternal(ControllableContainer* 
 
 	if (!enabled->boolValue()) return;
 
-	//if (c->type != Parameter::TRIGGER)
-	//{
-	//    if (ObjectComponent* oc = c->getParentAs<ObjectComponent>())
-	//    {
-	//        if (targetInterface->targetContainer != nullptr)
-	//        {
-	//            if (!oc->computedParameters.contains((Parameter*)c)) computeComponentValues(oc);
-	//            //else sendComponentParameter(oc, ((Parameter*)c));
-	//        }
-	//    }
-	//}
 }
 
 

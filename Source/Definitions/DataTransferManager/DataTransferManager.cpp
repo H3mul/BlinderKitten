@@ -90,16 +90,20 @@ DataTransferManager::DataTransferManager() :
     groupCopyMode = addEnumParameter("Group merge mode", "Group record mode");
     groupCopyMode->addOption("Merge", "merge");
     groupCopyMode->addOption("Replace", "replace");
+    groupCopyMode->addOption("Set another", "setanother");
 
     presetCopyMode = addEnumParameter("Preset merge mode", "Preset record mode");
     presetCopyMode->addOption("Record", "record");
     presetCopyMode->addOption("Merge", "merge");
     presetCopyMode->addOption("Replace", "replace");
+    presetCopyMode->addOption("Remove", "remove");
+    presetCopyMode->addOption("Set another", "setanother");
 
     cuelistCopyMode = addEnumParameter("Cuelist merge mode", "Cuelist record mode");
     cuelistCopyMode->addOption("Update current cue", "merge");
     cuelistCopyMode->addOption("Replace current cue", "replace");
     cuelistCopyMode->addOption("Add new cue", "add");
+    cuelistCopyMode->addOption("Set another", "setanother");
 
     go = addTrigger("Transfer Data", "Run the data transfer");
     updateDisplay();
@@ -185,6 +189,7 @@ void DataTransferManager::execute() {
             }
 
             bool updateOnly = presetCopyMode->getValue() == "merge";
+            bool remove = presetCopyMode->getValue() == "remove";
 
             Array<ChannelFamily*> filters;
             if (UserInputManager::getInstance()->currentProgrammer == source) {
@@ -208,7 +213,7 @@ void DataTransferManager::execute() {
                             pfv = target->subFixtureValues.items[i];
                         }
                     }
-                    if (pfv == nullptr && !updateOnly) {
+                    if (pfv == nullptr && !updateOnly && !remove) {
                         pfv = target->subFixtureValues.addItem();
                         pfv->targetFixtureId->setValue(fixtId);
                         pfv->targetSubFixtureId->setValue(subfixtId);
@@ -222,11 +227,18 @@ void DataTransferManager::execute() {
                                 pv = pfv->values.items[i];
                             }
                         }
-                        if (pv == nullptr) {
-                            pv = pfv->values.addItem();
-                            pv->param->setValueFromTarget(chan->channelType);
+                        if (remove) {
+                            if (pv != nullptr) {
+                                pfv->values.removeItem(pv);
+                            }
                         }
-                        pv->paramValue->setValue(cValue->endValue());
+                        else {
+                            if (pv == nullptr) {
+                                pv = pfv->values.addItem();
+                                pv->param->setValueFromTarget(chan->channelType);
+                            }
+                            pv->paramValue->setValue(cValue->endValue());
+                        }
                     }
                 }
             }
@@ -277,10 +289,10 @@ void DataTransferManager::execute() {
             }
             source->computing.exit();
             target->selectThis();
-            //if (target->cueA == targetCue) {
 
-            target->go(targetCue,0,0);
-            //}
+            if (source->editionMode->getValueData() != "blind") {
+                target->go(targetCue, 0, 0);
+            }
 
             dynamic_cast<BKEngine*>(BKEngine::mainEngine)->selectCue(targetCue, BKEngine::SET);
 
@@ -583,10 +595,16 @@ void DataTransferManager::execute() {
             Preset* trg = Brain::getInstance()->getPresetById(tId);
             if (trg == nullptr) {
                 trg = PresetManager::getInstance()->addItemFromData(src->getJSONData());
-                src->id->setValue(sId);
-                trg->id->setValue(tId);
                 trg->userName->setValue(src->userName->getValue());
-                trg->selectThis();
+                if (sId != 1) {
+                    // inversion trg et src pour garder les references (trg remplace src a la copie)
+                    src->id->setValue(tId);
+                    src->selectThis();
+                }
+                else {
+                    trg->id->setValue(tId);
+                    trg->selectThis();
+                }
             }
         }
         else if (trgType == "programmer") {
@@ -613,10 +631,16 @@ void DataTransferManager::execute() {
             Group* trg = Brain::getInstance()->getGroupById(tId);
             if (src != nullptr && trg == nullptr) {
                 trg = GroupManager::getInstance()->addItemFromData(src->getJSONData());
-                src->id->setValue(sId);
-                trg->id->setValue(tId);
                 trg->userName->setValue(src->userName->getValue());
-                trg->selectThis();
+                if (sId != 1) {
+                    // inversion trg et src pour garder les references (trg remplace src a la copie)
+                    src->id->setValue(tId);
+                    src->selectThis();
+                }
+                else {
+                    trg->id->setValue(tId);
+                    trg->selectThis();
+                }
             }
         }
 
@@ -787,31 +811,43 @@ void DataTransferManager::moveObject(String type, int id, String typeTo, int idT
         Fixture* source = Brain::getInstance()->getFixtureById(id);
         Fixture* target = Brain::getInstance()->getFixtureById(idTo);
         if (source == nullptr) { return; }
-        if (target != nullptr) { target->id->setValue(99999999); }
-        source->id->setValue(idTo);
-        if (target != nullptr) { target->id->setValue(id); }
+        if (target != nullptr) { 
+            target->id->setValue(998989); 
+        }
+        source->id->setValue(idTo); 
+        if (target != nullptr) {
+            target->id->setValue(id); 
+        }
     }
     else if (type == "group" && typeTo == "group") {
         Group* source = Brain::getInstance()->getGroupById(id);
         Group* target = Brain::getInstance()->getGroupById(idTo);
         if (source == nullptr) { return; }
-        if (target != nullptr) { target->id->setValue(99999999); }
-        source->id->setValue(idTo);
-        if (target != nullptr) { target->id->setValue(id); }
+        if (target != nullptr) {
+            target->id->setValue(998989); 
+        }
+        source->id->setValue(idTo); 
+        if (target != nullptr) {
+            target->id->setValue(id); 
+        }
     }
     else if (type == "preset" && typeTo == "preset") {
         Preset* source = Brain::getInstance()->getPresetById(id);
         Preset* target = Brain::getInstance()->getPresetById(idTo);
         if (source == nullptr) { return; }
-        if (target != nullptr) { target->id->setValue(99999999); }
-        source->id->setValue(idTo);
-        if (target != nullptr) { target->id->setValue(id); }
+        if (target != nullptr) {
+            target->id->setValue(998989); 
+        }
+        source->id->setValue(idTo); 
+        if (target != nullptr) {
+            target->id->setValue(id); 
+        }
     }
     else if (type == "cuelist" && typeTo == "cuelist") {
         Cuelist* source = Brain::getInstance()->getCuelistById(id);
         Cuelist* target = Brain::getInstance()->getCuelistById(idTo);
         if (source == nullptr) { return; }
-        if (target != nullptr) { target->id->setValue(99999999); }
+        if (target != nullptr) { target->id->setValue(998989); }
         source->id->setValue(idTo);
         if (target != nullptr) { target->id->setValue(id); }
     }
@@ -819,7 +855,7 @@ void DataTransferManager::moveObject(String type, int id, String typeTo, int idT
         Effect* source = Brain::getInstance()->getEffectById(id);
         Effect* target = Brain::getInstance()->getEffectById(idTo);
         if (source == nullptr) { return; }
-        if (target != nullptr) { target->id->setValue(99999999); }
+        if (target != nullptr) { target->id->setValue(998989); }
         source->id->setValue(idTo);
         if (target != nullptr) { target->id->setValue(id); }
     }
@@ -827,7 +863,7 @@ void DataTransferManager::moveObject(String type, int id, String typeTo, int idT
         Carousel* source = Brain::getInstance()->getCarouselById(id);
         Carousel* target = Brain::getInstance()->getCarouselById(idTo);
         if (source == nullptr) { return; }
-        if (target != nullptr) { target->id->setValue(99999999); }
+        if (target != nullptr) { target->id->setValue(998989); }
         source->id->setValue(idTo);
         if (target != nullptr) { target->id->setValue(id); }
     }
@@ -835,7 +871,7 @@ void DataTransferManager::moveObject(String type, int id, String typeTo, int idT
         Mapper* source = Brain::getInstance()->getMapperById(id);
         Mapper* target = Brain::getInstance()->getMapperById(idTo);
         if (source == nullptr) { return; }
-        if (target != nullptr) { target->id->setValue(99999999); }
+        if (target != nullptr) { target->id->setValue(998989); }
         source->id->setValue(idTo);
         if (target != nullptr) { target->id->setValue(id); }
     }
@@ -884,3 +920,4 @@ void DataTransferManager::moveObject(String type, int id, String typeTo, int idT
         LOGERROR("copy not allowed");
     }
 }
+

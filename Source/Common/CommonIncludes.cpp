@@ -30,8 +30,11 @@
 #include "DMX/device/DMXSerialDevice.cpp"
 #include "DMX/device/DMXArtNetDevice.cpp"
 #include "DMX/device/DMXEnttecProDevice.cpp"
+#include "DMX/device/DMXKingManager.cpp"
+#include "DMX/device/DMXKingDevice.cpp"
 #include "DMX/device/DMXOpenUSBDevice.cpp"
 #include "DMX/device/DMXEuroliteDevice.cpp"
+#include "DMX/device/DMXSACNDevice.cpp"
 #include "DMX/DMXManager.cpp"
 
 #include "Helpers/SceneHelpers.cpp"

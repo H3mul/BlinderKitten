@@ -76,7 +76,24 @@ Command::~Command()
 	if (UserInputManager::getInstance()->targetCommand == this) {
 		UserInputManager::getInstance()->targetCommand = nullptr;
 	}
+	Programmer* p = UserInputManager::getInstance()->getProgrammer(false);
+	if (p != nullptr) {
+		if (p->currentUserCommand == this) {
+			p->currentUserCommand = nullptr;
+		}
+	}
 
+	Brain* b = Brain::getInstanceWithoutCreating();
+
+
+	if (b != nullptr && !b->isClearing) {
+		b->usingCollections.enter();
+		for (auto it = b->cuelists.begin(); it != b->cuelists.end(); it.next()) {
+			Cuelist* c = it.getValue();
+			c->commandHistory.removeAllInstancesOf(this);
+		}
+		b->usingCollections.exit();
+	}
 }
 
 void Command::updateDisplay() {
@@ -286,12 +303,13 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 	for (int commandIndex = 0; commandIndex < commandValues.size(); commandIndex++) {
 		CommandValue* cv = commandValues[commandIndex];
 		if (cv->enabled->boolValue()) {
-			bool symValues = cv->symmetry->getValue();
+			bool symValues = cv->symmetry->boolValue();
+			bool randomizeValue = cv->randomize->boolValue();
 			Preset* pFrom = nullptr;
 			Preset* pTo = nullptr;
 			if (cv->presetOrValue->getValue() == "preset") {
-				pFrom = Brain::getInstance()->getPresetById(cv->presetIdFrom->getValue(), true);
-				pTo = Brain::getInstance()->getPresetById(cv->presetIdTo->getValue(), true);
+				pFrom = Brain::getInstance()->getPresetById(cv->presetIdFrom->intValue(), true);
+				pTo = Brain::getInstance()->getPresetById(cv->presetIdTo->intValue(), true);
 				if (pFrom != nullptr) {
 					pFrom -> computeValues();
 				}
@@ -302,8 +320,10 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 
 			ChannelType* rawChan = dynamic_cast<ChannelType*>(cv->channelType->targetContainer.get());
 			float maxNormalizedPosition = 0;
+			HashMap<SubFixture*, float> subfixtToRandom;
 			for (int indexFixt = 0; indexFixt < subFixtures.size(); indexFixt++) {
 				SubFixture* sf = subFixtures[indexFixt];
+				if (randomizeValue) subfixtToRandom.set(sf, Brain::getInstance()->mainRandom.nextFloat());
 				if (selection.subFixtureToPosition.contains(sf)) {
 					maxNormalizedPosition = jmax(maxNormalizedPosition, selection.subFixtureToPosition.getReference(sf));
 				}
@@ -312,12 +332,18 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 			for (int indexFixt = 0; indexFixt < subFixtures.size(); indexFixt++) {
 				SubFixture* sf = subFixtures[indexFixt];
 				float normalizedPosition = indexFixt / (float)(subFixtures.size()-1);
+                if(isnan(normalizedPosition)) {
+                    normalizedPosition = 0;
+                }
 				bool useNormalized = false;
 				if (selection.subFixtureToPosition.contains(sf)) {
 					useNormalized = true;
 					normalizedPosition = selection.subFixtureToPosition.getReference(sf);
 				}
-				float normalizedPositionSym = jmap(normalizedPosition,0.f,maxNormalizedPosition,0.f,1.f) * 2;
+                float normalizedPositionSym = 0;
+                if (maxNormalizedPosition > 0) {
+                    normalizedPositionSym = jmap(normalizedPosition,0.f,maxNormalizedPosition,0.f,1.f) * 2;
+                }
 				normalizedPositionSym = normalizedPositionSym > 1 ? 2 - normalizedPositionSym : normalizedPositionSym;
 
 				std::shared_ptr<HashMap<ChannelType*, float>> valuesFrom = std::make_shared <HashMap<ChannelType*, float>>();
@@ -365,6 +391,7 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 							auto tempCV = std::make_shared<ChannelValue>();
 							tempCV->values.remove(1);
 							computedValues.set(fchan, tempCV);
+							tempCV->targetSubFixtureChannel = fchan;
 						}
 						channelToCommandValue.set(fchan, cv);
 						std::shared_ptr<ChannelValue> finalValue = computedValues.getReference(fchan);
@@ -372,9 +399,10 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 						finalValue->canBeTracked = !doNotTrack->boolValue();
 
 						float val = valueFrom;
-						if (cv->thru->getValue() && subFixtures.size() > 1) {
+						if (cv->thru->getValue() && (subFixtures.size() > 1 || randomizeValue)) {
 							float position = normalizedPosition;
 							if (symValues) { position = useNormalized ? normalizedPositionSym : Brain::symPosition(indexFixt, subFixtures.size()); }
+							if (randomizeValue) {position = subfixtToRandom.getReference(sf);}
 							val = jmap(position, val, valueTo);
 						}
 						if (pathMode) {

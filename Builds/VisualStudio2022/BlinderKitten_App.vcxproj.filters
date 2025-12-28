@@ -38,6 +38,9 @@
     <Filter Include="BlinderKitten\Source\Common\ComponentSelector">
       <UniqueIdentifier>{CEAC4443-F62F-A515-EAA5-7056CDDA1A20}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BlinderKitten\Source\Common\DMX\device\sacn">
+      <UniqueIdentifier>{FF49C177-E9CF-29D5-A4C4-68814186A1FE}</UniqueIdentifier>
+    </Filter>
     <Filter Include="BlinderKitten\Source\Common\DMX\device">
       <UniqueIdentifier>{7795E17B-C7D4-D7CB-5DA8-EDBEF981BB02}</UniqueIdentifier>
     </Filter>
@@ -175,6 +178,9 @@
     </Filter>
     <Filter Include="BlinderKitten\Source\Definitions\Programmer">
       <UniqueIdentifier>{166D0C99-5B9A-E645-30E2-3B61A6497BAE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BlinderKitten\Source\Definitions\SelectionMaster">
+      <UniqueIdentifier>{CE95BC86-5208-4620-4343-CAC96BEF5704}</UniqueIdentifier>
     </Filter>
     <Filter Include="BlinderKitten\Source\Definitions\SubFixture">
       <UniqueIdentifier>{31ABCE2F-E396-1009-4A33-7C970B554790}</UniqueIdentifier>
@@ -1255,6 +1261,9 @@
     <ClCompile Include="..\..\Source\Common\ComponentSelector\ComponentSelector.cpp">
       <Filter>BlinderKitten\Source\Common\ComponentSelector</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Common\DMX\device\sacn\e131.c">
+      <Filter>BlinderKitten\Source\Common\DMX\device\sacn</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\Common\DMX\device\DMXArtNetDevice.cpp">
       <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
     </ClCompile>
@@ -1264,10 +1273,19 @@
     <ClCompile Include="..\..\Source\Common\DMX\device\DMXEnttecProDevice.cpp">
       <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Common\DMX\device\DMXKingDevice.cpp">
+      <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Common\DMX\device\DMXKingManager.cpp">
+      <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\Common\DMX\device\DMXEuroliteDevice.cpp">
       <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Common\DMX\device\DMXOpenUSBDevice.cpp">
+      <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Common\DMX\device\DMXSACNDevice.cpp">
       <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Common\DMX\device\DMXSerialDevice.cpp">
@@ -1367,6 +1385,9 @@
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\Actions\PresetAction.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Actions\SelectionMasterAction.cpp">
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\Actions\SoloPoolAction.cpp">
@@ -1546,6 +1567,15 @@
     <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypeManagerUI.cpp">
       <Filter>BlinderKitten\Source\Definitions\FixtureType</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypePreset.cpp">
+      <Filter>BlinderKitten\Source\Definitions\FixtureType</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypePresetManager.cpp">
+      <Filter>BlinderKitten\Source\Definitions\FixtureType</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypePresetValues.cpp">
+      <Filter>BlinderKitten\Source\Definitions\FixtureType</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypeVirtualChannel.cpp">
       <Filter>BlinderKitten\Source\Definitions\FixtureType</Filter>
     </ClCompile>
@@ -1701,6 +1731,15 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\Programmer\ProgrammerManagerUI.cpp">
       <Filter>BlinderKitten\Source\Definitions\Programmer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\SelectionMaster\SelectionMaster.cpp">
+      <Filter>BlinderKitten\Source\Definitions\SelectionMaster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\SelectionMaster\SelectionMasterManager.cpp">
+      <Filter>BlinderKitten\Source\Definitions\SelectionMaster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\SelectionMaster\SelectionMasterManagerUI.cpp">
+      <Filter>BlinderKitten\Source\Definitions\SelectionMaster</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\SubFixture\SubFixture.cpp">
       <Filter>BlinderKitten\Source\Definitions\SubFixture</Filter>
@@ -5115,6 +5154,9 @@
     <ClInclude Include="..\..\Source\Common\ComponentSelector\ComponentSelector.h">
       <Filter>BlinderKitten\Source\Common\ComponentSelector</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\Common\DMX\device\sacn\e131.h">
+      <Filter>BlinderKitten\Source\Common\DMX\device\sacn</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\Common\DMX\device\DMXArtNetDevice.h">
       <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
     </ClInclude>
@@ -5124,10 +5166,19 @@
     <ClInclude Include="..\..\Source\Common\DMX\device\DMXEnttecProDevice.h">
       <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\Common\DMX\device\DMXKingDevice.h">
+      <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Common\DMX\device\DMXKingManager.h">
+      <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\Common\DMX\device\DMXEuroliteDevice.h">
       <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Common\DMX\device\DMXOpenUSBDevice.h">
+      <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Common\DMX\device\DMXSACNDevice.h">
       <Filter>BlinderKitten\Source\Common\DMX\device</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Common\DMX\device\DMXSerialDevice.h">
@@ -5209,6 +5260,9 @@
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\Actions\PresetAction.h">
+      <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Actions\SelectionMasterAction.h">
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\Actions\SoloPoolAction.h">
@@ -5388,6 +5442,15 @@
     <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypeManagerUI.h">
       <Filter>BlinderKitten\Source\Definitions\FixtureType</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypePreset.h">
+      <Filter>BlinderKitten\Source\Definitions\FixtureType</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypePresetManager.h">
+      <Filter>BlinderKitten\Source\Definitions\FixtureType</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypePresetValues.h">
+      <Filter>BlinderKitten\Source\Definitions\FixtureType</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypeVirtualChannel.h">
       <Filter>BlinderKitten\Source\Definitions\FixtureType</Filter>
     </ClInclude>
@@ -5543,6 +5606,15 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\Programmer\ProgrammerManagerUI.h">
       <Filter>BlinderKitten\Source\Definitions\Programmer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\SelectionMaster\SelectionMaster.h">
+      <Filter>BlinderKitten\Source\Definitions\SelectionMaster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\SelectionMaster\SelectionMasterManager.h">
+      <Filter>BlinderKitten\Source\Definitions\SelectionMaster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\SelectionMaster\SelectionMasterManagerUI.h">
+      <Filter>BlinderKitten\Source\Definitions\SelectionMaster</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\SubFixture\SubFixture.h">
       <Filter>BlinderKitten\Source\Definitions\SubFixture</Filter>

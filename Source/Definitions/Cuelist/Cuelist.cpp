@@ -80,7 +80,7 @@ Cuelist::Cuelist(var params) :
 	chaserOutFade = chaserOptions.addFloatParameter("Out fade", "Fade for out values, not in seconds, but in number of steps !", 0, 0);
 	chaserRunXTimes = chaserOptions.addFloatParameter("Run X times", "number of cycles of the chaser, 0 mean infinite",0,0);
 	chaserStepPerTap = chaserOptions.addFloatParameter("Step per hits", "Number of steps per tap tempo hit",1,0.001);
-	chaserTapTempo = chaserOptions.addTrigger("Tap tempo", "");
+	chaserTapTempo = chaserOptions.addTrigger("Tap tempo", "Hit me at least twice to se tempo");
 
 	chaserFadeInCurve.allowKeysOutside = false;
 	chaserFadeInCurve.setNiceName("In curve");
@@ -160,6 +160,7 @@ Cuelist::Cuelist(var params) :
 	tempMergeTrack = addTrigger("Temp merge track", "Merge the content of the programmer in this cue, values will be tracked");
 	tempMergeNoTrack = addTrigger("Temp merge no track", "Merge the content of the programmer in this cue, values will not be tracked (off at the next go)");
 	cleanAllBtn = addTrigger("Clean all cues", "Delete all unused commands in all cues");
+	regroupAllBtn = addTrigger("Regroup in all cues", "Try to regroup commands per group in cues");
 	selectAsMainConductorBtn = addTrigger("Set main conductor", "Sets this cuelist as main conductor in project settings");
 
 	nextCue = addTargetParameter("Next Cue", "Cue triggered when button go pressed", &cues);
@@ -257,7 +258,9 @@ Cuelist::~Cuelist()
 	if (CuelistSheet::getInstanceWithoutCreating() && CuelistSheet::getInstance()->targetCuelist == this) {
 		CuelistSheet::getInstance()->targetCuelist = nullptr;
 	}
-
+	if (CuelistLoadWindow::getInstanceWithoutCreating() != nullptr && CuelistLoadWindow::getInstance()->currentTarget == this) {
+		CuelistLoadWindow::getInstance()->currentTarget = nullptr;
+	}
 }
 
 void Cuelist::reorderCues() {
@@ -429,6 +432,11 @@ void Cuelist::triggerTriggered(Trigger* t) {
 	else if (t == cleanAllBtn) {
 		for (Cue* c : cues.items) {
 			c->cleanUnused();
+		}
+	}
+	else if (t == regroupAllBtn) {
+		for (Cue* c : cues.items) {
+			c->regroupCommands();
 		}
 	}
 	else if (t == selectAsMainConductorBtn) {
@@ -642,7 +650,9 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 				std::shared_ptr<ChannelValue> temp = it.getValue();
 				if (newActiveValues.contains(it.getKey())) {
 					//ChannelValue* current = newActiveValues.getReference(it.getKey());
-					temp->values.set(0,it.getKey()->postCuelistValue);
+					double currentTiming = jmap(now, (double)temp->TSStart, (double)temp->TSEnd, 0.0, 1.0);
+					currentTiming = jlimit(0.,1.,currentTiming);
+					temp->values.set(0,temp->valueAt(currentTiming,0));
 				}
 				else {
 					temp->values.set(0, -1);
@@ -674,25 +684,29 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 			std::shared_ptr<ChannelValue> temp = it.getValue();
 			if (activeValues.contains(it.getKey())) {
 				std::shared_ptr<ChannelValue> current = activeValues.getReference(it.getKey());
-				if (it.getKey()->isHTP && !temp->htpOverride) {
-					if (current != nullptr) {
-						double fader = HTPLevel->getValue();
-						double currentTiming = jmap(now, (double)current->TSStart, (double)current->TSEnd,0.0,1.0);
-						if (stopTransition) {
-							currentTiming = currentManualInTransition;
+				if (current != nullptr) {
+					SubFixtureChannel* sfc = it.getKey();
+					sfc->cs.enter();
+					if (sfc->isHTP) {
+						temp->values.set(0, current->value);
+					}
+					else if (sfc->liveCV.contains(current)) {
+						bool last = sfc->liveCV[sfc->liveCV.size()-1] == current;
+						if (last) {
+							temp->values.set(0, current->value);
 						}
-						if (current->isEnded) {
-							currentTiming = 1;
+						else {
+							temp->values.set(0, sfc->postCuelistValue);
 						}
-						currentTiming = jlimit(0.0,1.0,currentTiming);
-						temp->values.set(0, current->valueAt(currentTiming, 0)*fader);
 					}
 					else {
-						temp->values.set(0, 0);
+						temp->values.set(0, -1);
 					}
+					
+					sfc->cs.exit();
 				}
 				else {
-					temp->values.set(0, it.getKey()->postCuelistValue);
+					temp->values.set(0, -1);
 				}
 			}
 			else {
@@ -886,11 +900,13 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 		});
 	}
 
-	const MessageManagerLock mmLock;
-	nextCue->resetValue();
-	nextCueId->resetValue();
-	fillTexts();
-
+	//const MessageManagerLock mmLock;
+	MessageManager::callAsync([this](){
+		nextCue->resetValue();
+		nextCueId->resetValue();
+		fillTexts();
+	});
+	
 	return ;
 }
 
@@ -1139,7 +1155,7 @@ void Cuelist::autoLoadCueB() {
 		}
 		if (!valid) { // cueA is the last cue
 			String end = endAction->getValue();
-			if (end == "loop") {
+			if (end == "loop" && currentCues.size()>0) {
 				cueB = currentCues[0];
 			}
 			else {
@@ -1151,27 +1167,30 @@ void Cuelist::autoLoadCueB() {
 }
 
 float Cuelist::applyToChannel(SubFixtureChannel* fc, float currentVal, double now, bool& isApplied, bool flashValues) {
-	float val = currentVal;
 	bool HTP = fc->parentParamDefinition->priority->getValue() == "HTP";
 	
 	bool keepUpdate = false;
 	isApplied = false;
 
-	float localValue = 0;
-	std::shared_ptr<ChannelValue> cv;
+	float newValue = 0;
+	std::shared_ptr<ChannelValue> cv = nullptr;
 	float faderLevel = 0;
 	if (!activeValues.contains(fc)) {return currentVal;}
 	cv = activeValues.getReference(fc);
 	if (cv == nullptr) {
 		return currentVal;
 	}
-
+	
+	ScopedLock lock(cv->cs);
 	if (stopTransition) {
 		double ratio = cv->isTransitionOut ? currentManualOutTransition : currentManualInTransition;
 		now = TSTransitionStart + (TSTransitionDuration * ratio);
 	}
 
 	faderLevel = (float)HTPLevel->getValue();
+	if (!fc->isHTP) {
+		faderLevel = (float)LTPLevel->getValue();
+	}
 
 	if (TSOffFlashEnd > now) {
 		double flashLvl = jmax(faderLevel, (float)flashLevel->getValue());
@@ -1187,9 +1206,12 @@ float Cuelist::applyToChannel(SubFixtureChannel* fc, float currentVal, double no
 
 	float valueFrom = currentVal;
 	float valueTo = currentVal;
+	float ratioBegin = 0;
+	float ratioEnd = 1;
 
 	if (cv->startValue() >= 0) {
-		valueFrom = cv->startValue(); 
+		valueFrom = cv->startValue();
+		ratioBegin = 1;
 	}
 	if (cv->endValue() >= 0) { 
 		valueTo = cv->endValue(); 
@@ -1203,66 +1225,84 @@ float Cuelist::applyToChannel(SubFixtureChannel* fc, float currentVal, double no
 		cv->currentPosition = 1;
 	}
 
-	float fade = 0;
+	bool addToLiveCV = false;
+	bool clearLiveCV = true;
+
+	float transition = 0;
 	if (flashValues) {
-		localValue = valueTo;
-		fade = 1;
+		newValue = valueTo;
+		transition = 1;
+		addToLiveCV = true;
 	}
 	else if (cv -> TSStart > now) {
-		fade = 0;
-		localValue = valueFrom; 
+		transition = 0;
+		newValue = valueFrom; 
 		keepUpdate = true;
 		Brain::getInstance()->pleaseUpdate(this);
 	}
 	else if (cv -> TSEnd <= now) {
-		localValue = valueTo;
-		fade = 1;
+		if (cv->endValue() != -1) {
+			addToLiveCV = true;
+		}
+		newValue = valueTo;
+		transition = 1;
 		if (!cv->isEnded) {
 			cv->isEnded = true;
 			Brain::getInstance()->pleaseUpdate(this);
 		}
 	}
 	else {
-		fade = double(now - cv->TSStart) / double(cv->TSEnd - cv->TSStart);
-		if (cv->fadeCurve != nullptr) fade = cv->fadeCurve->getValueAtPosition(fade);
-		//localValue = jmap(fade, valueFrom, valueTo);
-		localValue = cv->valueAt(fade, currentVal);
+		addToLiveCV = true;
+		clearLiveCV = false;
+		transition = double(now - cv->TSStart) / double(cv->TSEnd - cv->TSStart);
+		if (cv->fadeCurve != nullptr) transition = cv->fadeCurve->getValueAtPosition(transition);
+		newValue = cv->valueAt(transition, currentVal);
 		keepUpdate = true;
 		Brain::getInstance()->pleaseUpdate(this);
 	}
-	cv->value = localValue;
+	cv->value = newValue;
+
+	float faderUse = jmap(transition, 0.0f, 1.0f, ratioBegin, ratioEnd);
+	faderLevel = jmap(faderUse, 0.f,1.f, 1.0f, faderLevel);
 
 	if (HTP) {
-		localValue *= faderLevel;
+		newValue *= faderLevel;
 	}
 	else {
 		if (!isFlashing || flashWithLtpLevel->boolValue()) {
-			float localValueNoFade = localValue;
 			if (absoluteLTPValue->boolValue()) {
-				localValue *= (double)LTPLevel->getValue();
+				newValue *= faderLevel;
 			}
 			else {
-				localValue = jmap(LTPLevel->floatValue(), currentVal, localValue);
+				newValue = jmap(faderLevel, currentVal, newValue);
 			}
-			localValue = jmap(fade,0.f,1.f,localValueNoFade, localValue);
+			//localValue = jmap(transition,0.f,1.f,localValueNoFade, localValue);
 		}
+		clearLiveCV = clearLiveCV || faderLevel < 1;
 	}
 
+	if (addToLiveCV) {
+		fc->cs.enter();
+		if (clearLiveCV) {
+			fc->liveCV.clear();
+		}
+		fc->liveCV.add(cv);
+		fc->cs.exit();
+	}
 
 
 	if (HTP && !cv->htpOverride) {
-		isApplied = localValue >= val;
-		val = jmax(val, localValue);
+		isApplied = newValue >= currentVal;
+		newValue = jmax(currentVal, newValue);
 	}
 	else {
 		isApplied = true;
-		val = localValue;
 	}
 
 	if (keepUpdate && !stopTransition) {
 		Brain::getInstance()->pleaseUpdate(fc);
 	}
-	return val;
+	return newValue;
 }
 
 void Cuelist::insertProgCueBefore()
@@ -1506,7 +1546,7 @@ Cue* Cuelist::getNextCue() {
 			}
 		}
 		String end = endAction->getValue();
-		if (end == "loop") {
+		if (end == "loop" && currentCues.size()>0) {
 			return currentCues[0];
 		}
 	}
@@ -1870,6 +1910,15 @@ void Cuelist::exportInTextFile()
 	os->writeString(output);
 	os->flush();
 
+}
+
+void Cuelist::takeSelection(Programmer* p)
+{
+	Cue* target = cueA;
+	if (target == nullptr && cues.items.size() > 0) target = cues.items[0];
+	if (target != nullptr) {
+		target->takeSelection(nullptr);
+	}
 }
 
 void Cuelist::tapTempo() {

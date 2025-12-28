@@ -28,6 +28,7 @@
 #include "Definitions/Cue/Task.h"
 #include "Definitions/Layout/Layout.h"
 #include "Definitions/Tracker/Tracker.h"
+#include "Definitions/SelectionMaster/SelectionMaster.h"
 #include "Definitions/Bundle/Bundle.h"
 
 
@@ -54,6 +55,7 @@ public:
     HashMap<int, Carousel*>carousels;
     HashMap<int, Mapper*>mappers;
     HashMap<int, Tracker*>trackers;
+    HashMap<int, SelectionMaster*>selectionMasters;
     HashMap<int, Layout*>layouts;
     HashMap<int, Bundle*>bundles;
 
@@ -73,6 +75,8 @@ public:
     Array<Mapper*> mapperPoolWaiting;
     Array<Tracker*> trackerPoolUpdating;
     Array<Tracker*> trackerPoolWaiting;
+    Array<SelectionMaster*> selectionMasterPoolUpdating;
+    Array<SelectionMaster*> selectionMasterPoolWaiting;
 
     Array<SubFixtureChannel*> swoppableChannels;
     Array<SubFixtureChannel*> grandMasterChannels;
@@ -81,6 +85,8 @@ public:
     Array<Carousel*> swoppedCarousels;
 
     Array<Command*> allCommands;
+    Array<CommandSelection*> allCommandSelections;
+    Array<CommandValue*> allCommandValues;
     Array<SubFixture*> allSubfixtures;
     Array<SubFixtureChannel*> allSubfixtureChannels;
 
@@ -114,11 +120,11 @@ public:
     CriticalSection usingTasksCollection;
     void registerSubFixture(SubFixture* f, int id);
     void unregisterSubFixture(SubFixture* f);
-    void registerFixture(Fixture* f, int id, bool swap = false);
+    void registerFixture(Fixture* f, int id);
     void unregisterFixture(Fixture* f);
-    void registerGroup(Group* f, int id, bool swap = false);
+    void registerGroup(Group* f, int id);
     void unregisterGroup(Group* f);
-    void registerPreset(Preset* p, int id, bool swap = false);
+    void registerPreset(Preset* p, int id);
     void unregisterPreset(Preset* p);
     void registerCuelist(Cuelist* c, int id, bool swap = false);
     void unregisterCuelist(Cuelist* c);
@@ -140,6 +146,8 @@ public:
     void unregisterLayout(Layout* p);
     void registerTracker(Tracker* p, int id, bool swap = false);
     void unregisterTracker(Tracker* p);
+    void registerSelectionMaster(SelectionMaster* p, int id, bool swap = false);
+    void unregisterSelectionMaster(SelectionMaster* p);
     void registerBundle(Bundle* p, int id, bool swap = false);
     void unregisterBundle(Bundle* p);
 
@@ -151,6 +159,7 @@ public:
     void pleaseUpdate(Carousel* c);
     void pleaseUpdate(Mapper* c);
     void pleaseUpdate(Tracker* c);
+    void pleaseUpdate(SelectionMaster* c);
 
     void updateAllChannels();
 
@@ -172,6 +181,7 @@ public:
     Mapper* getMapperById(int id);
     Layout* getLayoutById(int id);
     Tracker* getTrackerById(int id);
+    SelectionMaster* getSelectionMasterById(int id);
     Bundle* getBundleById(int id);
 
     void swoppedCuelist(Cuelist* c);
@@ -211,4 +221,11 @@ public:
     void soloPoolCheck(int poolId, String excludeType, int excludeId);
     void soloPoolRandom(int poolId);
     void soloPoolStop(int poolId);
+
+    void replaceFixtureIdEverywhere(int from, int to);
+    void replaceGroupIdEverywhere(int from, int to);
+    void replacePresetIdEverywhere(int from, int to);
+
+
+
 };

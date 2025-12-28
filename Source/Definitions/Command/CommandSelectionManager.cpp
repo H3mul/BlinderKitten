@@ -80,7 +80,7 @@ void CommandSelectionManager::computeSelection(Array<int> groupHistory) {
 						}
 						//if (groupHistory.indexOf(g->id->getValue()) == -1) {
 						if (count < 10) {
-							groupHistory.add(id);
+							groupHistory.add(groupId);
 							g->selection.computeSelection(groupHistory);
 							g->selection.computing.enter();
 							tempSelection.addArray(g->selection.computedSelectedSubFixtures);
@@ -182,6 +182,22 @@ void CommandSelectionManager::computeSelection(Array<int> groupHistory) {
 				tempSelection = filteredSelection;
 
 			}
+			else if (selections[selId]->filter->getValue() == "begin") {
+				Array<SubFixture*> filteredSelection;
+				int n = jmin(selections[selId]->randomNumber->intValue(), tempSelection.size());
+				for (int i = 0; i < n; i++) {
+					filteredSelection.add(tempSelection[i]);
+				}
+				tempSelection = filteredSelection;
+			}
+			else if (selections[selId]->filter->getValue() == "end") {
+				Array<SubFixture*> filteredSelection;
+				int n = jmin(selections[selId]->randomNumber->intValue(), tempSelection.size());
+				for (int i = tempSelectionSize-n; i < tempSelectionSize; i++) {
+					filteredSelection.add(tempSelection[i]);
+				}
+				tempSelection = filteredSelection;
+			}
 			else if (selections[selId]->filter->getValue() == "random") {
 				Array<SubFixture*> filteredSelection;
 				HashMap<int, std::shared_ptr<Array<SubFixture*>>> indexToSubFixtures;
@@ -194,22 +210,22 @@ void CommandSelectionManager::computeSelection(Array<int> groupHistory) {
 				int maxIndex = 0;
 				Array<int> indexes;
 
-                int realTot = ceil(tempSelection.size()/(float)nBuddy);
-                float wingSize = realTot / (float)nWings;
-                realTot = ceil(realTot / (float)nWings);
-                int roundedWingSize = round(wingSize);
-				roundedWingSize = jmax(roundedWingSize,1);
+				int realTot = ceil(tempSelection.size() / (float)nBuddy);
+				float wingSize = realTot / (float)nWings;
+				realTot = ceil(realTot / (float)nWings);
+				int roundedWingSize = round(wingSize);
+				roundedWingSize = jmax(roundedWingSize, 1);
 
-                for (int chanIndex = 0; chanIndex < tempSelection.size(); chanIndex++) {
-                    int realIndex = chanIndex/nBuddy;
+				for (int chanIndex = 0; chanIndex < tempSelection.size(); chanIndex++) {
+					int realIndex = chanIndex / nBuddy;
 
-                    int nWing = realIndex/wingSize;
-                    if (nWing % 2 == 1) {
-                        realIndex = realIndex % roundedWingSize;
-                        realIndex = wingSize - 1 - realIndex;
-                    }
-                    realIndex = realIndex*nBlocks;
-                    realIndex = realIndex % roundedWingSize;
+					int nWing = realIndex / wingSize;
+					if (nWing % 2 == 1) {
+						realIndex = realIndex % roundedWingSize;
+						realIndex = wingSize - 1 - realIndex;
+					}
+					realIndex = realIndex * nBlocks;
+					realIndex = realIndex % roundedWingSize;
 					maxIndex = jmax(maxIndex, realIndex);
 					indexes.addIfNotAlreadyThere(realIndex);
 					if (!indexToSubFixtures.contains(realIndex)) {
@@ -256,6 +272,49 @@ void CommandSelectionManager::computeSelection(Array<int> groupHistory) {
 				}
 
 				tempSelection = filteredSelection;
+				selections[selId]->lastRandom.clear();
+				selections[selId]->lastRandom.addArray(filteredSelection);
+			}
+			else if (selections[selId]->filter->getValue() == "bbw") {
+				Array<SubFixture*> filteredSelection;
+
+				int nBuddy = selections[selId]->randomBuddy->getValue();
+				int nBlocks = selections[selId]->randomBlock->getValue();
+				int nWings = selections[selId]->randomWing->getValue();
+				int maxIndex = 0;
+				Array<int> indexes;
+
+				int realTot = ceil(tempSelection.size() / (float)nBuddy);
+				float wingSize = realTot / (float)nWings;
+				realTot = ceil(realTot / (float)nWings);
+				int roundedWingSize = round(wingSize);
+				roundedWingSize = jmax(roundedWingSize, 1);
+
+				HashMap<SubFixture*, int> subFixtToIndex;
+
+				for (int chanIndex = 0; chanIndex < tempSelection.size(); chanIndex++) {
+					int realIndex = chanIndex / nBuddy;
+					int nWing = realIndex / wingSize;
+					if (nWing % 2 == 1) {
+						realIndex = realIndex % roundedWingSize;
+						realIndex = wingSize - 1 - realIndex;
+					}
+					realIndex = realIndex * nBlocks;
+					realIndex = realIndex % roundedWingSize;
+					maxIndex = jmax(maxIndex, realIndex);
+					subFixtToIndex.set(tempSelection[chanIndex], realIndex);
+				}
+
+				for (auto it = subFixtToIndex.begin(); it != subFixtToIndex.end(); it.next()) {
+					SubFixture* sf = it.getKey();
+					int index = it.getValue();
+
+					float vWithGap = jmap((float)index, (float)0, (float)(maxIndex+ nBlocks), 0.f, 1.f);
+					subFixtureToPosition.set(sf, vWithGap);
+					float vNoGap = jmap((float)index, (float)0, (float)(maxIndex), 0.f, 1.f);
+					subFixtureToPositionNoGap.set(sf, vNoGap);
+				}
+
 				selections[selId]->lastRandom.clear();
 				selections[selId]->lastRandom.addArray(filteredSelection);
 			}
@@ -374,6 +433,55 @@ void CommandSelectionManager::computeSelection(Array<int> groupHistory) {
 						if (sfToPos->contains(tempSelection[i])) {
 							float v = sfToPos->getReference(tempSelection[i]);
 							subFixtureToPosition.set(tempSelection[i], v);
+						}
+					}
+				}
+			}
+			else if (selections[selId]->filter->getValue() == "layoutwake") {
+				Layout* l = Brain::getInstance()->getLayoutById(selections[selId]->layoutId->intValue());
+				if (l != nullptr) {
+					Point<float> origin((float)selections[selId]->layoutWakeAnchor->getValue()[0], (float)selections[selId]->layoutWakeAnchor->getValue()[1]);
+					auto sfToPos = l->getSubfixturesRatioFromWake(&origin, selections[selId]->layoutDirection->floatValue(), selections[selId]->layoutWakeAngle->floatValue(), true);
+					float min = 0;
+					float max = 1;
+					min = 1; max = 0;
+					for (int i = 0; i < tempSelection.size(); i++) {
+						if (sfToPos->contains(tempSelection[i])) {
+							min = jmin(min, sfToPos->getReference(tempSelection[i]));
+							max = jmax(max, sfToPos->getReference(tempSelection[i]));
+						}
+					}
+					float maxGap = 0;
+					float currentOffset = 0;
+					float currentNextOffset = 1;
+					bool search = true;
+					while (search) {
+						for (int i = 0; i < tempSelection.size(); i++) {
+							if (sfToPos->contains(tempSelection[i])) {
+								float thisVal = sfToPos->getReference(tempSelection[i]);
+								if (thisVal > currentOffset && thisVal < currentNextOffset) {
+									currentNextOffset = thisVal;
+								}
+							}
+						}
+						maxGap = jmax(maxGap, currentNextOffset - currentOffset);
+						if (currentOffset == currentNextOffset) {
+							search = false;
+						}
+						else {
+							currentOffset = currentNextOffset;
+							currentNextOffset = max;
+						}
+					}
+					float maxNoGap = max;
+					max += maxGap;
+					for (int i = 0; i < tempSelection.size(); i++) {
+						if (sfToPos->contains(tempSelection[i])) {
+							float v = sfToPos->getReference(tempSelection[i]);
+							float vWithGap = jmap(v, min, max, 0.f, 1.f);
+							subFixtureToPosition.set(tempSelection[i], vWithGap);
+							float vNoGap = jmap(v, min, maxNoGap, 0.f, 1.f);
+							subFixtureToPositionNoGap.set(tempSelection[i], vNoGap);
 						}
 					}
 				}

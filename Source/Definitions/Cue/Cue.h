@@ -56,6 +56,8 @@ public:
     Trigger* createAfterBtn;
     Trigger* createBeforeBtn;
     Trigger* cleanUnusedCommandsBtn;
+    Trigger* regroupCommandsBtn;
+    Trigger* takeSelectionBtn;
 
     MoveInBlackManager moveInBlack;
     FloatParameter* moveInBlackDelay;
@@ -82,6 +84,8 @@ public:
     void endTransition();
 
     void cleanUnused();
+    void regroupCommands();
+    void takeSelection(Programmer* p);
 
     void loadContent(Programmer *p);
     void replaceContent(Programmer* p);
@@ -99,6 +103,7 @@ public:
     void runOffTasks(float forcedDelay =-1, float forcedFade = -1);
 
     String getCommandsText(bool useName);
+    String getCommandsText(bool useName, Array<Cue*> history);
 
     String getTypeString() const override { return objectType; }
     static Cue* create(var params) { return new Cue(params); }

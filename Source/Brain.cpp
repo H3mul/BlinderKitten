@@ -15,6 +15,9 @@
 #include "UI/VirtualButtons/VirtualButtonGrid.h"
 #include "UI/Encoders.h"
 #include "UserInputManager.h"
+#include "UI/GridView/FixtureGridView.h"
+#include "UI/GridView/GroupGridView.h"
+#include "UI/GridView/PresetGridView.h"
 #include "UI/GridView/CuelistGridView.h"
 #include "UI/GridView/EffectGridView.h"
 #include "UI/GridView/CarouselGridView.h"
@@ -54,6 +57,7 @@ void Brain::clear()
     carousels.clear();
     mappers.clear();
     trackers.clear();
+    selectionMasters.clear();
     bundles.clear();
     layouts.clear();
     cuelistPoolUpdating.clear();
@@ -205,6 +209,20 @@ void Brain::brainLoop() {
     }
     programmerPoolUpdating.clear();
 
+    if (selectionMasterPoolWaiting.size() > 0) {
+        ScopedLock lock(usingCollections);
+        for (int i = 0; i < selectionMasterPoolWaiting.size(); i++) {
+            selectionMasterPoolUpdating.add(selectionMasterPoolWaiting[i]);
+        }
+        selectionMasterPoolWaiting.clear();
+    }
+    for (int i = 0; i < selectionMasterPoolUpdating.size(); i++) {
+        selectionMasterPoolUpdating[i]->update(now);
+    }
+    selectionMasterPoolUpdating.clear();
+
+
+
     Array<SubFixtureChannel* > modifiedSF;
 
     for (SubFixtureChannel* sfc : allSubfixtureChannels) {
@@ -231,10 +249,10 @@ void Brain::brainLoop() {
 
     if (runningTasks.size()>0) 
     {
+        ScopedLock lock(usingTasksCollection);
         for (int i = 0; i < runningTasks.size(); i++) {
             runningTasks[i]->update(now);
         }
-        ScopedLock lock(usingTasksCollection);
         for (int i = runningTasks.size() - 1; i >= 0; i--) {
             if (runningTasks[i]->isEnded) {
                 runningTasks.remove(i);
@@ -352,32 +370,36 @@ void Brain::unregisterSubFixture(SubFixture* f) {
     }
 }
 
-void Brain::registerFixture(Fixture* p, int id, bool swap) {
-    int askedId = id;
-    if (fixtures.getReference(id) == p) { return; }
-    if (fixtures.containsValue(p)) {
-        fixtures.removeValue(p);
+void Brain::registerFixture(Fixture* target, int askedId) {
+    int currentId = target->registeredId;
+    if (fixtures.getReference(askedId) == target) { return; }
+    if (fixtures.containsValue(target)) {
+        fixtures.removeValue(target);
     }
+
+    Fixture* toSwap = fixtures.contains(askedId) ? fixtures.getReference(askedId) : nullptr;
     bool idIsOk = false;
-    if (swap && p->registeredId != 0) {
-        if (fixtures.contains(id) && fixtures.getReference(id) != nullptr) {
-            Fixture* presentItem = fixtures.getReference(id);
-            unregisterFixture(p);
-            registerFixture(presentItem, p->registeredId, false);
-        }
+    int newId = askedId;
+
+    if (target->isCurrentlyLoadingData && toSwap != nullptr) {
+        toSwap->id->setValue(currentId);
+        idIsOk = true;
     }
-    while (!idIsOk) {
-        if (fixtures.contains(id) && fixtures.getReference(id) != nullptr) {
-            id++;
-        }
-        else {
-            idIsOk = true;
-        }
+
+    int delta = askedId < currentId ? -1 : 1;
+    while (!idIsOk && newId > 0) {
+        idIsOk = fixtures.getReference(newId) == nullptr;
+        if (!idIsOk) newId += delta;
     }
-    fixtures.set(id, p);
-    p->id->setValue(id);
-    p->registeredId = id;
-    if (id != askedId) {
+
+    if (!idIsOk) {
+        newId = currentId;
+    }
+    fixtures.set(newId, target);
+    target->id->setValue(newId);
+    target->registeredId = newId;
+    if (currentId != newId && currentId != 0) {
+        replaceFixtureIdEverywhere(currentId, newId);
     }
 }
 
@@ -385,34 +407,39 @@ void Brain::unregisterFixture(Fixture* d) {
     if (fixtures.containsValue(d)) {
         fixtures.removeValue(d);
     }
+    if (!Brain::getInstance()->isClearing && FixtureGridView::getInstanceWithoutCreating() != nullptr) FixtureGridView::getInstance()->updateCells();
 }
 
-void Brain::registerGroup(Group* p, int id, bool swap) {
-    int askedId = id;
-    if (groups.getReference(id) == p) { return; }
-    if (groups.containsValue(p)) {
-        groups.removeValue(p);
+void Brain::registerGroup(Group* target, int askedId) {
+    int currentId = target->registeredId;
+    if (groups.getReference(askedId) == target) { return; }
+    if (groups.containsValue(target)) {
+        groups.removeValue(target);
     }
+
+    Group* toSwap = groups.contains(askedId) ? groups.getReference(askedId) : nullptr;
     bool idIsOk = false;
-    if (swap && p->registeredId != 0) {
-        if (groups.contains(id) && groups.getReference(id) != nullptr) {
-            Group* presentItem = groups.getReference(id);
-            unregisterGroup(p);
-            registerGroup(presentItem, p->registeredId, false);
-        }
+    int newId = askedId;
+
+    if (target->isCurrentlyLoadingData && toSwap != nullptr) {
+        toSwap->id->setValue(currentId);
+        idIsOk = true;
     }
-    while (!idIsOk) {
-        if (groups.contains(id) && groups.getReference(id) != nullptr) {
-            id++;
-        }
-        else {
-            idIsOk = true;
-        }
+
+    int delta = askedId < currentId ? -1 : 1;
+    while (!idIsOk && newId > 0) {
+        idIsOk = groups.getReference(newId) == nullptr;
+        if (!idIsOk) newId += delta;
     }
-    groups.set(id, p);
-    p->id->setValue(id);
-    p->registeredId = id;
-    if (id != askedId) {
+
+    if (!idIsOk) {
+        newId = currentId;
+    }
+    groups.set(newId, target);
+    target->id->setValue(newId);
+    target->registeredId = newId;
+    if (currentId != newId && currentId != 0) {
+        replaceGroupIdEverywhere(currentId, newId);
     }
 }
 
@@ -420,41 +447,48 @@ void Brain::unregisterGroup(Group* g) {
     if (groups.containsValue(g)) {
         groups.removeValue(g);
     }
+    if (!Brain::getInstance()->isClearing && GroupGridView::getInstanceWithoutCreating() != nullptr) GroupGridView::getInstance()->updateCells();
 }
 
-void Brain::registerPreset(Preset* p, int id, bool swap) {
-    int askedId = id;
-    if (presets.getReference(id) == p) { return; }
-    if (presets.containsValue(p)) {
-        presets.removeValue(p);
+void Brain::registerPreset(Preset* target, int askedId) {
+    int currentId = target->registeredId;
+    if (presets.getReference(askedId) == target) { return; }
+    if (presets.containsValue(target)) {
+        presets.removeValue(target);
     }
+
+    Preset* toSwap = presets.contains(askedId) ? presets.getReference(askedId) : nullptr;
     bool idIsOk = false;
-    if (swap && p->registeredId != 0) {
-        if (presets.contains(id) && presets.getReference(id) != nullptr ){
-            Preset* presentItem = presets.getReference(id);
-            unregisterPreset(p);
-            registerPreset(presentItem, p->registeredId, false);
-        }
+    int newId = askedId;
+
+    if (target->isCurrentlyLoadingData && toSwap != nullptr) {
+        toSwap->id->setValue(currentId);
+        idIsOk = true;
     }
-    while (!idIsOk) {
-        if (presets.contains(id) && presets.getReference(id) != nullptr) {
-            id++;
-        }
-        else {
-            idIsOk = true;
-        }
+
+    int delta = askedId < currentId ? -1 : 1;
+    while (!idIsOk && newId > 0) {
+        idIsOk = presets.getReference(newId) == nullptr;
+        if (!idIsOk) newId += delta;
     }
-    presets.set(id, p);
-    p->id->setValue(id);
-    p->registeredId = id;
-    if (id != askedId) {
+
+    if (!idIsOk) {
+        newId = currentId;
     }
+    presets.set(newId, target);
+    target->id->setValue(newId);
+    target->registeredId = newId;
+    if (currentId != newId && currentId != 0) {
+        replacePresetIdEverywhere(currentId, newId);
+    }
+
 }
 
 void Brain::unregisterPreset(Preset* p) {
     if (presets.containsValue(p)) {
         presets.removeValue(p);
     }
+    if (!Brain::getInstance()->isClearing && PresetGridView::getInstanceWithoutCreating() != nullptr) PresetGridView::getInstance()->updateCells();
 }
 
 void Brain::registerCuelist(Cuelist* p, int id, bool swap) {
@@ -512,6 +546,7 @@ void Brain::unregisterCuelist(Cuelist* c) {
     }
     reconstructVirtuals = true;
     TSBundles = Time::getMillisecondCounterHiRes();
+    if (!Brain::getInstance()->isClearing && CuelistGridView::getInstanceWithoutCreating() != nullptr) CuelistGridView::getInstance()->updateCells();
 }
 
 void Brain::registerProgrammer(Programmer* p, int id, bool swap) {
@@ -695,6 +730,7 @@ void Brain::unregisterEffect(Effect* c) {
     }
     reconstructVirtuals = true;
     TSBundles = Time::getMillisecondCounterHiRes();
+    if (!Brain::getInstance()->isClearing && EffectGridView::getInstanceWithoutCreating() != nullptr) EffectGridView::getInstance()->updateCells();
 }
 
 void Brain::registerCarousel(Carousel* p, int id, bool swap) {
@@ -734,6 +770,7 @@ void Brain::unregisterCarousel(Carousel* c) {
     }
     reconstructVirtuals = true;
     TSBundles = Time::getMillisecondCounterHiRes();
+    if (!Brain::getInstance()->isClearing && CarouselGridView::getInstanceWithoutCreating() != nullptr) CarouselGridView::getInstance()->updateCells();
 }
 
 void Brain::registerMapper(Mapper* p, int id, bool swap) {
@@ -773,6 +810,7 @@ void Brain::unregisterMapper(Mapper* c) {
     }
     reconstructVirtuals = true;
     TSBundles = Time::getMillisecondCounterHiRes();
+    if (!Brain::getInstance()->isClearing && MapperGridView::getInstanceWithoutCreating() != nullptr) MapperGridView::getInstance()->updateCells();
 }
 
 void Brain::registerLayout(Layout* p, int id, bool swap) {
@@ -845,6 +883,45 @@ void Brain::registerTracker(Tracker* p, int id, bool swap) {
 void Brain::unregisterTracker(Tracker* c) {
     if (trackers.containsValue(c)) {
         trackers.removeValue(c);
+    }
+    TSBundles = Time::getMillisecondCounterHiRes();
+}
+
+
+void Brain::registerSelectionMaster(SelectionMaster* p, int id, bool swap) {
+    int askedId = id;
+    if (selectionMasters.getReference(id) == p) { return; }
+    if (selectionMasters.containsValue(p)) {
+        selectionMasters.removeValue(p);
+    }
+    bool idIsOk = false;
+    if (swap && p->registeredId != 0) {
+        if (selectionMasters.contains(id) && selectionMasters.getReference(id) != nullptr) {
+            SelectionMaster* presentItem = selectionMasters.getReference(id);
+            unregisterSelectionMaster(p);
+            registerSelectionMaster(presentItem, p->registeredId, false);
+        }
+    }
+    while (!idIsOk) {
+        if (selectionMasters.contains(id) && selectionMasters.getReference(id) != nullptr) {
+            id++;
+        }
+        else {
+            idIsOk = true;
+        }
+    }
+    selectionMasters.set(id, p);
+    p->id->setValue(id);
+    p->registeredId = id;
+    if (id != askedId) {
+    }
+    TSBundles = Time::getMillisecondCounterHiRes();
+}
+
+
+void Brain::unregisterSelectionMaster(SelectionMaster* c) {
+    if (selectionMasters.containsValue(c)) {
+        selectionMasters.removeValue(c);
     }
     TSBundles = Time::getMillisecondCounterHiRes();
 }
@@ -951,6 +1028,14 @@ void Brain::pleaseUpdate(Tracker* f) {
     }
 }
 
+void Brain::pleaseUpdate(SelectionMaster* f) {
+    if (f == nullptr || f->objectType != "SelectionMaster") { return; }
+    ScopedLock lock(usingCollections);
+    if (!selectionMasterPoolWaiting.contains(f)) {
+        selectionMasterPoolWaiting.add(f);
+    }
+}
+
 void Brain::grandMasterChanged()
 {
     virtualFadersNeedUpdate = true;
@@ -965,10 +1050,10 @@ float Brain::symPosition(int index, int nElements) {
     float position = 0;
     if (nElements == 0) { return 0; }
     if (index < float(nElements / 2)) {
-        position = float(index) / float((nElements - 1) / 2);
+        position = float(index) / float((nElements - 1) / 2.0);
     }
     else {
-        position = float(nElements - index - 1) / float((nElements - 1) / 2);
+        position = float(nElements - index - 1) / float((nElements - 1) / 2.0);
     }
     return position;
 }
@@ -1163,6 +1248,17 @@ void Brain::startTask(Task* t, double startTime, int cuelistId, float forcedDela
         }
 
         if (valid) {
+            ScopedLock lock(usingTasksCollection);
+            Array<RunningTask*> toRemove;
+            for (RunningTask* t : runningTasks) {
+                if (actionType == t->actionType && targetType == t->targetType && targetId == t->targetId) {
+                    toRemove.add (t);
+                }
+            }
+            for (RunningTask* rt : toRemove) {
+                runningTasks.removeObject(rt, true);
+            }
+
             RunningTask* rt = runningTasks.add(new RunningTask());
             rt->parentTask = t;
             rt->id = newTaskId();
@@ -1349,6 +1445,15 @@ Tracker* Brain::getTrackerById(int id) {
     }
 }
 
+SelectionMaster* Brain::getSelectionMasterById(int id) {
+    if (selectionMasters.contains(id)) {
+        return selectionMasters.getReference(id);
+    }
+    else {
+        return nullptr;
+    }
+}
+
 Bundle* Brain::getBundleById(int id) {
     if (bundles.contains(id)) {
         return bundles.getReference(id);
@@ -1447,10 +1552,10 @@ void Brain::goAllLoadedCuelists() {
         Cuelist* c = it.getValue();
         Cue* cueB = dynamic_cast<Cue*>(c->nextCue->targetContainer.get());
         if (cueB != nullptr) {
-            c->go();
+            c->userGo();
         }
         else if ((int)c->nextCueId->getValue() > 0) {
-            c->go();
+            c->userGo();
         }
     }
 }
@@ -1670,21 +1775,21 @@ void Brain::soloPoolRandom(int poolId)
     usingCollections.enter();
     for (auto it = cuelists.begin(); it != cuelists.end(); it.next()) {
         Cuelist* c = it.getValue();
-        if (c->soloPool->intValue() == poolId) {
+        if (!c->isCuelistOn->boolValue() && c->soloPool->intValue() == poolId) {
             types.add("cuelist");
             ids.add(c->id->intValue());
         }
     }
     for (auto it = effects.begin(); it != effects.end(); it.next()) {
         Effect* c = it.getValue();
-        if (c->soloPool->intValue() == poolId) {
+        if (!c->isOn && c->soloPool->intValue() == poolId) {
             types.add("effect");
             ids.add(c->id->intValue());
         }
     }
     for (auto it = carousels.begin(); it != carousels.end(); it.next()) {
         Carousel* c = it.getValue();
-        if (c->soloPool->intValue() == poolId) {
+        if (!c->isOn && c->soloPool->intValue() == poolId) {
             types.add("carousel");
             ids.add(c->id->intValue());
         }
@@ -1696,7 +1801,7 @@ void Brain::soloPoolRandom(int poolId)
     int id = ids[i];
     String type = types[i];
 
-    if (type == "cuelist") { Brain::getCuelistById(id)->go(); }
+    if (type == "cuelist") { Brain::getCuelistById(id)->userGo(); }
     else if (type == "effect") { Brain::getEffectById(id)->start(); }
     else if (type == "carousel") { Brain::getCarouselById(id)->start(); }
 }
@@ -1735,4 +1840,41 @@ void Brain::soloPoolStop(int poolId)
     for (Carousel* c : offCarousels) c->stop();
 
 
+}
+
+
+void Brain::replaceFixtureIdEverywhere(int from, int to)
+{
+    usingCollections.enter();
+    for (int i = 0; i < allCommandSelections.size(); i++) {
+        CommandSelection* sel = allCommandSelections[i];
+        if (sel->targetType->getValueData() == "fixture" && sel->valueFrom->intValue() == from && !sel->thru->boolValue()) {
+            sel->valueFrom->setValue(to);
+        }
+    }
+    usingCollections.exit();
+}
+
+void Brain::replaceGroupIdEverywhere(int from, int to)
+{
+    usingCollections.enter();
+    for (int i = 0; i < allCommandSelections.size(); i++) {
+        CommandSelection* sel = allCommandSelections[i];
+        if (sel->targetType->getValueData() == "group" && sel->valueFrom->intValue() == from && !sel->thru->boolValue()) {
+            sel->valueFrom->setValue(to);
+        }
+    }
+    usingCollections.exit();
+}
+
+void Brain::replacePresetIdEverywhere(int from, int to)
+{
+    usingCollections.enter();
+    for (int i = 0; i < allCommandValues.size(); i++) {
+        CommandValue* sel = allCommandValues[i];
+        if (sel->presetOrValue->getValueData() == "preset" && sel->presetIdFrom->intValue() == from && !sel->thru->boolValue()) {
+            sel->presetIdFrom->setValue(to);
+        }
+    }
+    usingCollections.exit();
 }

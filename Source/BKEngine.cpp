@@ -1,4 +1,4 @@
-﻿/*
+/*
  ==============================================================================
 
  Engine.cpp
@@ -40,6 +40,7 @@
 #include "./Definitions/Carousel/CarouselManager.h"
 #include "./Definitions/Mapper/MapperManager.h"
 #include "./Definitions/Tracker/TrackerManager.h"
+#include "./Definitions/SelectionMaster/SelectionMasterManager.h"
 #include "./Definitions/Multiplicator/MultiplicatorManager.h"
 #include "./Definitions/Layout/LayoutManager.h"
 #include "./Definitions/Bundle/BundleManager.h"
@@ -134,7 +135,7 @@ BKEngine::BKEngine() :
 	defaultPresetId = genericSettingsContainer.addIntParameter("Default preset ID", "ID of the preset to use as default value", 0, 0);
 	defaultPresetId->addParameterListener(this);
 
-	faderSelectionMode = virtualParamsContainer.addEnumParameter("Faders selection mode", "Single copies elements on only one leement, column assign target to all elements in selected column");
+	faderSelectionMode = virtualParamsContainer.addEnumParameter("Faders selection mode", "Single copies elements on only one element, column assign target to all elements in selected column");
 	faderSelectionMode->addOption("Single", "single")->addOption("Column", "column");
 
 	virtualButtonGridCols = virtualParamsContainer.addIntParameter("Button cols", "Number of cols in playback button grid", 5, 1);
@@ -160,8 +161,10 @@ BKEngine::BKEngine() :
 	//panelScale->addParameterListener(this);
 	encodersScale = uiParamsContainer.addFloatParameter("Encoders scale", "scale the encoders view", 1, 0.1, 3);
 	encodersScale->addParameterListener(this);
-	gridCols= uiParamsContainer.addIntParameter("Grid Columns", "Number of columns for grid viewss", 10, 1);
+	gridCols = uiParamsContainer.addIntParameter("Grid Columns", "Number of columns for grid views", 10, 1);
 	gridCols->addParameterListener(this);
+	gridRows = uiParamsContainer.addIntParameter("Grid rows", "Number of rows for grid views", 20, 5);
+	gridRows->addParameterListener(this);
 	gridScale = uiParamsContainer.addFloatParameter("Grid scale", "scale the grid view", 1, 0.1, 3);
 	gridScale->addParameterListener(this);
 	encoderBigNumber = uiParamsContainer.addIntParameter("Encoder big offset", "Offset of encoders when << or >> pressed",4,2);
@@ -185,58 +188,72 @@ BKEngine::BKEngine() :
 	CPRedChannel = colorPickerContainer.addTargetParameter("Red channel", "", ChannelFamilyManager::getInstance());
 	CPRedChannel->targetType = TargetParameter::CONTAINER;
 	CPRedChannel->maxDefaultSearchLevel = 2;
+	CPRedChannel->typesFilter.add("ChannelType");
 
 	CPGreenChannel = colorPickerContainer.addTargetParameter("Green channel", "", ChannelFamilyManager::getInstance());
 	CPGreenChannel->targetType = TargetParameter::CONTAINER;
 	CPGreenChannel->maxDefaultSearchLevel = 2;
+	CPGreenChannel->typesFilter.add("ChannelType");
 
 	CPBlueChannel = colorPickerContainer.addTargetParameter("Blue channel", "", ChannelFamilyManager::getInstance());
 	CPBlueChannel->targetType = TargetParameter::CONTAINER;
 	CPBlueChannel->maxDefaultSearchLevel = 2;
+	CPBlueChannel->typesFilter.add("ChannelType");
 
 	CPWhiteChannel = colorPickerContainer.addTargetParameter("White channel", "", ChannelFamilyManager::getInstance());
 	CPWhiteChannel->targetType = TargetParameter::CONTAINER;
 	CPWhiteChannel->maxDefaultSearchLevel = 2;
+	CPWhiteChannel->typesFilter.add("ChannelType");
 
 	CPAmberChannel = colorPickerContainer.addTargetParameter("Amber channel", "", ChannelFamilyManager::getInstance());
 	CPAmberChannel->targetType = TargetParameter::CONTAINER;
 	CPAmberChannel->maxDefaultSearchLevel = 2;
+	CPAmberChannel->typesFilter.add("ChannelType");
 
 	CPUVChannel = colorPickerContainer.addTargetParameter("UV channel", "", ChannelFamilyManager::getInstance());
 	CPUVChannel->targetType = TargetParameter::CONTAINER;
 	CPUVChannel->maxDefaultSearchLevel = 2;
+	CPUVChannel->typesFilter.add("ChannelType");
 
 	CPCyanChannel = colorPickerContainer.addTargetParameter("Cyan channel", "", ChannelFamilyManager::getInstance());
 	CPCyanChannel->targetType = TargetParameter::CONTAINER;
 	CPCyanChannel->maxDefaultSearchLevel = 2;
+	CPCyanChannel->typesFilter.add("ChannelType");
 
 	CPMagentaChannel = colorPickerContainer.addTargetParameter("Magenta channel", "", ChannelFamilyManager::getInstance());
 	CPMagentaChannel->targetType = TargetParameter::CONTAINER;
 	CPMagentaChannel->maxDefaultSearchLevel = 2;
+	CPMagentaChannel->typesFilter.add("ChannelType");
 
 	CPYellowChannel = colorPickerContainer.addTargetParameter("Yellow channel", "", ChannelFamilyManager::getInstance());
 	CPYellowChannel->targetType = TargetParameter::CONTAINER;
 	CPYellowChannel->maxDefaultSearchLevel = 2;
+	CPYellowChannel->typesFilter.add("ChannelType");
 
 	CPHueChannel = colorPickerContainer.addTargetParameter("Hue channel", "", ChannelFamilyManager::getInstance());
 	CPHueChannel->targetType = TargetParameter::CONTAINER;
 	CPHueChannel->maxDefaultSearchLevel = 2;
+	CPHueChannel->typesFilter.add("ChannelType");
 
 	CPSaturationChannel = colorPickerContainer.addTargetParameter("Saturation channel", "", ChannelFamilyManager::getInstance());
 	CPSaturationChannel->targetType = TargetParameter::CONTAINER;
 	CPSaturationChannel->maxDefaultSearchLevel = 2;
+	CPSaturationChannel->typesFilter.add("ChannelType");
 
 	IntensityChannel = trackerContainer.addTargetParameter("Intensity channel", "", ChannelFamilyManager::getInstance());
 	IntensityChannel->targetType = TargetParameter::CONTAINER;
 	IntensityChannel->maxDefaultSearchLevel = 2;
+	IntensityChannel->typesFilter.add("ChannelType");
 
 	TPanChannel = trackerContainer.addTargetParameter("Pan channel", "", ChannelFamilyManager::getInstance());
 	TPanChannel->targetType = TargetParameter::CONTAINER;
 	TPanChannel->maxDefaultSearchLevel = 2;
+	TPanChannel->typesFilter.add("ChannelType");
 
 	TTiltChannel = trackerContainer.addTargetParameter("Tilt channel", "", ChannelFamilyManager::getInstance());
 	TTiltChannel->targetType = TargetParameter::CONTAINER;
 	TTiltChannel->maxDefaultSearchLevel = 2;
+	TTiltChannel->typesFilter.add("ChannelType");
 
 
 	loadWindowWidth = loadWindowContainer.addIntParameter("Window Width", "", 810,100);
@@ -276,6 +293,7 @@ BKEngine::BKEngine() :
 	addChildControllableContainer(CarouselManager::getInstance());
 	addChildControllableContainer(MapperManager::getInstance());
 	addChildControllableContainer(TrackerManager::getInstance());
+	addChildControllableContainer(SelectionMasterManager::getInstance());
 	addChildControllableContainer(MultiplicatorManager::getInstance());
 	addChildControllableContainer(LayoutManager::getInstance());
 	addChildControllableContainer(BundleManager::getInstance());
@@ -389,6 +407,7 @@ BKEngine::~BKEngine()
 	MultiplicatorManager::deleteInstance();
 	EffectManager::deleteInstance();
 	CarouselManager::deleteInstance();
+	SelectionMasterManager::deleteInstance();
 	TrackerManager::deleteInstance();
 	MapperManager::deleteInstance();
 	ProgrammerManager::deleteInstance();
@@ -419,10 +438,11 @@ BKEngine::~BKEngine()
 
 void BKEngine::createNewGraphInternal()
 {
-	MessageManager::callAsync([this](){
-		importMochi(JSON::parse(BinaryData::newFileDefaultContent_mochi)); 
+	
+	MessageManager::callAsync([this]() {
+		importMochi(JSON::parse(BinaryData::newFileDefaultContent_mochi));
 		Brain::getInstance()->showWindow("Input Panel");
-	});
+		});
 }
 
 void BKEngine::clearInternal()
@@ -445,6 +465,7 @@ void BKEngine::clearInternal()
 	Brain::getInstance()->isClearing = true;
 	VirtualFaderColManager::getInstance()->clear();
 	VirtualButtonManager::getInstance()->clear();
+	SelectionMasterManager::getInstance()->clear();
 	TrackerManager::getInstance()->clear();
 	MapperManager::getInstance()->clear();
 	MultiplicatorManager::getInstance()->clear();
@@ -488,6 +509,7 @@ void BKEngine::clearInternal()
 	defaultPresetId->resetValue();
 	encodersNumber->resetValue();
 	gridCols->resetValue();
+	gridRows->resetValue();
 	gridScale->resetValue();
 	encodersScale->resetValue();
 	encoderBigNumber->resetValue();
@@ -526,6 +548,7 @@ void BKEngine::clearInternal()
 	encodersNumber->resetValue();
 	encodersScale->resetValue();
 	gridCols->resetValue();
+	gridRows->resetValue();
 	gridScale->resetValue();
 
 
@@ -603,6 +626,9 @@ var BKEngine::getJSONData(bool includeNonOverriden)
 	var bunData = BundleManager::getInstance()->getJSONData(includeNonOverriden);
 	if (!bunData.isVoid() && bunData.getDynamicObject()->getProperties().size() > 0) data.getDynamicObject()->setProperty(BundleManager::getInstance()->shortName, bunData);
 
+	var selMastData = SelectionMasterManager::getInstance()->getJSONData(includeNonOverriden);
+	if (!selMastData.isVoid() && selMastData.getDynamicObject()->getProperties().size() > 0) data.getDynamicObject()->setProperty(SelectionMasterManager::getInstance()->shortName, selMastData);
+
 	//var sData = StateManager::getInstance()->getJSONData(includeNonOverriden);
 	//if (!sData.isVoid() && sData.getDynamicObject()->getProperties().size() > 0) data.getDynamicObject()->setProperty(StateManager::getInstance()->shortName, sData);
 
@@ -640,6 +666,7 @@ void BKEngine::loadJSONDataInternalEngine(var data, ProgressTask* loadingTask)
 	ProgressTask* multTask = loadingTask->addTask("Multiplicators");
 	ProgressTask* layTask = loadingTask->addTask("Layouts");
 	ProgressTask* bunTask = loadingTask->addTask("Bundles");
+	ProgressTask* selMastTask = loadingTask->addTask("Selection Masters");
 	ProgressTask* vbTask = loadingTask->addTask("Virtual buttons");
 	ProgressTask* vfTask = loadingTask->addTask("Virtual faders");
 	//ProgressTask* stateTask = loadingTask->addTask("States");
@@ -745,6 +772,11 @@ void BKEngine::loadJSONDataInternalEngine(var data, ProgressTask* loadingTask)
 	BundleManager::getInstance()->loadJSONData(data.getProperty(BundleManager::getInstance()->shortName, var()));
 	bunTask->setProgress(1);
 	bunTask->end();
+
+	selMastTask->start();
+	SelectionMasterManager::getInstance()->loadJSONData(data.getProperty(SelectionMasterManager::getInstance()->shortName, var()));
+	selMastTask->setProgress(1);
+	selMastTask->end();
 
 	vbTask->start();
 	VirtualButtonManager::getInstance()->loadJSONData(data.getProperty(VirtualButtonManager::getInstance()->shortName, var()));
@@ -896,6 +928,7 @@ void BKEngine::importMochi(var data)
 	CarouselManager::getInstance()->addItemsFromData(data.getProperty(CarouselManager::getInstance()->shortName, var()));
 	MapperManager::getInstance()->addItemsFromData(data.getProperty(MapperManager::getInstance()->shortName, var()));
 	TrackerManager::getInstance()->addItemsFromData(data.getProperty(TrackerManager::getInstance()->shortName, var()));
+	SelectionMasterManager::getInstance()->addItemsFromData(data.getProperty(SelectionMasterManager::getInstance()->shortName, var()));
 	MultiplicatorManager::getInstance()->addItemsFromData(data.getProperty(MultiplicatorManager::getInstance()->shortName, var()));
 	EffectManager::getInstance()->addItemsFromData(data.getProperty(EffectManager::getInstance()->shortName, var()));
 	LayoutManager::getInstance()->addItemsFromData(data.getProperty(LayoutManager::getInstance()->shortName, var()));
@@ -920,6 +953,19 @@ void BKEngine::exportSelection()
 {
 	var data(new DynamicObject());
 
+	for (Inspectable* i : selectionManager->currentInspectables) {
+		FixtureType* ft = dynamic_cast<FixtureType*>(i);
+		if (ft != nullptr) {
+			for (FixtureTypeChannel* ftc : ft->chansManager.items) {
+				ChannelType* ct = dynamic_cast<ChannelType*>(ftc->channelType->targetContainer.get());
+				if (ct != nullptr) {
+					ChannelFamily *cf = dynamic_cast<ChannelFamily*>(ct->parentContainer->parentContainer.get());
+					if (cf != nullptr) cf->selectThis(true);
+				}
+			}
+		}
+	}
+
 	data.getDynamicObject()->setProperty(InterfaceManager::getInstance()->shortName, InterfaceManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(ChannelFamilyManager::getInstance()->shortName, ChannelFamilyManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(FixtureTypeManager::getInstance()->shortName, FixtureTypeManager::getInstance()->getExportSelectionData());
@@ -935,6 +981,7 @@ void BKEngine::exportSelection()
 	data.getDynamicObject()->setProperty(CarouselManager::getInstance()->shortName, CarouselManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(MapperManager::getInstance()->shortName, MapperManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(TrackerManager::getInstance()->shortName, TrackerManager::getInstance()->getExportSelectionData());
+	data.getDynamicObject()->setProperty(SelectionMasterManager::getInstance()->shortName, SelectionMasterManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(MultiplicatorManager::getInstance()->shortName, MultiplicatorManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(EffectManager::getInstance()->shortName, EffectManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(LayoutManager::getInstance()->shortName, LayoutManager::getInstance()->getExportSelectionData());
@@ -989,6 +1036,8 @@ FixtureType* BKEngine::importGDTFContent(InputStream* stream, String importModeN
 	changedNames.set("ColorAdd_B", "Blue");
 	changedNames.set("ColorAdd_W", "White");
 	changedNames.set("ColorAdd_A", "Amber");
+    changedNames.set("ColorAdd_RY", "Amber");
+    changedNames.set("ColorAdd_UV", "UV");
 	changedNames.set("ColorSub_C", "Cyan");
 	changedNames.set("ColorSub_M", "Magenta");
 	changedNames.set("ColorSub_Y", "Yellow");
@@ -1322,7 +1371,7 @@ void BKEngine::importFixtureFromMVR(XmlElement* child, std::shared_ptr<ZipFile> 
 
 	id = child->getChildByName("FixtureID")->getAllSubText().trim().getIntValue();
 	if (id == 0) {
-		id = child->getChildByName("UnitNumber")->getAllSubText().trim().getIntValue();
+		id = child->getChildByName("UnitNumber") != nullptr ? child->getChildByName("UnitNumber")->getAllSubText().trim().getIntValue() : 0;
 	}
 
 	if (valid) {
@@ -1442,6 +1491,23 @@ void BKEngine::parameterValueChanged(Parameter* p) {
 	if (p == encodersScale) {
 		Encoders::getInstance()->resized();
 		//EncodersMult::getInstance()->resized();
+	}
+	else if (p == gridRows) {
+		FixtureGridView::getInstance()->initArrays();
+		FixtureGridView::getInstance()->updateCells();
+		GroupGridView::getInstance()->initArrays();
+		GroupGridView::getInstance()->updateCells();
+		PresetGridView::getInstance()->initArrays();
+		PresetGridView::getInstance()->updateCells();
+		CuelistGridView::getInstance()->initArrays();
+		CuelistGridView::getInstance()->updateCells();
+		EffectGridView::getInstance()->initArrays();
+		EffectGridView::getInstance()->updateCells();
+		CarouselGridView::getInstance()->initArrays();
+		CarouselGridView::getInstance()->updateCells();
+		MapperGridView::getInstance()->initArrays();
+		MapperGridView::getInstance()->updateCells();
+
 	}
 	else if (p == gridScale || p == gridCols) {
 		FixtureGridView::getInstance()->resized();

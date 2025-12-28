@@ -66,7 +66,7 @@
       <Optimization>Disabled</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;C:\repos\JUCE\modules;..\..\..\JUCE\modules;..\..\Modules;../../External/serial/include;../../External/asio;../../External/servus/include;../../External/dnssd/include;../../Source;../../Source/Definitions;../../External/serial/include;../../External/servus/include;../../External/dnssd/include;../../External/ois/include;../../External/sdl/include;../../External/libusb/include/libusb-1.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;_ITERATOR_DEBUG_LEVEL=1;JUCE_DISABLE_ASSERTIONS=1;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=1.0.1b84;JUCE_APP_VERSION_HEX=0x10001;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;_ITERATOR_DEBUG_LEVEL=1;JUCE_DISABLE_ASSERTIONS=1;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=1.0.1b92;JUCE_APP_VERSION_HEX=0x10001;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -81,7 +81,7 @@
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;C:\repos\JUCE\modules;..\..\..\JUCE\modules;..\..\Modules;../../External/serial/include;../../External/asio;../../External/servus/include;../../External/dnssd/include;../../Source;../../Source/Definitions;../../External/serial/include;../../External/servus/include;../../External/dnssd/include;../../External/ois/include;../../External/sdl/include;../../External/libusb/include/libusb-1.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;_ITERATOR_DEBUG_LEVEL=1;JUCE_DISABLE_ASSERTIONS=1;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=1.0.1b84;JUCE_APP_VERSION_HEX=0x10001;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;_ITERATOR_DEBUG_LEVEL=1;JUCE_DISABLE_ASSERTIONS=1;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=1.0.1b92;JUCE_APP_VERSION_HEX=0x10001;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <OutputFile>$(OutDir)\BlinderKitten.exe</OutputFile>
@@ -115,7 +115,7 @@
       <Optimization>Full</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;C:\repos\JUCE\modules;..\..\..\JUCE\modules;..\..\Modules;../../External/serial/include;../../External/asio;../../External/servus/include;../../External/dnssd/include;../../Source;../../Source/Definitions;../../External/serial/include;../../External/servus/include;../../External/dnssd/include;../../External/ois/include;../../External/sdl/include;../../External/libusb/include/libusb-1.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;_ITERATOR_DEBUG_LEVEL=1;JUCE_DISABLE_ASSERTIONS=1;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=1.0.1b84;JUCE_APP_VERSION_HEX=0x10001;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;_ITERATOR_DEBUG_LEVEL=1;JUCE_DISABLE_ASSERTIONS=1;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=1.0.1b92;JUCE_APP_VERSION_HEX=0x10001;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -130,7 +130,7 @@
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;C:\repos\JUCE\modules;..\..\..\JUCE\modules;..\..\Modules;../../External/serial/include;../../External/asio;../../External/servus/include;../../External/dnssd/include;../../Source;../../Source/Definitions;../../External/serial/include;../../External/servus/include;../../External/dnssd/include;../../External/ois/include;../../External/sdl/include;../../External/libusb/include/libusb-1.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;_ITERATOR_DEBUG_LEVEL=1;JUCE_DISABLE_ASSERTIONS=1;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=1.0.1b84;JUCE_APP_VERSION_HEX=0x10001;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;_ITERATOR_DEBUG_LEVEL=1;JUCE_DISABLE_ASSERTIONS=1;JUCER_VS2022_78A503E=1;JUCE_APP_VERSION=1.0.1b92;JUCE_APP_VERSION_HEX=0x10001;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <OutputFile>$(OutDir)\BlinderKitten.exe</OutputFile>
@@ -202,6 +202,9 @@
     <ClCompile Include="..\..\Source\Common\ComponentSelector\ComponentSelector.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Common\DMX\device\sacn\e131.c">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\Source\Common\DMX\device\DMXArtNetDevice.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -211,10 +214,19 @@
     <ClCompile Include="..\..\Source\Common\DMX\device\DMXEnttecProDevice.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Common\DMX\device\DMXKingDevice.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Common\DMX\device\DMXKingManager.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\Source\Common\DMX\device\DMXEuroliteDevice.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\Source\Common\DMX\device\DMXOpenUSBDevice.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Common\DMX\device\DMXSACNDevice.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\Source\Common\DMX\device\DMXSerialDevice.cpp">
@@ -280,6 +292,7 @@
     <ClCompile Include="..\..\Source\Definitions\Actions\MapperAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\MultiplicatorAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\PresetAction.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\Actions\SelectionMasterAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\SoloPoolAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\TapTempoMultiple.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\TrackerAction.cpp"/>
@@ -339,6 +352,9 @@
     <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypeChannelManager.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypeManager.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypeManagerUI.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypePreset.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypePresetManager.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypePresetValues.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypeVirtualChannel.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\FixtureType\FixtureTypeVirtualChannelManager.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Group\Group.cpp"/>
@@ -439,6 +455,9 @@
     <ClCompile Include="..\..\Source\Definitions\Programmer\Programmer.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Programmer\ProgrammerManager.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Programmer\ProgrammerManagerUI.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\SelectionMaster\SelectionMaster.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\SelectionMaster\SelectionMasterManager.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\SelectionMaster\SelectionMasterManagerUI.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\SubFixture\SubFixture.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\SubFixture\SubFixtureChannel.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\TimingPreset\TimingPreset.cpp"/>
@@ -3507,11 +3526,15 @@
     <ClInclude Include="..\..\Source\Common\CommonClasses\SceneListener.h"/>
     <ClInclude Include="..\..\Source\Common\ComponentSelector\ui\ComponentSelectorUI.h"/>
     <ClInclude Include="..\..\Source\Common\ComponentSelector\ComponentSelector.h"/>
+    <ClInclude Include="..\..\Source\Common\DMX\device\sacn\e131.h"/>
     <ClInclude Include="..\..\Source\Common\DMX\device\DMXArtNetDevice.h"/>
     <ClInclude Include="..\..\Source\Common\DMX\device\DMXDevice.h"/>
     <ClInclude Include="..\..\Source\Common\DMX\device\DMXEnttecProDevice.h"/>
+    <ClInclude Include="..\..\Source\Common\DMX\device\DMXKingDevice.h"/>
+    <ClInclude Include="..\..\Source\Common\DMX\device\DMXKingManager.h"/>
     <ClInclude Include="..\..\Source\Common\DMX\device\DMXEuroliteDevice.h"/>
     <ClInclude Include="..\..\Source\Common\DMX\device\DMXOpenUSBDevice.h"/>
+    <ClInclude Include="..\..\Source\Common\DMX\device\DMXSACNDevice.h"/>
     <ClInclude Include="..\..\Source\Common\DMX\device\DMXSerialDevice.h"/>
     <ClInclude Include="..\..\Source\Common\DMX\DMXManager.h"/>
     <ClInclude Include="..\..\Source\Common\Helpers\SceneHelpers.h"/>
@@ -3539,6 +3562,7 @@
     <ClInclude Include="..\..\Source\Definitions\Actions\MapperAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\MultiplicatorAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\PresetAction.h"/>
+    <ClInclude Include="..\..\Source\Definitions\Actions\SelectionMasterAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\SoloPoolAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\TapTempoMultiple.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\TrackerAction.h"/>
@@ -3598,6 +3622,9 @@
     <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypeChannelManager.h"/>
     <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypeManager.h"/>
     <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypeManagerUI.h"/>
+    <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypePreset.h"/>
+    <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypePresetManager.h"/>
+    <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypePresetValues.h"/>
     <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypeVirtualChannel.h"/>
     <ClInclude Include="..\..\Source\Definitions\FixtureType\FixtureTypeVirtualChannelManager.h"/>
     <ClInclude Include="..\..\Source\Definitions\Group\Group.h"/>
@@ -3650,6 +3677,9 @@
     <ClInclude Include="..\..\Source\Definitions\Programmer\Programmer.h"/>
     <ClInclude Include="..\..\Source\Definitions\Programmer\ProgrammerManager.h"/>
     <ClInclude Include="..\..\Source\Definitions\Programmer\ProgrammerManagerUI.h"/>
+    <ClInclude Include="..\..\Source\Definitions\SelectionMaster\SelectionMaster.h"/>
+    <ClInclude Include="..\..\Source\Definitions\SelectionMaster\SelectionMasterManager.h"/>
+    <ClInclude Include="..\..\Source\Definitions\SelectionMaster\SelectionMasterManagerUI.h"/>
     <ClInclude Include="..\..\Source\Definitions\SubFixture\SubFixture.h"/>
     <ClInclude Include="..\..\Source\Definitions\SubFixture\SubFixtureChannel.h"/>
     <ClInclude Include="..\..\Source\Definitions\TimingPreset\TimingPreset.h"/>
