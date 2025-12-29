@@ -1,2 +1,5 @@
+[*]
+end_of_line = lf
+
 [*.vcxproj]
 tab_width = 2
