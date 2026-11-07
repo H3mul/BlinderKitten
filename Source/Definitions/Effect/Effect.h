@@ -79,6 +79,7 @@ public:
     Array<double> tapTempoHistory;
     Trigger* tapTempoBtn;
     FloatParameter* beatPerCycle;
+    IntParameter* tempoId;
 
     TargetParameter* midiClockSyncInterface;
 

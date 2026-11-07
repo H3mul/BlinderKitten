@@ -309,6 +309,7 @@
     <ClCompile Include="..\..\Source\Definitions\Actions\MapperAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\MultiplicatorAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\PaletteAction.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\Actions\TempoAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\PresetAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\SelectionMasterAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\SoloPoolAction.cpp"/>
@@ -496,6 +497,9 @@
     <ClCompile Include="..\..\Source\Definitions\Palette\PaletteManager.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Palette\PaletteManagerUI.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Palette\PaletteRemap.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\TempoManagerUI.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\TempoManager.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\Tempo.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Tracker\Tracker.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Tracker\TrackerManager.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Tracker\TrackerManagerUI.cpp"/>
@@ -3635,6 +3639,7 @@
     <ClInclude Include="..\..\Source\Definitions\Actions\MapperAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\MultiplicatorAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\PaletteAction.h"/>
+    <ClInclude Include="..\..\Source\Definitions\Actions\TempoAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\PresetAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\SelectionMasterAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\SoloPoolAction.h"/>
@@ -3774,6 +3779,9 @@
     <ClInclude Include="..\..\Source\Definitions\Palette\PaletteManager.h"/>
     <ClInclude Include="..\..\Source\Definitions\Palette\PaletteManagerUI.h"/>
     <ClInclude Include="..\..\Source\Definitions\Palette\PaletteRemap.h"/>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\TempoManagerUI.h"/>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\TempoManager.h"/>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\Tempo.h"/>
     <ClInclude Include="..\..\Source\Definitions\Tracker\Tracker.h"/>
     <ClInclude Include="..\..\Source\Definitions\Tracker\TrackerManager.h"/>
     <ClInclude Include="..\..\Source\Definitions\Tracker\TrackerManagerUI.h"/>

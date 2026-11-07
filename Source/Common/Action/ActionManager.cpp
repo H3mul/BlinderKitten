@@ -24,6 +24,7 @@ juce_ImplementSingleton(ActionFactory);
 #include "Definitions/Actions/EncoderAction.h"
 #include "Definitions/Actions/MultiplicatorAction.h"
 #include "Definitions/Actions/PaletteAction.h"
+#include "Definitions/Actions/TempoAction.h"
 #include "Definitions/Actions/TapTempoMultiple.h"
 #include "Definitions/Actions/GenericAction.h"
 #include "Definitions/Actions/BundleAction.h"
@@ -196,6 +197,14 @@ ActionFactory::ActionFactory()
     defs.add(Factory<Action>::Definition::createDef("Palette", "Previous palette state", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_PREVIOUS));
     defs.add(Factory<Action>::Definition::createDef("Palette", "Shift all palettes to state", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_SHIFT_ALL));
     defs.add(Factory<Action>::Definition::createDef("Palette", "Shift all palettes to state (momentary)", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_SHIFT_ALL_HOLD));
+    defs.add(Factory<Action>::Definition::createDef("Tempo", "Tap", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_TAP));
+    defs.add(Factory<Action>::Definition::createDef("Tempo", "Set BPM", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_SET));
+    defs.add(Factory<Action>::Definition::createDef("Tempo", "Set BPM static", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_SETAT));
+    defs.add(Factory<Action>::Definition::createDef("Tempo", "Set scale static", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_SCALEAT));
+    defs.add(Factory<Action>::Definition::createDef("Tempo", "Double scale", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_DOUBLE));
+    defs.add(Factory<Action>::Definition::createDef("Tempo", "Half scale", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_HALF));
+    defs.add(Factory<Action>::Definition::createDef("Tempo", "Reset scale", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_RESETSCALE));
+    defs.add(Factory<Action>::Definition::createDef("Tempo", "Downbeat", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_DOWNBEAT));
 
     defs.add(Factory<Action>::Definition::createDef("VirtualButton", "Virtual Button Press", &VirtualButtonAction::create)->addParam("actionType", VirtualButtonAction::VB_PRESS));
     defs.add(Factory<Action>::Definition::createDef("VirtualButton", "Virtual Buttons Page Up", &VirtualButtonAction::create)->addParam("actionType", VirtualButtonAction::VB_PAGEUP));

@@ -359,6 +359,10 @@
           <FILE id="1l7FlL" name="PaletteAction.cpp" compile="1" resource="0"
                 file="Source/Definitions/Actions/PaletteAction.cpp"/>
           <FILE id="YMfj5s" name="PaletteAction.h" compile="0" resource="0" file="Source/Definitions/Actions/PaletteAction.h"/>
+          <FILE id="OAswh6" name="TempoAction.cpp" compile="1" resource="0"
+                file="Source/Definitions/Actions/TempoAction.cpp"/>
+          <FILE id="ojXnd4" name="TempoAction.h" compile="0" resource="0"
+                file="Source/Definitions/Actions/TempoAction.h"/>
           <FILE id="onIrJC" name="PresetAction.cpp" compile="1" resource="0"
                 file="Source/Definitions/Actions/PresetAction.cpp"/>
           <FILE id="pWJqFW" name="PresetAction.h" compile="0" resource="0" file="Source/Definitions/Actions/PresetAction.h"/>
@@ -894,6 +898,15 @@
                 file="Source/Definitions/Palette/PaletteRemap.cpp"/>
           <FILE id="ioArA4" name="PaletteRemap.h" compile="0" resource="0" file="Source/Definitions/Palette/PaletteRemap.h"/>
         </GROUP>
+        <GROUP id="{CC4EB4FE-A7D2-4D16-A57F-35591A11CFED}" name="Tempo">
+          <FILE id="wyns8r" name="Tempo.cpp" compile="1" resource="0" file="Source/Definitions/Tempo/Tempo.cpp"/>
+          <FILE id="qqhvqq" name="Tempo.h" compile="0" resource="0" file="Source/Definitions/Tempo/Tempo.h"/>
+          <FILE id="zETgAc" name="TempoManager.cpp" compile="1" resource="0" file="Source/Definitions/Tempo/TempoManager.cpp"/>
+          <FILE id="A8lvvP" name="TempoManager.h" compile="0" resource="0" file="Source/Definitions/Tempo/TempoManager.h"/>
+          <FILE id="eHvCYy" name="TempoManagerUI.cpp" compile="1" resource="0" file="Source/Definitions/Tempo/TempoManagerUI.cpp"/>
+          <FILE id="pbmzfE" name="TempoManagerUI.h" compile="0" resource="0" file="Source/Definitions/Tempo/TempoManagerUI.h"/>
+        </GROUP>
+
         <GROUP id="{C0C7B219-6AA1-FED5-1B9E-249CD2F5643C}" name="Tracker">
           <FILE id="tdIlIL" name="Tracker.cpp" compile="1" resource="0" file="Source/Definitions/Tracker/Tracker.cpp"/>
           <FILE id="MSEWQa" name="Tracker.h" compile="0" resource="0" file="Source/Definitions/Tracker/Tracker.h"/>

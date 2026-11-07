@@ -22,6 +22,7 @@
 #include "Definitions/CurvePreset/CurvePreset.h"
 #include "Definitions/TimingPreset/TimingPreset.h"
 #include "Definitions/Palette/Palette.h"
+#include "Definitions/Tempo/Tempo.h"
 #include "Definitions/BKPathPreset/BKPathPreset.h"
 #include "Definitions/Effect/Effect.h"
 #include "Definitions/Stamp/Stamp.h"
@@ -78,6 +79,7 @@ void Brain::clear()
     programmers.clear();
     curvePresets.clear();
     timingPresets.clear();
+    tempos.clear();
     bkPathPresets.clear();
     effects.clear();
     stamps.clear();
@@ -824,6 +826,45 @@ void Brain::unregisterPalette(Palette* c) {
     ScopedLock lock(usingLibraries);
     if (palettes.containsValue(c)) {
         palettes.removeValue(c);
+    }
+}
+
+
+void Brain::registerTempo(Tempo* p, int id, bool swap) {
+    ScopedLock lock(usingLibraries);
+    int askedId = id;
+    if (tempos.getReference(id) == p) { return; }
+    if (tempos.containsValue(p)) {
+        tempos.removeValue(p);
+    }
+    bool idIsOk = false;
+    if (swap && p->registeredId != 0) {
+        if (tempos.contains(id) && tempos.getReference(id) != nullptr) {
+            Tempo* presentItem = tempos.getReference(id);
+            unregisterTempo(p);
+            registerTempo(presentItem, p->registeredId, false);
+        }
+    }
+    while (!idIsOk) {
+        if (tempos.contains(id) && tempos.getReference(id) != nullptr) {
+            id++;
+        }
+        else {
+            idIsOk = true;
+        }
+    }
+    tempos.set(id, p);
+    p->id->setValue(id);
+    p->registeredId = id;
+    if (id != askedId) {
+    }
+}
+
+
+void Brain::unregisterTempo(Tempo* c) {
+    ScopedLock lock(usingLibraries);
+    if (tempos.containsValue(c)) {
+        tempos.removeValue(c);
     }
 }
 
@@ -1629,6 +1670,13 @@ TimingPreset* Brain::getTimingPresetById(int id, bool followIfAnother) {
     else {
         return nullptr;
     }
+}
+
+Tempo* Brain::getTempoById(int id) {
+    if (tempos.contains(id)) {
+        return tempos.getReference(id);
+    }
+    return nullptr;
 }
 
 BKPathPreset* Brain::getBKPathPresetById(int id, bool followIfAnother) {

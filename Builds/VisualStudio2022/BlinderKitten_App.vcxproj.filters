@@ -200,6 +200,9 @@
     <Filter Include="BlinderKitten\Source\Definitions\Palette">
       <UniqueIdentifier>{8361223C-3408-42DF-87FD-71CE89D69A8C}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BlinderKitten\Source\Definitions\Tempo">
+      <UniqueIdentifier>{FD3123C6-4A9B-4F60-BB11-761194756157}</UniqueIdentifier>
+    </Filter>
     <Filter Include="BlinderKitten\Source\Definitions\Tracker">
       <UniqueIdentifier>{28BFFCCA-9D78-DB2C-58E0-FA4EB588DA34}</UniqueIdentifier>
     </Filter>
@@ -1426,6 +1429,9 @@
     <ClCompile Include="..\..\Source\Definitions\Actions\PaletteAction.cpp">
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Actions\TempoAction.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\Actions\PresetAction.cpp">
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClCompile>
@@ -1842,6 +1848,15 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\Palette\PaletteRemap.cpp">
       <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\TempoManagerUI.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\TempoManager.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\Tempo.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\Tracker\Tracker.cpp">
       <Filter>BlinderKitten\Source\Definitions\Tracker</Filter>
@@ -5403,6 +5418,9 @@
     <ClInclude Include="..\..\Source\Definitions\Actions\PaletteAction.h">
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Actions\TempoAction.h">
+      <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\Actions\PresetAction.h">
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClInclude>
@@ -5819,6 +5837,15 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\Palette\PaletteRemap.h">
       <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\TempoManagerUI.h">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\TempoManager.h">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\Tempo.h">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\Tracker\Tracker.h">
       <Filter>BlinderKitten\Source\Definitions\Tracker</Filter>

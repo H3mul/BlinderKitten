@@ -26,6 +26,7 @@ class Programmer;
 class CurvePreset;
 class TimingPreset;
 class Palette;
+class Tempo;
 class BKPathPreset;
 class Effect;
 class Stamp;
@@ -62,6 +63,7 @@ public:
     HashMap<int, CurvePreset*>curvePresets;
     HashMap<int, TimingPreset*>timingPresets;
     HashMap<int, Palette*>palettes;
+    HashMap<int, Tempo*>tempos;
     HashMap<int, BKPathPreset*>bkPathPresets;
     HashMap<int, Effect*>effects;
     HashMap<int, Stamp*>stamps;
@@ -158,6 +160,8 @@ public:
     void unregisterTimingPreset(TimingPreset* p);
     void registerPalette(Palette* p, int id, bool swap = false);
     void unregisterPalette(Palette* p);
+    void registerTempo(Tempo* p, int id, bool swap = false);
+    void unregisterTempo(Tempo* p);
     void registerBKPathPreset(BKPathPreset* p, int id, bool swap = false);
     void unregisterBKPathPreset(BKPathPreset* p);
     void registerEffect(Effect* p, int id, bool swap = false);
@@ -209,6 +213,7 @@ public:
     void paletteChanged();
     void refreshPaletteUsers();
     std::atomic<bool> paletteRefreshPending{ false };
+    Tempo* getTempoById(int id);
     BKPathPreset* getBKPathPresetById(int id, bool followIfAnother = false);
     Effect* getEffectById(int id);
     Stamp* getStampById(int id);

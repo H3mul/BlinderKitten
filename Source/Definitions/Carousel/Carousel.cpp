@@ -10,6 +10,7 @@
 
 #include "JuceHeader.h"
 #include "Carousel.h"
+#include "Definitions/Tempo/Tempo.h"
 #include "../Command/CommandSelectionManager.h"
 #include "../SubFixture/SubFixtureChannel.h"
 #include "../../Brain.h"
@@ -60,7 +61,8 @@ Carousel::Carousel(var params) :
 	fadeInTime = addFloatParameter("Fade in", "Fade in time in seconds", 0, 0);
 	fadeOutTime = addFloatParameter("Fade out", "Fade out time in seconds", 0, 0);
 
-	beatPerCycle = addFloatParameter("Beat by cycles", "Number of tap tempo beats by cycle", 1, 1);
+	beatPerCycle = addFloatParameter("Beat by cycles", "Number of tap tempo beats by cycle", 1, 0.125f);
+	tempoId = addIntParameter("Tempo", "Id of the Tempo this carousel follows. 0 = not bound, uses its own speed", 0, 0);
 	tapTempoBtn = addTrigger("Tap tempo", "Hit me at least twice to se tempo");
 	 
 	midiClockSyncInterface = addTargetParameter("Clock interface", "select an interface you want to use as midi clock input", InterfaceManager::getInstance());
@@ -255,10 +257,11 @@ void Carousel::update(double now) {
 			currentSizeMult = sizeMult.getValue();
 			double deltaTime = now - TSLastUpdate;
 			TSLastUpdate = now;
-			double currentSpeed = speed->getValue();
+			Tempo* tempo = Brain::getInstance()->getTempoById(tempoId->intValue());
+			double currentSpeed = tempo != nullptr ? tempo->effectiveBpm->floatValue() / beatPerCycle->floatValue() : speed->getValue();
 			float speedMultVal = speedMult.getValue();
 			currentSpeed *= speedMultVal;
-			if (speed->floatValue() != 0) {
+			if (tempo != nullptr || speed->floatValue() != 0) {
 				double duration = 60000. / currentSpeed;
 				double delta = deltaTime / duration;
 				totalElapsed += delta;
@@ -424,6 +427,11 @@ void Carousel::updateName() {
 }
 
 void Carousel::tapTempo() {
+	Tempo* tempo = Brain::getInstance()->getTempoById(tempoId->intValue());
+	if (tempo != nullptr) {
+		tempo->tap();
+		return;
+	}
 	double now = Time::getMillisecondCounterHiRes();
 	double delta = now - lastTapTempo;
 	lastTapTempo = now;
