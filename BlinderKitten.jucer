@@ -877,6 +877,15 @@
           <FILE id="khpHjA" name="TimingPresetManagerUI.h" compile="0" resource="0"
                 file="Source/Definitions/TimingPreset/TimingPresetManagerUI.h"/>
         </GROUP>
+        <GROUP id="{CC4EB4FE-A7D2-4D16-A57F-35591A11CFED}" name="Tempo">
+          <FILE id="wyns8r" name="Tempo.cpp" compile="1" resource="0" file="Source/Definitions/Tempo/Tempo.cpp"/>
+          <FILE id="qqhvqq" name="Tempo.h" compile="0" resource="0" file="Source/Definitions/Tempo/Tempo.h"/>
+          <FILE id="zETgAc" name="TempoManager.cpp" compile="1" resource="0" file="Source/Definitions/Tempo/TempoManager.cpp"/>
+          <FILE id="A8lvvP" name="TempoManager.h" compile="0" resource="0" file="Source/Definitions/Tempo/TempoManager.h"/>
+          <FILE id="eHvCYy" name="TempoManagerUI.cpp" compile="1" resource="0" file="Source/Definitions/Tempo/TempoManagerUI.cpp"/>
+          <FILE id="pbmzfE" name="TempoManagerUI.h" compile="0" resource="0" file="Source/Definitions/Tempo/TempoManagerUI.h"/>
+        </GROUP>
+
         <GROUP id="{C0C7B219-6AA1-FED5-1B9E-249CD2F5643C}" name="Tracker">
           <FILE id="tdIlIL" name="Tracker.cpp" compile="1" resource="0" file="Source/Definitions/Tracker/Tracker.cpp"/>
           <FILE id="MSEWQa" name="Tracker.h" compile="0" resource="0" file="Source/Definitions/Tracker/Tracker.h"/>

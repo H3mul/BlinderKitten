@@ -197,6 +197,9 @@
     <Filter Include="BlinderKitten\Source\Definitions\TimingPreset">
       <UniqueIdentifier>{C243809F-B0A7-8028-42D7-B83B5AD45414}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BlinderKitten\Source\Definitions\Tempo">
+      <UniqueIdentifier>{FD3123C6-4A9B-4F60-BB11-761194756157}</UniqueIdentifier>
+    </Filter>
     <Filter Include="BlinderKitten\Source\Definitions\Tracker">
       <UniqueIdentifier>{28BFFCCA-9D78-DB2C-58E0-FA4EB588DA34}</UniqueIdentifier>
     </Filter>
@@ -1824,6 +1827,15 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\TimingPreset\TimingPresetManagerUI.cpp">
       <Filter>BlinderKitten\Source\Definitions\TimingPreset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\TempoManagerUI.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\TempoManager.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\Tempo.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\Tracker\Tracker.cpp">
       <Filter>BlinderKitten\Source\Definitions\Tracker</Filter>
@@ -5786,6 +5798,15 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\TimingPreset\TimingPresetManagerUI.h">
       <Filter>BlinderKitten\Source\Definitions\TimingPreset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\TempoManagerUI.h">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\TempoManager.h">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\Tempo.h">
+      <Filter>BlinderKitten\Source\Definitions\Tempo</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\Tracker\Tracker.h">
       <Filter>BlinderKitten\Source\Definitions\Tracker</Filter>

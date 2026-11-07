@@ -491,6 +491,9 @@
     <ClCompile Include="..\..\Source\Definitions\TimingPreset\TimingPreset.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\TimingPreset\TimingPresetManager.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\TimingPreset\TimingPresetManagerUI.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\TempoManagerUI.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\TempoManager.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\Tempo\Tempo.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Tracker\Tracker.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Tracker\TrackerManager.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Tracker\TrackerManagerUI.cpp"/>
@@ -3764,6 +3767,9 @@
     <ClInclude Include="..\..\Source\Definitions\TimingPreset\TimingPreset.h"/>
     <ClInclude Include="..\..\Source\Definitions\TimingPreset\TimingPresetManager.h"/>
     <ClInclude Include="..\..\Source\Definitions\TimingPreset\TimingPresetManagerUI.h"/>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\TempoManagerUI.h"/>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\TempoManager.h"/>
+    <ClInclude Include="..\..\Source\Definitions\Tempo\Tempo.h"/>
     <ClInclude Include="..\..\Source\Definitions\Tracker\Tracker.h"/>
     <ClInclude Include="..\..\Source\Definitions\Tracker\TrackerManager.h"/>
     <ClInclude Include="..\..\Source\Definitions\Tracker\TrackerManagerUI.h"/>
