@@ -33,6 +33,12 @@ public:
     void onContainerParameterChangedInternal(Parameter* p) override;
     void updateName();
     void updateEffectiveBpm();
+    void triggerTriggered(Trigger* t) override;
+    void tap();
+    void downbeat();
+
+    double lastTap = 0;
+    Array<double> tapHistory;
 
     String getTypeString() const override { return objectType; }
     static Tempo* create(var params) { return new Tempo(params); }

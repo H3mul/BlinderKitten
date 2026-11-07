@@ -61,6 +61,7 @@ Effect::Effect(var params) :
 	fadeOutTime = addFloatParameter("Fade out", "Fade out time in seconds", 0, 0);
 
 	beatPerCycle = addFloatParameter("Beat by cycles", "Number of tap tempo beats by cycle", 1, 1);
+	tempoId = addIntParameter("Tempo", "Id of the Tempo this effect follows. 0 = not bound, uses its own speed", 0, 0);
 	tapTempoBtn = addTrigger("Tap tempo", "Hit me at least twice to se tempo");
 
 	midiClockSyncInterface = addTargetParameter("Clock interface", "select an interface you want to use as midi clock input", InterfaceManager::getInstance());
