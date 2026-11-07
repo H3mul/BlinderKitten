@@ -308,6 +308,7 @@
     <ClCompile Include="..\..\Source\Definitions\Actions\InterfaceAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\MapperAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\MultiplicatorAction.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\Actions\TempoAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\PresetAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\SelectionMasterAction.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Actions\SoloPoolAction.cpp"/>
@@ -3632,6 +3633,7 @@
     <ClInclude Include="..\..\Source\Definitions\Actions\InterfaceAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\MapperAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\MultiplicatorAction.h"/>
+    <ClInclude Include="..\..\Source\Definitions\Actions\TempoAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\PresetAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\SelectionMasterAction.h"/>
     <ClInclude Include="..\..\Source\Definitions\Actions\SoloPoolAction.h"/>
