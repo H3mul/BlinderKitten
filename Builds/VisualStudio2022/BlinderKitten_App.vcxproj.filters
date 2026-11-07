@@ -197,6 +197,9 @@
     <Filter Include="BlinderKitten\Source\Definitions\TimingPreset">
       <UniqueIdentifier>{C243809F-B0A7-8028-42D7-B83B5AD45414}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BlinderKitten\Source\Definitions\Palette">
+      <UniqueIdentifier>{8361223C-3408-42DF-87FD-71CE89D69A8C}</UniqueIdentifier>
+    </Filter>
     <Filter Include="BlinderKitten\Source\Definitions\Tracker">
       <UniqueIdentifier>{28BFFCCA-9D78-DB2C-58E0-FA4EB588DA34}</UniqueIdentifier>
     </Filter>
@@ -1420,6 +1423,9 @@
     <ClCompile Include="..\..\Source\Definitions\Actions\MultiplicatorAction.cpp">
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Actions\PaletteAction.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\Actions\PresetAction.cpp">
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClCompile>
@@ -1824,6 +1830,18 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\TimingPreset\TimingPresetManagerUI.cpp">
       <Filter>BlinderKitten\Source\Definitions\TimingPreset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Palette\Palette.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Palette\PaletteManager.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Palette\PaletteManagerUI.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Palette\PaletteRemap.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\Tracker\Tracker.cpp">
       <Filter>BlinderKitten\Source\Definitions\Tracker</Filter>
@@ -5382,6 +5400,9 @@
     <ClInclude Include="..\..\Source\Definitions\Actions\MultiplicatorAction.h">
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Actions\PaletteAction.h">
+      <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\Actions\PresetAction.h">
       <Filter>BlinderKitten\Source\Definitions\Actions</Filter>
     </ClInclude>
@@ -5786,6 +5807,18 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\TimingPreset\TimingPresetManagerUI.h">
       <Filter>BlinderKitten\Source\Definitions\TimingPreset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Palette\Palette.h">
+      <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Palette\PaletteManager.h">
+      <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Palette\PaletteManagerUI.h">
+      <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Palette\PaletteRemap.h">
+      <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\Tracker\Tracker.h">
       <Filter>BlinderKitten\Source\Definitions\Tracker</Filter>

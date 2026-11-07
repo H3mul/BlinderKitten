@@ -2084,3 +2084,48 @@ void Cuelist::tapTempo() {
 		tapTempoHistory.clear();
 	}
 }
+void Cuelist::refreshActiveCue() {
+	// Chasers recompute their cue at every step, so they pick the new state up at the next step.
+	if (cueA == nullptr || isChaser->boolValue() || !isCuelistOn->boolValue()) { return; }
+
+	double now = Time::getMillisecondCounterHiRes();
+	int endIndex = cues.items.indexOf(cueA);
+	int startIndex = endIndex;
+	if (endIndex >= 0 && tracking->getValue() == "cuelist") {
+		startIndex = 0;
+		for (int i = 0; i <= endIndex; i++) {
+			if (cues.items[i]->releaseCurrentTracking->boolValue()) { startIndex = i; }
+		}
+	}
+
+	Array<Cue*> toApply;
+	if (endIndex < 0) { toApply.add(cueA); }
+	else { for (int i = startIndex; i <= endIndex; i++) { toApply.add(cues.items[i]); } }
+
+	Array<SubFixtureChannel*> toUpdate;
+	isComputing.enter();
+	for (Cue* c : toApply) {
+		c->computeValues();
+		c->csComputing.enter();
+		for (auto it = c->computedValues.begin(); it != c->computedValues.end(); it.next()) {
+			SubFixtureChannel* sfc = it.getKey();
+			std::shared_ptr<ChannelValue> v = it.getValue();
+			if (sfc == nullptr || v == nullptr) { continue; }
+			v->values.set(0, -1);
+			v->TSInit = now;
+			v->TSStart = now;
+			v->TSEnd = now;
+			v->isEnded = true;
+			activeValues.set(sfc, v);
+			sfc->cs.enter();
+			// keep the cuelist's place in the stack: only a first appearance goes on top
+			if (!sfc->cuelistStack.contains(this)) { sfc->cuelistOnTopOfStack(this); }
+			sfc->cs.exit();
+			toUpdate.addIfNotAlreadyThere(sfc);
+		}
+		c->csComputing.exit();
+	}
+	isComputing.exit();
+
+	for (auto* sfc : toUpdate) { Brain::getInstance()->pleaseUpdate(sfc); }
+}

@@ -15,6 +15,7 @@
 #include "Command/MoveInBlackManager.h"
 #include "CueTimecode.h"
 #include "CueTimecodeManager.h"
+#include "Definitions/Palette/PaletteRemap.h"
 
 class Cuelist;
 
@@ -133,6 +134,9 @@ public:
     void timecodeUpdated();
 
     CueTimecodeManager timecode;
+
+    // palette ref remap for this cue's commands (A -> B)
+    BaseManager<PaletteRemap> paletteRemap;
 
 };
 

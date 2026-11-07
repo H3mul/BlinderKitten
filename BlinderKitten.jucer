@@ -356,6 +356,9 @@
                 file="Source/Definitions/Actions/MultiplicatorAction.cpp"/>
           <FILE id="C5M6jw" name="MultiplicatorAction.h" compile="0" resource="0"
                 file="Source/Definitions/Actions/MultiplicatorAction.h"/>
+          <FILE id="1l7FlL" name="PaletteAction.cpp" compile="1" resource="0"
+                file="Source/Definitions/Actions/PaletteAction.cpp"/>
+          <FILE id="YMfj5s" name="PaletteAction.h" compile="0" resource="0" file="Source/Definitions/Actions/PaletteAction.h"/>
           <FILE id="onIrJC" name="PresetAction.cpp" compile="1" resource="0"
                 file="Source/Definitions/Actions/PresetAction.cpp"/>
           <FILE id="pWJqFW" name="PresetAction.h" compile="0" resource="0" file="Source/Definitions/Actions/PresetAction.h"/>
@@ -876,6 +879,20 @@
                 file="Source/Definitions/TimingPreset/TimingPresetManagerUI.cpp"/>
           <FILE id="khpHjA" name="TimingPresetManagerUI.h" compile="0" resource="0"
                 file="Source/Definitions/TimingPreset/TimingPresetManagerUI.h"/>
+        </GROUP>
+        <GROUP id="{D6406212-C417-45C8-83FD-CA4769FAAC2C}" name="Palette">
+          <FILE id="OmeXx6" name="Palette.cpp" compile="1" resource="0"
+                file="Source/Definitions/Palette/Palette.cpp"/>
+          <FILE id="mXEHbo" name="Palette.h" compile="0" resource="0" file="Source/Definitions/Palette/Palette.h"/>
+          <FILE id="iu2Wwm" name="PaletteManager.cpp" compile="1" resource="0"
+                file="Source/Definitions/Palette/PaletteManager.cpp"/>
+          <FILE id="7NFpJA" name="PaletteManager.h" compile="0" resource="0" file="Source/Definitions/Palette/PaletteManager.h"/>
+          <FILE id="xepV8C" name="PaletteManagerUI.cpp" compile="1" resource="0"
+                file="Source/Definitions/Palette/PaletteManagerUI.cpp"/>
+          <FILE id="yVYLbI" name="PaletteManagerUI.h" compile="0" resource="0" file="Source/Definitions/Palette/PaletteManagerUI.h"/>
+          <FILE id="TiSaDS" name="PaletteRemap.cpp" compile="1" resource="0"
+                file="Source/Definitions/Palette/PaletteRemap.cpp"/>
+          <FILE id="ioArA4" name="PaletteRemap.h" compile="0" resource="0" file="Source/Definitions/Palette/PaletteRemap.h"/>
         </GROUP>
         <GROUP id="{C0C7B219-6AA1-FED5-1B9E-249CD2F5643C}" name="Tracker">
           <FILE id="tdIlIL" name="Tracker.cpp" compile="1" resource="0" file="Source/Definitions/Tracker/Tracker.cpp"/>

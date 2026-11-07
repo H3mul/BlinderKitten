@@ -23,6 +23,7 @@ juce_ImplementSingleton(ActionFactory);
 #include "Definitions/Actions/InputPanelAction.h"
 #include "Definitions/Actions/EncoderAction.h"
 #include "Definitions/Actions/MultiplicatorAction.h"
+#include "Definitions/Actions/PaletteAction.h"
 #include "Definitions/Actions/TapTempoMultiple.h"
 #include "Definitions/Actions/GenericAction.h"
 #include "Definitions/Actions/BundleAction.h"
@@ -190,6 +191,11 @@ ActionFactory::ActionFactory()
 
     defs.add(Factory<Action>::Definition::createDef("Multiplicator", "Set Mult Value", &MultiplicatorAction::create)->addParam("actionType", MultiplicatorAction::MULT_SET));
     defs.add(Factory<Action>::Definition::createDef("Multiplicator", "Set Mult Static Value", &MultiplicatorAction::create)->addParam("actionType", MultiplicatorAction::MULT_SETAT));
+    defs.add(Factory<Action>::Definition::createDef("Palette", "Set palette state", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_SET));
+    defs.add(Factory<Action>::Definition::createDef("Palette", "Next palette state", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_NEXT));
+    defs.add(Factory<Action>::Definition::createDef("Palette", "Previous palette state", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_PREVIOUS));
+    defs.add(Factory<Action>::Definition::createDef("Palette", "Shift all palettes to state", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_SHIFT_ALL));
+    defs.add(Factory<Action>::Definition::createDef("Palette", "Shift all palettes to state (momentary)", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_SHIFT_ALL_HOLD));
 
     defs.add(Factory<Action>::Definition::createDef("VirtualButton", "Virtual Button Press", &VirtualButtonAction::create)->addParam("actionType", VirtualButtonAction::VB_PRESS));
     defs.add(Factory<Action>::Definition::createDef("VirtualButton", "Virtual Buttons Page Up", &VirtualButtonAction::create)->addParam("actionType", VirtualButtonAction::VB_PAGEUP));

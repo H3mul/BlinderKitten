@@ -34,6 +34,7 @@
 #include "./Definitions/Cuelist/CuelistManager.h"
 #include "./Definitions/Programmer/ProgrammerManager.h"
 #include "./Definitions/TimingPreset/TimingPresetManager.h"
+#include "./Definitions/Palette/PaletteManager.h"
 #include "./Definitions/BKPathPreset/BKPathPresetManager.h"
 #include "./Definitions/CurvePreset/CurvePresetManager.h"
 #include "./Definitions/Effect/EffectManager.h"
@@ -292,6 +293,7 @@ BKEngine::BKEngine() :
 	addChildControllableContainer(ProgrammerManager::getInstance());
 	addChildControllableContainer(CurvePresetManager::getInstance());
 	addChildControllableContainer(TimingPresetManager::getInstance());
+	addChildControllableContainer(PaletteManager::getInstance());
 	addChildControllableContainer(BKPathPresetManager::getInstance());
 	addChildControllableContainer(EffectManager::getInstance());
 	addChildControllableContainer(StampManager::getInstance());
@@ -426,6 +428,7 @@ BKEngine::~BKEngine()
 	FixtureTypeManager::deleteInstance();
 	ChannelFamilyManager::deleteInstance();
 	TimingPresetManager::deleteInstance();
+	PaletteManager::deleteInstance();
 	BKPathPresetManager::deleteInstance();
 	CurvePresetManager::deleteInstance();
 
@@ -495,6 +498,7 @@ void BKEngine::clearInternal()
 	ChannelFamilyManager::getInstance()->clear();
 	InterfaceManager::getInstance()->clear();
 	TimingPresetManager::getInstance()->clear();
+	PaletteManager::getInstance()->clear();
 	BKPathPresetManager::getInstance()->clear();
 	CurvePresetManager::getInstance()->clear();
 	LayoutManager::getInstance()->clear();
@@ -607,6 +611,9 @@ var BKEngine::getJSONData(bool includeNonOverriden)
 
 	var tpData = TimingPresetManager::getInstance()->getJSONData(includeNonOverriden);
 	if (!tpData.isVoid() && tpData.getDynamicObject()->getProperties().size() > 0) data.getDynamicObject()->setProperty(TimingPresetManager::getInstance()->shortName, tpData);
+
+	var palData = PaletteManager::getInstance()->getJSONData(includeNonOverriden);
+	if (!palData.isVoid() && palData.getDynamicObject()->getProperties().size() > 0) data.getDynamicObject()->setProperty(PaletteManager::getInstance()->shortName, palData);
 
 	var ptData = BKPathPresetManager::getInstance()->getJSONData(includeNonOverriden);
 	if (!ptData.isVoid() && ptData.getDynamicObject()->getProperties().size() > 0) data.getDynamicObject()->setProperty(BKPathPresetManager::getInstance()->shortName, ptData);
@@ -746,6 +753,7 @@ void BKEngine::loadJSONDataInternalEngine(var data, ProgressTask* loadingTask)
 
 	tpTask->start();
 	TimingPresetManager::getInstance()->loadJSONData(data.getProperty(TimingPresetManager::getInstance()->shortName, var()));
+	PaletteManager::getInstance()->loadJSONData(data.getProperty(PaletteManager::getInstance()->shortName, var()));
 	tpTask->setProgress(1);
 	tpTask->end();
 
@@ -946,6 +954,7 @@ void BKEngine::importMochi(var data)
 	ProgrammerManager::getInstance()->addItemsFromData(data.getProperty(ProgrammerManager::getInstance()->shortName, var()));
 	CurvePresetManager::getInstance()->addItemsFromData(data.getProperty(CurvePresetManager::getInstance()->shortName, var()));
 	TimingPresetManager::getInstance()->addItemsFromData(data.getProperty(TimingPresetManager::getInstance()->shortName, var()));
+	PaletteManager::getInstance()->addItemsFromData(data.getProperty(PaletteManager::getInstance()->shortName, var()));
 	BKPathPresetManager::getInstance()->addItemsFromData(data.getProperty(BKPathPresetManager::getInstance()->shortName, var()));
 	CarouselManager::getInstance()->addItemsFromData(data.getProperty(CarouselManager::getInstance()->shortName, var()));
 	MapperManager::getInstance()->addItemsFromData(data.getProperty(MapperManager::getInstance()->shortName, var()));
@@ -1005,6 +1014,7 @@ void BKEngine::exportSelection()
 	data.getDynamicObject()->setProperty(ProgrammerManager::getInstance()->shortName, ProgrammerManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(CurvePresetManager::getInstance()->shortName, CurvePresetManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(TimingPresetManager::getInstance()->shortName, TimingPresetManager::getInstance()->getExportSelectionData());
+	data.getDynamicObject()->setProperty(PaletteManager::getInstance()->shortName, PaletteManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(BKPathPresetManager::getInstance()->shortName, BKPathPresetManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(CarouselManager::getInstance()->shortName, CarouselManager::getInstance()->getExportSelectionData());
 	data.getDynamicObject()->setProperty(MapperManager::getInstance()->shortName, MapperManager::getInstance()->getExportSelectionData());

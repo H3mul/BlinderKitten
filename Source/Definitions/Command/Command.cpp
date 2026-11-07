@@ -409,7 +409,10 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 			ChannelType* rawChan = dynamic_cast<ChannelType*>(cv->channelType->targetContainer.get());
 			ChannelFamily* rawFam = dynamic_cast<ChannelFamily*>(cv->channelType->targetContainer.get());
 
-			if (cv->presetOrValue->getValue() == "preset") {
+			if (cv->presetOrValue->getValue() == "palette") {
+				cv->resolvePalette(callingCue, pFrom, pTo);
+			}
+			else if (cv->presetOrValue->getValue() == "preset") {
 				pFrom = Brain::getInstance()->getPresetById(cv->presetIdFrom->intValue(), true);
 				pTo = Brain::getInstance()->getPresetById(cv->presetIdTo->intValue(), true);
 				if (pFrom != nullptr) {
@@ -450,7 +453,7 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 				std::shared_ptr<HashMap<ChannelType*, float>> valuesFrom = std::make_shared <HashMap<ChannelType*, float>>();
 				std::shared_ptr <HashMap<ChannelType*, float>> valuesTo = std::make_shared <HashMap<ChannelType*, float>>();
 				String test = cv->presetOrValue->stringValue();
-				if (cv->presetOrValue->stringValue() == "preset") {
+				if (cv->usesPreset()) {
 
 					std::shared_ptr < HashMap<ChannelType*, float>> tempValuesFrom = pFrom != nullptr ? pFrom->getSubFixtureValues(sf) : nullptr;
 					std::shared_ptr < HashMap<ChannelType*, float>> tempValuesTo = pTo != nullptr ? pTo->getSubFixtureValues(sf) : nullptr;
@@ -815,6 +818,15 @@ StringArray Command::getCommandAsTexts(bool useNames) {
 					}
 				}
 			}
+		}
+		else if (v->presetOrValue->getValue() == "palette") {
+			words.add("palette " + v->paletteId->stringValue() + "." + v->slotFrom->stringValue());
+			if (v->thru->getValue()) { words.add("thru " + v->slotTo->stringValue()); }
+			lastTarget = "valuePalette";
+			userCantPress();
+			userCanPressValueType = true;
+			userCanPressTimingType = true;
+			userCanHaveAnotherCommand = true;
 		}
 		else if (v->presetOrValue->getValue() == "value") {
 			ChannelType* c = dynamic_cast<ChannelType*>(v->channelType->targetContainer.get());
