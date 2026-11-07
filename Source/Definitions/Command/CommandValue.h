@@ -11,6 +11,9 @@
 #pragma once
 #include "JuceHeader.h"
 
+class Cue;
+class Preset;
+
 class CommandValue:
     public BaseItem,
     public Inspectable::InspectableListener
@@ -34,6 +37,9 @@ class CommandValue:
     BoolParameter* thru;
 
     IntParameter* presetIdTo;
+    IntParameter* paletteId;
+    IntParameter* slotFrom;
+    IntParameter* slotTo;
     FloatParameter* valueTo;
     BoolParameter* symmetry;
     BoolParameter* randomize;
@@ -44,6 +50,11 @@ class CommandValue:
     FloatParameter* stepSize;
 
     void updateDisplay();
+
+    // true for the Preset and Palette value types
+    bool usesPreset();
+    // Palette value type: resolve slotFrom/slotTo to presets (cue = owning cue for its remap, may be null)
+    void resolvePalette(Cue* cue, Preset*& from, Preset*& to);
 
     void afterLoadJSONDataInternal();
     void onContainerParameterChangedInternal(Parameter* p);

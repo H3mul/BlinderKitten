@@ -29,7 +29,8 @@ Cue::Cue(var params) :
 	tasks("Tasks"),
 	tasksOffCue("Tasks off"),
 	timingContainer("Timing"),
-	timecode("Timecode")
+	timecode("Timecode"),
+	paletteRemap("Palette remap")
 {
 	canBeDisabled = false;
 	saveAndLoadRecursiveData = true;
@@ -75,6 +76,7 @@ Cue::Cue(var params) :
 	createAfterBtn = actionsContainer.addTrigger("Create After", "Create a cue after this one with the content of the programmer");
 
 	timecode.selectItemWhenCreated = false;
+	paletteRemap.selectItemWhenCreated = false;
 	commands.selectItemWhenCreated = false;
 	tasks.selectItemWhenCreated = false;
 	tasksOffCue.selectItemWhenCreated = false;
@@ -92,6 +94,7 @@ Cue::Cue(var params) :
 	addChildControllableContainer(&timingContainer);
 	addChildControllableContainer(&moveInBlack);
 	addChildControllableContainer(&timecode);
+	addChildControllableContainer(&paletteRemap);
 
 	addChildControllableContainer(&commands);
 	addChildControllableContainer(&tasks);
@@ -398,6 +401,10 @@ void Cue::regroupCommands()
 			if (cmdOrigin->values.items[0]->presetOrValue->getValue() != cmdTest->values.items[0]->presetOrValue->getValue()) continue;
 			if (cmdOrigin->values.items[0]->presetOrValue->getValue() == "preset") {
 				if (cmdOrigin->values.items[0]->presetIdFrom->getValue() != cmdTest->values.items[0]->presetIdFrom->getValue()) continue;
+			}
+			else if (cmdOrigin->values.items[0]->presetOrValue->getValue() == "palette") {
+				if (cmdOrigin->values.items[0]->paletteId->getValue() != cmdTest->values.items[0]->paletteId->getValue()) continue;
+				if (cmdOrigin->values.items[0]->slotFrom->getValue() != cmdTest->values.items[0]->slotFrom->getValue()) continue;
 			}
 			else if (cmdOrigin->values.items[0]->presetOrValue->getValue() == "value") {
 				if (cmdOrigin->values.items[0]->valueFrom->getValue() != cmdTest->values.items[0]->valueFrom->getValue()) continue;

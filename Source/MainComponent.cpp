@@ -13,6 +13,7 @@
 #include "Definitions/Programmer/ProgrammerManagerUI.h"
 #include "Definitions/CurvePreset/CurvePresetManagerUI.h"
 #include "Definitions/TimingPreset/TimingPresetManagerUI.h"
+#include "Definitions/Palette/PaletteManagerUI.h"
 #include "Definitions/BKPathPreset/BKPathPresetManagerUI.h"
 #include "Definitions/Effect/EffectManagerUI.h"
 #include "Definitions/Stamp/StampManagerUI.h"
@@ -125,6 +126,7 @@ void MainContentComponent::init()
     ShapeShifterFactory::getInstance()->defs.add(new ShapeShifterDefinition("Groups", &GroupManagerUI::create));
     ShapeShifterFactory::getInstance()->defs.add(new ShapeShifterDefinition("Presets", &PresetManagerUI::create));
     ShapeShifterFactory::getInstance()->defs.add(new ShapeShifterDefinition("Timing Presets", &TimingPresetManagerUI::create));
+    ShapeShifterFactory::getInstance()->defs.add(new ShapeShifterDefinition("Palettes", &PaletteManagerUI::create));
     ShapeShifterFactory::getInstance()->defs.add(new ShapeShifterDefinition("Path Presets", &BKPathPresetManagerUI::create));
     ShapeShifterFactory::getInstance()->defs.add(new ShapeShifterDefinition("Curve Presets", &CurvePresetManagerUI::create));
     ShapeShifterFactory::getInstance()->defs.add(new ShapeShifterDefinition("Cuelists", &CuelistManagerUI::create));

@@ -94,7 +94,10 @@ void CarouselStep::computeValues(Array<SubFixture*> &SubFixtures) {
 		bool symValues = cv->symmetry->getValue();
 		Preset* pFrom = nullptr;
 		Preset* pTo = nullptr;
-		if (cv->presetOrValue->getValue() == "preset") {
+		if (cv->presetOrValue->getValue() == "palette") {
+			cv->resolvePalette(nullptr, pFrom, pTo);
+		}
+		else if (cv->presetOrValue->getValue() == "preset") {
 			pFrom = Brain::getInstance()->getPresetById(cv->presetIdFrom->getValue(), true);
 			pTo = Brain::getInstance()->getPresetById(cv->presetIdTo->getValue(), true);
 			if (pFrom != nullptr) {
@@ -115,7 +118,7 @@ void CarouselStep::computeValues(Array<SubFixture*> &SubFixtures) {
 			std::shared_ptr < HashMap<ChannelType*, float>> valuesFrom = std::make_shared<HashMap<ChannelType*, float>>();
 			std::shared_ptr < HashMap<ChannelType*, float>> valuesTo = std::make_shared<HashMap<ChannelType*, float>>();
 			String test = cv->presetOrValue->getValue();
-			if (cv->presetOrValue->getValue() == "preset") {
+			if (cv->usesPreset()) {
 
 				std::shared_ptr < HashMap<ChannelType*, float>> tempValuesFrom = pFrom != nullptr ? pFrom->getSubFixtureValues(SubFixtures[indexFixt]) : nullptr;
 				std::shared_ptr < HashMap<ChannelType*, float>> tempValuesTo = pTo != nullptr ? pTo->getSubFixtureValues(SubFixtures[indexFixt]) : nullptr;

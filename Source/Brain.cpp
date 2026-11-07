@@ -21,6 +21,7 @@
 #include "Definitions/Programmer/Programmer.h"
 #include "Definitions/CurvePreset/CurvePreset.h"
 #include "Definitions/TimingPreset/TimingPreset.h"
+#include "Definitions/Palette/Palette.h"
 #include "Definitions/BKPathPreset/BKPathPreset.h"
 #include "Definitions/Effect/Effect.h"
 #include "Definitions/Stamp/Stamp.h"
@@ -785,6 +786,44 @@ void Brain::unregisterTimingPreset(TimingPreset* c) {
     ScopedLock lock(usingLibraries);
     if (timingPresets.containsValue(c)) {
         timingPresets.removeValue(c);
+    }
+}
+
+void Brain::registerPalette(Palette* p, int id, bool swap) {
+    ScopedLock lock(usingLibraries);
+    int askedId = id;
+    if (palettes.getReference(id) == p) { return; }
+    if (palettes.containsValue(p)) {
+        palettes.removeValue(p);
+    }
+    bool idIsOk = false;
+    if (swap && p->registeredId != 0) {
+        if (palettes.contains(id) && palettes.getReference(id) != nullptr) {
+            Palette* presentItem = palettes.getReference(id);
+            unregisterPalette(p);
+            registerPalette(presentItem, p->registeredId, false);
+        }
+    }
+    while (!idIsOk) {
+        if (palettes.contains(id) && palettes.getReference(id) != nullptr) {
+            id++;
+        }
+        else {
+            idIsOk = true;
+        }
+    }
+    palettes.set(id, p);
+    p->id->setValue(id);
+    p->registeredId = id;
+    if (id != askedId) {
+    }
+}
+
+
+void Brain::unregisterPalette(Palette* c) {
+    ScopedLock lock(usingLibraries);
+    if (palettes.containsValue(c)) {
+        palettes.removeValue(c);
     }
 }
 
@@ -2406,4 +2445,42 @@ void Brain::replacePresetIdEverywhere(int from, int to)
         }
     }
     usingLibraries.exit();
+}
+
+Palette* Brain::getPaletteById(int id) {
+    if (palettes.contains(id)) {
+        return palettes.getReference(id);
+    }
+    return nullptr;
+}
+
+void Brain::paletteChanged() {
+    if (paletteRefreshPending.exchange(true)) { return; }
+    MessageManager::callAsync([this]() {
+        paletteRefreshPending = false;
+        refreshPaletteUsers();
+    });
+}
+
+void Brain::refreshPaletteUsers() {
+    Array<Cuelist*> cl;
+    for (auto it = cuelists.begin(); it != cuelists.end(); it.next()) {
+        if (it.getValue() != nullptr && it.getValue()->isCuelistOn->boolValue()) cl.add(it.getValue());
+    }
+    for (auto* c : cl) c->refreshActiveCue();
+
+    Array<Carousel*> ca;
+    for (auto it = carousels.begin(); it != carousels.end(); it.next()) {
+        if (it.getValue() != nullptr && it.getValue()->isOn) ca.add(it.getValue());
+    }
+    for (auto* c : ca) c->computeData();
+
+    Array<Mapper*> ma;
+    for (auto it = mappers.begin(); it != mappers.end(); it.next()) {
+        if (it.getValue() != nullptr && it.getValue()->isOn) ma.add(it.getValue());
+    }
+    for (auto* m : ma) m->computeData();
+
+    Programmer* prog = UserInputManager::getInstance()->getProgrammer(false);
+    if (prog != nullptr) pleaseUpdate(prog);
 }
