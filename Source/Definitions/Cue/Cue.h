@@ -159,6 +159,8 @@ public:
     BaseManager<CueReuse> moreReuse;
     Array<Cue*> getReuseSources(Array<bool>* hostTiming = nullptr);
     // true if this cue, or a cue it includes, has a palette ref to one of these palette ids
+    // this cue, then the cues it includes (depth first, cycle-safe): their palette remaps apply to this cue, first match wins
+    Array<Cue*> getRemapCues(Array<Cue*> history = Array<Cue*>());
     bool refsPalettes(const Array<int>& paletteIds, Array<Cue*> history = Array<Cue*>());
 
 };
