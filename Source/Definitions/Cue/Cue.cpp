@@ -626,7 +626,7 @@ CueReuse::CueReuse(var params) :
 	cue->targetType = TargetParameter::CONTAINER;
 	cue->maxDefaultSearchLevel = 2;
 	cue->typesFilter = StringArray("Cue");
-	useHostTiming = addBoolParameter("Use host timing", "Use the cuelist timing (preset, raw or filtered) of the cue that includes this one, instead of the cuelist this cue belongs to", false);
+	useHostTiming = addBoolParameter("Use host timing", "Use the cuelist timing (preset, raw or filtered) of the cue that includes this one, instead of the cuelist this cue belongs to", true);
 }
 
 void CueReuse::onContainerParameterChangedInternal(Parameter* p)
