@@ -34,8 +34,8 @@ Actions (category **Palette**, usable on virtual buttons, faders and cue tasks):
 | Next / Previous palette state | Step one palette, wrapping (press only). |
 | Shift all palettes to state | Every palette that has a state with that exact name goes to it (press only). |
 | Shift all palettes to state (momentary) | Press shifts, release returns each palette to its previous state. Overlapping momentary buttons restore correctly in either release order, and a palette another action changed during the hold stays as set. |
-| Blend palette states (fader) | A fader crossfades one palette (or all with id 0) between state A and state B. |
-| Blend all palettes to state (fader) | A fader crossfades every palette from the state it was in when the fader left 0 to the named state. At 100% the named state is committed, back at 0 each palette returns. |
+| Blend palette states (fader) | A fader blends one palette (or all with id 0) toward state B. State A is the base while this fader is the palette's first one up; it is ignored when other faders are already up. |
+| Blend all palettes to state (fader) | A fader blends every palette that has the named state toward it. Back at 0 each palette shows its base state again. |
 
 A state change reaches running cues, carousels and mappers that use the palette without re-triggering them. Only consumers that reference the palette are re-resolved.
 
@@ -44,6 +44,12 @@ A state change reaches running cues, carousels and mappers that use the palette 
 By default a state change is instant. Set **Fade time** (seconds) on a palette to fade between states, or set **Timing preset** to a timing preset id to use that preset's fade value (it wins over Fade time, and one timing preset can drive several palettes). Only the preset's base fade is used, not its delay, thru, symmetry, random or curves.
 
 A state change during a fade jumps to the previous target state and fades from there. Colours between two states are interpolated per channel (a channel in only one state, or a release, switches at the midpoint).
+
+## Blend layers
+
+Each blend fader owns one layer on the palette: a target state and a weight (the fader value). The palette shows its base state plus all layers, mixed like springs: each fader pulls toward its state with strength equal to its value, and the base pulls with strength 1 minus the highest fader value. The result does not depend on which fader moved first. One fader at 50% gives half base, half target; base state 1 with two faders at 50% toward states 2 and 3 gives a third of each state. Two faders at 100% give half of each target, the base no longer contributes. A fader back at 0 removes its layer.
+
+Set, Next, Previous, shift by name and momentary shifts change the **base** and leave the faders' layers on top (a timed fade animates the base, so nothing jumps when it ends). **Current state** shows the dominant state, the one with the largest share; Next and Previous act from it. Layers are not saved: a show saved mid-blend reloads in the dominant state. Per-channel rule with several states: a channel appears when the states that have it hold at least half of the mix, and is released when release holds at least half of those.
 
 ## Default preset
 

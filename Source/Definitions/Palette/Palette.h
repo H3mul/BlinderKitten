@@ -62,18 +62,24 @@ public:
     IntParameter* currentState;   // 1-based
     PaletteStateManager states;
 
-    // v2 fade. Runtime only (not saved, plain members so the live-edit feedback hook never sees them).
+    // v3 base + blend layers. Runtime only (not saved, plain members so the live-edit feedback hook never sees them).
     FloatParameter* fadeTime;     // seconds, 0 = snap
     IntParameter* timingPresetId; // 0 = none; a found timing preset's fade wins over fadeTime
-    int shownState = 0;           // currentState as of the last change
-    int fromState = 0;            // state fading out, 0 = no fade
-    int blendTo = 0;              // state fading in while blending
-    float blend = 1.f;            // 0 = fromState, 1 = blendTo
+    struct Layer { int ownerId; int state; float weight; int seq; };
+    Array<Layer> layers;          // fader layers on top of the base
+    int baseState = 0;            // 0 = not set yet, follows currentState
+    int baseFrom = 0;             // timed fade of the base: state fading out, 0 = no fade
+    float baseT = 1.f;            // 0 = baseFrom, 1 = baseState
     bool fading = false;
-    bool manualWrite = false;     // currentState written by a blend fader
+    bool manualWrite = false;     // currentState written as the dominant state (not an external change)
     double fadeStart = 0, fadeLen = 0;
     float getFadeSeconds();
-    bool isBlending() const { return fromState > 0 && blend < 1.f; }
+    int getBase() { return baseState > 0 ? baseState : currentState->intValue(); }
+    // Spring mix: (state, share) with the shares summing to 1, aggregated per state.
+    Array<std::pair<int, float>> getBlendStack();
+    // State with the largest share (base counts as its target state); ties: layer over base, newest layer, lower state.
+    int getDominantState();
+    bool isBlending() { return !layers.isEmpty() || (baseFrom > 0 && baseT < 1.f); }
     int getPresetIdForState(int state, int slot);
 
     void onContainerParameterChangedInternal(Parameter* p) override;
@@ -85,7 +91,7 @@ public:
     StringArray getSlotNameList() const;
     bool hasSlot(int slot) const;               // slot is 1-based
     int getPresetId(int slot);                  // preset id of the current state, 0 if none
-    void setStateIndex(int oneBased);           // clamps to the existing states
+    void setStateIndex(int oneBased);           // external change: acts on the base, clamps to the existing states
     int findStateIndex(const String& name);     // 1-based, 0 if no state has this name
 
     // Palette a ref resolves to, applying the cue's remap with fall-through (nullptr if none).

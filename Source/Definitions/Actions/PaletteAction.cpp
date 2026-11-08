@@ -19,6 +19,9 @@ PaletteAction::PaletteAction(var params) :
     if (actionType == PAL_SHIFT_ALL_HOLD) {
         holdId = PaletteRuntime::beginHold();
     }
+    if (actionType == PAL_BLEND || actionType == PAL_BLEND_ALL) {
+        ownerId = PaletteRuntime::newOwnerId();
+    }
     if (actionType == PAL_SET) {
         stateIndex = addIntParameter("State", "Position of the state to select (1 = first)", 1, 1);
     }
@@ -29,6 +32,7 @@ PaletteAction::PaletteAction(var params) :
 
 PaletteAction::~PaletteAction()
 {
+    if (ownerId > 0) PaletteRuntime::clearOwner(ownerId);
 }
 
 void PaletteAction::triggerInternal()
@@ -50,18 +54,10 @@ void PaletteAction::shiftAll()
 void PaletteAction::blendAll(float value)
 {
     String name = stateName->stringValue();
-    if (value > 0 && blendBase.size() == 0) { // fader left 0: record every palette that has the named state
-        for (auto* p : PaletteManager::getInstance()->items) {
-            if (p->findStateIndex(name) > 0) blendBase.set(p->registeredId, p->currentState->intValue());
-        }
-    }
-    for (HashMap<int, int>::Iterator it(blendBase); it.next();) {
-        Palette* p = Brain::getInstance()->getPaletteById(it.getKey()); // may have been deleted meanwhile
-        if (p == nullptr) continue;
+    for (auto* p : PaletteManager::getInstance()->items) {
         int b = p->findStateIndex(name);
-        if (b > 0) PaletteRuntime::setBlend(p, it.getValue(), b, value);
+        if (b > 0) PaletteRuntime::setLayer(p, ownerId, b, value);
     }
-    if (value <= 0) blendBase.clear();
 }
 
 void PaletteAction::setValueInternal(var value, String origin, int incrementIndex, bool isRelative)
@@ -86,7 +82,7 @@ void PaletteAction::setValueInternal(var value, String origin, int incrementInde
 
     if (actionType == PAL_BLEND) { // fader: every value counts
         for (auto* p : PaletteManager::getInstance()->items) {
-            if (paletteId->intValue() == 0 || paletteId->intValue() == p->registeredId) PaletteRuntime::setBlend(p, stateA->intValue(), stateB->intValue(), val);
+            if (paletteId->intValue() == 0 || paletteId->intValue() == p->registeredId) PaletteRuntime::setLayer(p, ownerId, stateB->intValue(), val, stateA->intValue());
         }
         return;
     }

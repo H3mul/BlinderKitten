@@ -57,11 +57,10 @@ class CommandValue:
     bool usesPreset();
     // Palette value type: resolve slotFrom/slotTo to presets (cue = owning cue for its remap, may be null)
     void resolvePalette(Cue* cue, Preset*& from, Preset*& to);
-    // While a palette fades: mix the previous state's values into the current ones (no-op otherwise). Call after the preset values are filled.
+    // While a palette blends (layers or a timed fade): replace the values with the share-weighted mix of the stack (no-op otherwise). Call after the preset values are filled.
     void applyPaletteBlend(SubFixture* sf, HashMap<ChannelType*, float>& valuesFrom, HashMap<ChannelType*, float>& valuesTo);
-    Preset* blendPrevFrom = nullptr;
-    Preset* blendPrevTo = nullptr;
-    float blendAmount = 1.f;
+    typedef Array<std::pair<Preset*, float>> PresetStack; // preset (may be null) and share, shares sum to 1
+    PresetStack stackFrom, stackTo;                        // empty = no blend
 
     void afterLoadJSONDataInternal();
     void onContainerParameterChangedInternal(Parameter* p);

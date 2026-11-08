@@ -24,8 +24,11 @@ class PaletteRuntime :
 public:
     // A palette's currentState changed: start the fade (or snap) and refresh the consumers that ref it.
     static void stateChanged(Palette* p);
-    // Fader crossfade: value 0..1 between two states, no timed fade; currentState follows the nearer end.
-    static void setBlend(Palette* p, int stateA, int stateB, float value);
+    // Fader layers (v3): weight 0 removes the owner's layer. baseIfFirst > 0 sets the base when this creates the palette's first layer.
+    static int newOwnerId();
+    static void setLayer(Palette* p, int ownerId, int targetState, float weight, int baseIfFirst = 0);
+    static void clearLayer(Palette* p, int ownerId);
+    static void clearOwner(int ownerId); // every palette: the owner is gone
 
     // Preset renumbered / presets added or removed: keep slots and slot labels in step.
     static void presetRenumbered(int from, int to);
@@ -57,9 +60,11 @@ private:
     Array<int> fading;
     Array<Hold> holds;
     int nextHold = 0;
+    int nextOwner = 0, nextLayerSeq = 0;
     std::atomic<bool> flushPending{ false };
 
     void markPending(Palette* p);
+    void layersChanged(Palette* p);
     void flush();
     void timerCallback() override;
     std::shared_ptr<Consumers> getConsumers(Palette* p);
