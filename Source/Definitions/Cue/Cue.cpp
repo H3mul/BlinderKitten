@@ -12,6 +12,7 @@
 #include "Cue.h"
 #include "../Cuelist/Cuelist.h"
 #include "../../Brain.h"
+#include "../Command/CommandValue.h"
 #include "UserInputManager.h"
 #include "BKEngine.h"
 #include "UI/CuelistSheet/CuelistSheet.h"
@@ -646,6 +647,21 @@ Array<Cue*> Cue::getReuseSources(Array<bool>* hostTiming)
 		if (Cue* c = dynamic_cast<Cue*>(r->cue->targetContainer.get())) { ret.add(c); if (hostTiming) hostTiming->add(r->useHostTiming->boolValue()); }
 	}
 	return ret;
+}
+
+bool Cue::refsPalettes(const Array<int>& paletteIds, Array<Cue*> history)
+{
+	if (history.contains(this)) return false;
+	history.add(this);
+	for (auto* cmd : commands.items) {
+		for (auto* cv : cmd->values.getItemsWithType<CommandValue>()) {
+			if (cv->presetOrValue->getValueData() == "palette" && paletteIds.contains(cv->paletteId->intValue())) return true;
+		}
+	}
+	for (Cue* src : getReuseSources()) {
+		if (src->refsPalettes(paletteIds, history)) return true;
+	}
+	return false;
 }
 
 Array<Task*> Cue::getTasks()

@@ -158,6 +158,8 @@ public:
     // more source cues after `reuseCue`; later sources win per channel, own commands win over all
     BaseManager<CueReuse> moreReuse;
     Array<Cue*> getReuseSources(Array<bool>* hostTiming = nullptr);
+    // true if this cue, or a cue it includes, has a palette ref to one of these palette ids
+    bool refsPalettes(const Array<int>& paletteIds, Array<Cue*> history = Array<Cue*>());
 
 };
 

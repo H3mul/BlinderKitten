@@ -8,15 +8,6 @@
 #include "../ChannelValue.h"
 #include "../../Brain.h"
 
-static bool cueRefsPalette(Cue* cue, const Array<int>& paletteIds)
-{
-	for (auto* cmd : cue->commands.items) {
-		for (auto* cv : cmd->values.getItemsWithType<CommandValue>()) {
-			if (cv->presetOrValue->getValueData() == "palette" && paletteIds.contains(cv->paletteId->intValue())) return true;
-		}
-	}
-	return false;
-}
 
 void Cuelist::refreshPaletteRefs(const Array<int>& paletteIds)
 {
@@ -39,7 +30,7 @@ void Cuelist::refreshPaletteRefs(const Array<int>& paletteIds)
 	Array<SubFixtureChannel*> toUpdate;
 	isComputing.enter();
 	for (Cue* c : toApply) {
-		if (!cueRefsPalette(c, paletteIds)) continue;
+		if (!c->refsPalettes(paletteIds)) continue;
 		c->computeValues();
 		c->csComputing.enter();
 		for (auto it = c->computedValues.begin(); it != c->computedValues.end(); it.next()) {
