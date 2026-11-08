@@ -20,7 +20,7 @@ PaletteRemap::~PaletteRemap()
 
 void PaletteRemap::onContainerParameterChangedInternal(Parameter* p)
 {
-	if (p == fromId || p == toId) updateNote();
+	if (p == fromId || p == toId) { updateNote(); Brain::getInstance()->liveEditChanged(); }
 }
 
 void PaletteRemap::afterLoadJSONDataInternal()

@@ -109,6 +109,7 @@ void Preset::onContainerParameterChangedInternal(Parameter* p) {
 
 void Preset::onControllableFeedbackUpdateInternal(ControllableContainer* cc, Controllable* c) {
 	checkIfProgrammerNeedUpdate();
+	Brain::getInstance()->liveEditChanged();
 	int defaultPresetId = dynamic_cast<BKEngine*>(Engine::mainEngine)->defaultPresetId->intValue();
 	if (defaultPresetId == id->intValue()) {
 		Brain::getInstance()->defaultValuesNeedRefresh = true;

@@ -135,6 +135,7 @@ Cuelist::Cuelist(var params) :
 
 	offIfOverwritten = addBoolParameter("Off If Overwritten", "If checked, this cuelist will kill itself if all parameter are overwritten by other cuelists", false);
 
+	liveEdit = addBoolParameter("Live edit", "When on, editing a preset, palette or command used by the playing cue updates the output immediately. When off, edits apply at the next trigger.", false);
 	tracking = addEnumParameter("Tracking", "Tracking will keep the values of previous cues enabled");
 	tracking->addOption("None", "none");
 	tracking->addOption("Cuelist order", "cuelist");
@@ -2085,13 +2086,12 @@ void Cuelist::tapTempo() {
 	}
 }
 void Cuelist::refreshActiveCue() {
-	// Chasers recompute their cue at every step, so they pick the new state up at the next step.
-	if (cueA == nullptr || isChaser->boolValue() || !isCuelistOn->boolValue()) { return; }
+	if (cueA == nullptr || !isCuelistOn->boolValue()) { return; }
 
 	double now = Time::getMillisecondCounterHiRes();
 	int endIndex = cues.items.indexOf(cueA);
 	int startIndex = endIndex;
-	if (endIndex >= 0 && tracking->getValue() == "cuelist") {
+	if (endIndex >= 0 && !isChaser->boolValue() && tracking->getValue() == "cuelist") { // a chaser step releases tracking
 		startIndex = 0;
 		for (int i = 0; i <= endIndex; i++) {
 			if (cues.items[i]->releaseCurrentTracking->boolValue()) { startIndex = i; }

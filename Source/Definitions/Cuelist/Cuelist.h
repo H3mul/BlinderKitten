@@ -44,6 +44,7 @@ public:
     
     ControllableContainer chaserOptions;
     BoolParameter* isChaser;
+    BoolParameter* liveEdit; // edits to what the active cue plays refresh it live
     EnumParameter* chaserDirection;
     FloatParameter* chaserSpeed;
     FloatParameter* chaserInFade;

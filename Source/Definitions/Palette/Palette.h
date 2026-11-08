@@ -62,6 +62,7 @@ public:
     PaletteStateManager states;
 
     void onContainerParameterChangedInternal(Parameter* p) override;
+    void onControllableFeedbackUpdateInternal(ControllableContainer* cc, Controllable* c) override;
     void afterLoadJSONDataInternal() override;
     void updateName();
     void applySlotLabels();

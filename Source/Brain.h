@@ -211,7 +211,10 @@ public:
     Palette* getPaletteById(int id);
     // A palette changed state: running cuelists, carousels, mappers and the programmer re-resolve (coalesced, message thread).
     void paletteChanged();
-    void refreshPaletteUsers();
+    void refreshPaletteUsers(bool onlyLive = false);
+    // Something a cue plays was edited: cuelists with liveEdit on (and carousels/mappers while any is armed) re-resolve, coalesced.
+    void liveEditChanged();
+    std::atomic<bool> liveRefreshPending{ false };
     std::atomic<bool> paletteRefreshPending{ false };
     Tempo* getTempoById(int id);
     BKPathPreset* getBKPathPresetById(int id, bool followIfAnother = false);

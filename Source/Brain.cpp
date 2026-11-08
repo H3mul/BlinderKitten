@@ -2510,11 +2510,25 @@ void Brain::paletteChanged() {
     });
 }
 
-void Brain::refreshPaletteUsers() {
+void Brain::liveEditChanged() {
+    if (liveRefreshPending.exchange(true)) { return; }
+    MessageManager::callAsync([this]() {
+        liveRefreshPending = false;
+        refreshPaletteUsers(true);
+    });
+}
+
+void Brain::refreshPaletteUsers(bool onlyLive) {
     Array<Cuelist*> cl;
+    bool anyLive = false;
     for (auto it = cuelists.begin(); it != cuelists.end(); it.next()) {
-        if (it.getValue() != nullptr && it.getValue()->isCuelistOn->boolValue()) cl.add(it.getValue());
+        Cuelist* c = it.getValue();
+        if (c == nullptr) continue;
+        if (c->liveEdit->boolValue()) anyLive = true;
+        if (c->isCuelistOn->boolValue() && (!onlyLive || c->liveEdit->boolValue())) cl.add(c);
     }
+    // ponytail: carousels/mappers have no owner link, so any armed cuelist arms them all
+    if (onlyLive && !anyLive) return;
     for (auto* c : cl) c->refreshActiveCue();
 
     Array<Carousel*> ca;

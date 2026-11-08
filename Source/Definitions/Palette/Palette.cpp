@@ -95,6 +95,12 @@ void Palette::onContainerParameterChangedInternal(Parameter* p)
 	}
 }
 
+void Palette::onControllableFeedbackUpdateInternal(ControllableContainer* cc, Controllable* c)
+{
+	// currentState already refreshes everything through paletteChanged()
+	if (c != currentState) Brain::getInstance()->liveEditChanged();
+}
+
 void Palette::afterLoadJSONDataInternal()
 {
 	BaseItem::afterLoadJSONDataInternal();

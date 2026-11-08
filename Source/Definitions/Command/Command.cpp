@@ -644,6 +644,8 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 }
 
 void Command::onControllableFeedbackUpdate(ControllableContainer* cc, Controllable* c) {
+	// only commands stored in a cue drive a live refresh, not programmer typing
+	if ((&selection == cc || &values == cc) && parentContainer != nullptr && dynamic_cast<Cue*>(parentContainer->parentContainer.get()) != nullptr) { Brain::getInstance()->liveEditChanged(); }
 	if (&selection == cc) {
 		computeValues();
 		UserInputManager::getInstance()->commandSelectionChanged(this);
