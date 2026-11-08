@@ -208,6 +208,7 @@ public:
     void flash(bool on, bool timing, bool swop = false);
     bool userPressedGo = false;
     bool isFlashing = false;
+    bool flashStartedCuelist = false;
     bool isSwopping = false;
     bool wannaOffFlash = false;
 
