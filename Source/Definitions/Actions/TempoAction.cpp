@@ -27,7 +27,7 @@ TempoAction::TempoAction(var params) :
         atValue = addFloatParameter("BPM", "new bpm of the tempo", 120, 1);
     }
 
-    if (actionType == TEMPO_SCALEAT) {
+    if (actionType == TEMPO_SCALEAT || actionType == TEMPO_SCALEAT_HOLD) {
         atValue = addFloatParameter("Scale", "new scale of the tempo", 1, 0.0625f);
     }
 }
@@ -53,6 +53,23 @@ void TempoAction::setValueInternal(var value, String origin, int incrementIndex,
         if (incrementOk || abs(target->bpm->floatValue() - mapped) < 1) {
             target->bpm->setValue(mapped);
             validIncrementIndex = incrementIndex + 1;
+        }
+        return;
+    }
+
+    if (actionType == TEMPO_DOUBLE_HOLD || actionType == TEMPO_HALF_HOLD || actionType == TEMPO_SCALEAT_HOLD) {
+        // momentary: apply on press, reset scale to 1 on release (same as Reset scale, so overlapped holds always end at 1)
+        if (val == 1 && !held) {
+            held = true;
+            float s = target->scale->floatValue();
+            if (actionType == TEMPO_DOUBLE_HOLD) s *= 2;
+            else if (actionType == TEMPO_HALF_HOLD) s = jmax(0.0625f, s / 2);
+            else s = (float)atValue->getValue();
+            target->scale->setValue(s);
+        }
+        else if (val == 0 && held) {
+            held = false;
+            target->scale->setValue(1);
         }
         return;
     }
