@@ -206,6 +206,9 @@ ActionFactory::ActionFactory()
     defs.add(Factory<Action>::Definition::createDef("Tempo", "Set scale static", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_SCALEAT));
     defs.add(Factory<Action>::Definition::createDef("Tempo", "Double scale", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_DOUBLE));
     defs.add(Factory<Action>::Definition::createDef("Tempo", "Half scale", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_HALF));
+    defs.add(Factory<Action>::Definition::createDef("Tempo", "Double scale (momentary)", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_DOUBLE_HOLD));
+    defs.add(Factory<Action>::Definition::createDef("Tempo", "Half scale (momentary)", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_HALF_HOLD));
+    defs.add(Factory<Action>::Definition::createDef("Tempo", "Set scale static (momentary)", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_SCALEAT_HOLD));
     defs.add(Factory<Action>::Definition::createDef("Tempo", "Reset scale", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_RESETSCALE));
     defs.add(Factory<Action>::Definition::createDef("Tempo", "Downbeat", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_DOWNBEAT));
 
