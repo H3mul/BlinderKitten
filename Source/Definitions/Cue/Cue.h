@@ -19,6 +19,22 @@
 
 class Cuelist;
 
+// One extra source cue for "Use cue commands": applied after the main source, in list order, before the cue's own commands.
+class CueReuse :
+    public BaseItem
+{
+public:
+    CueReuse(var params = var());
+    ~CueReuse() {}
+
+    TargetParameter* cue;
+    BoolParameter* useHostTiming;
+
+    void onContainerParameterChangedInternal(Parameter* p) override;
+    String getTypeString() const override { return "CueReuse"; }
+    static CueReuse* create(var params) { return new CueReuse(params); }
+};
+
 class Cue:
     public BaseItem,
     public ChangeBroadcaster
@@ -80,7 +96,8 @@ public:
     void controllableStateChanged(Controllable* c) override;
 
     void computeValues();
-    void computeValues(Array<Cue*> history, Cue* callingCue);
+    // cuelistOverride: cuelist whose timing the commands use instead of this cue's own cuelist (host timing)
+    void computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOverride = nullptr);
     void update(double now);
     void go();
     void go(float forcedDelay, float forcedFade);
@@ -137,6 +154,12 @@ public:
 
     // palette ref remap for this cue's commands (A -> B)
     BaseManager<PaletteRemap> paletteRemap;
+
+    // more source cues after `reuseCue`; later sources win per channel, own commands win over all
+    BaseManager<CueReuse> moreReuse;
+    Array<Cue*> getReuseSources(Array<bool>* hostTiming = nullptr);
+    // true if this cue, or a cue it includes, has a palette ref to one of these palette ids
+    bool refsPalettes(const Array<int>& paletteIds, Array<Cue*> history = Array<Cue*>());
 
 };
 

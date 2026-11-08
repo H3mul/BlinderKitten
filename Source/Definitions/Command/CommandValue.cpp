@@ -128,7 +128,8 @@ void CommandValue::resolvePalette(Cue* cue, Preset*& from, Preset*& to) {
         out.clear();
         if (p == nullptr) return;
         auto stack = p->getBlendStack();
-        if (stack.size() < 2) return;
+        // one entry is the plain current state, unless the base fade is at its very start (only the old state has a share)
+        if (stack.size() < 2 && (stack.isEmpty() || stack[0].first == p->currentState->intValue())) return;
         for (auto& e : stack) {
             Preset* pr = b->getPresetById(p->getPresetIdForState(e.first, slot), true);
             if (pr != nullptr) pr->computeValues();

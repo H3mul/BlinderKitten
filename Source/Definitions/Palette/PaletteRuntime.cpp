@@ -178,6 +178,14 @@ std::shared_ptr<PaletteRuntime::Consumers> PaletteRuntime::scan(Palette* p)
 			}
 		}
 	}
+	// a cue that includes another cue's palette refs is a consumer too, whichever cuelist owns the refs
+	for (auto it = b->cuelists.begin(); it != b->cuelists.end(); it.next()) {
+		Cuelist* cl = it.getValue();
+		if (cl == nullptr) continue;
+		for (auto* cue : cl->cues.items) {
+			if (cue->refsPalettes(c->paletteIds)) { c->cuelists.addIfNotAlreadyThere(cl); break; }
+		}
+	}
 
 	b->usingLibraries.enter();
 	for (auto* cv : b->allCommandValues) {
