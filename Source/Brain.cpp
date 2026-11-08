@@ -1333,6 +1333,20 @@ void Brain::grandMasterChanged()
     }
 }
 
+void Brain::setEffectMaster(float value, bool all, int fromId, int toId)
+{
+    value = jlimit(0.f, 1.f, value);
+    if (all) effectMaster = value;
+    for (HashMap<int, Effect*>::Iterator it(effects); it.next();) {
+        int id = it.getKey();
+        if (!all && (id < fromId || id > toId)) continue;
+        Effect* e = it.getValue();
+        if (!all) e->masterMult = value;
+        e->pleaseComputeIfRunning();
+    }
+    virtualFadersNeedUpdate = true;
+}
+
 // utils
 
 float Brain::symPosition(int index, int nElements) {

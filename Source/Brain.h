@@ -198,6 +198,11 @@ public:
 
     void grandMasterChanged();
 
+    // Effect master: global multiplier on effect size (transient, never saved)
+    float effectMaster = 1;
+    String effectMasterController = "";
+    void setEffectMaster(float value, bool all, int fromId, int toId);
+
     //void updateChannel(SubFixtureChannel* fc);
 
     SubFixture* getSubFixtureById(int id);
