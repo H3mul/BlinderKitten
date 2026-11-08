@@ -175,6 +175,7 @@ void MainContentComponent::init()
     ShapeShifterManager::getInstance()->isInViewSubMenu.set("Fixtures", "Lists");
     ShapeShifterManager::getInstance()->isInViewSubMenu.set("Groups", "Lists");
     ShapeShifterManager::getInstance()->isInViewSubMenu.set("Presets", "Lists");
+    ShapeShifterManager::getInstance()->isInViewSubMenu.set("Palettes", "Lists");
     ShapeShifterManager::getInstance()->isInViewSubMenu.set("Timing Presets", "Lists");
     ShapeShifterManager::getInstance()->isInViewSubMenu.set("Path Presets", "Lists");
     ShapeShifterManager::getInstance()->isInViewSubMenu.set("Curve Presets", "Lists");
