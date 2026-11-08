@@ -118,7 +118,7 @@ void Palette::onControllableFeedbackUpdateInternal(ControllableContainer* cc, Co
 void Palette::afterLoadJSONDataInternal()
 {
 	BaseItem::afterLoadJSONDataInternal();
-	shownState = currentState->intValue();
+	baseState = currentState->intValue();
 	applySlotLabels();
 }
 
@@ -155,7 +155,7 @@ bool Palette::hasSlot(int slot) const
 
 int Palette::getPresetId(int slot)
 {
-	return getPresetIdForState(isBlending() && blendTo > 0 ? blendTo : currentState->intValue(), slot);
+	return getPresetIdForState(currentState->intValue(), slot);
 }
 
 int Palette::getPresetIdForState(int state, int slot)
@@ -179,7 +179,51 @@ float Palette::getFadeSeconds()
 void Palette::setStateIndex(int oneBased)
 {
 	int n = jmax(1, states.items.size());
-	currentState->setValue(jlimit(1, n, oneBased));
+	int v = jlimit(1, n, oneBased);
+	if (v == currentState->intValue() && v != getBase()) PaletteRuntime::stateChanged(this); // layers dominate: no value change event, the base still moves
+	else currentState->setValue(v);
+}
+
+Array<std::pair<int, float>> Palette::getBlendStack()
+{
+	Array<std::pair<int, float>> out;
+	float maxW = 0, sumW = 0;
+	for (auto& l : layers) { maxW = jmax(maxW, l.weight); sumW += l.weight; }
+	float kb = 1.f - maxW, total = kb + sumW;
+	auto add = [&out](int state, float share) {
+		if (share <= 0) return;
+		for (auto& e : out) if (e.first == state) { e.second += share; return; }
+		out.add({ state, share });
+	};
+	int b = getBase();
+	if (baseFrom > 0 && baseT < 1.f) { add(baseFrom, kb * (1.f - baseT) / total); add(b, kb * baseT / total); }
+	else add(b, kb / total);
+	for (auto& l : layers) add(l.state, l.weight / total);
+	return out;
+}
+
+int Palette::getDominantState()
+{
+	int b = getBase();
+	if (layers.isEmpty()) return b;
+	Array<std::pair<int, float>> stack;
+	float maxW = 0;
+	for (auto& l : layers) maxW = jmax(maxW, l.weight);
+	auto add = [&stack](int state, float share) {
+		for (auto& e : stack) if (e.first == state) { e.second += share; return; }
+		stack.add({ state, share });
+	};
+	add(b, 1.f - maxW); // the base counts as its target state while it fades
+	for (auto& l : layers) add(l.state, l.weight);
+	int best = 0; float bestShare = -1; int bestRank = -1;
+	for (auto& e : stack) {
+		int rank = 0; // 0 = base only, else 1 + newest layer seq on this state
+		for (auto& l : layers) if (l.state == e.first) rank = jmax(rank, 1 + l.seq);
+		bool better = e.second > bestShare + 1e-5f
+			|| (std::abs(e.second - bestShare) <= 1e-5f && (rank > bestRank || (rank == bestRank && e.first < best)));
+		if (better) { best = e.first; bestShare = e.second; bestRank = rank; }
+	}
+	return best;
 }
 
 int Palette::findStateIndex(const String& name)

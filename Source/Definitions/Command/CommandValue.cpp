@@ -124,49 +124,48 @@ void CommandValue::resolvePalette(Cue* cue, Preset*& from, Preset*& to) {
     if (from != nullptr) from->computeValues();
     if (to != nullptr) to->computeValues();
 
-    blendPrevFrom = blendPrevTo = nullptr;
-    blendAmount = 1.f;
-    Palette* pf = Palette::resolve(pid, slotFrom->intValue(), cue);
-    Palette* pt = Palette::resolve(pid, slotTo->intValue(), cue);
-    if (pf != nullptr && pf->isBlending()) {
-        blendPrevFrom = b->getPresetById(pf->getPresetIdForState(pf->fromState, slotFrom->intValue()), true);
-        blendAmount = pf->blend;
-    }
-    if (pt != nullptr && pt->isBlending()) {
-        blendPrevTo = b->getPresetById(pt->getPresetIdForState(pt->fromState, slotTo->intValue()), true);
-        blendAmount = pt->blend;
-    }
-    if (blendPrevFrom != nullptr) blendPrevFrom->computeValues();
-    if (blendPrevTo != nullptr) blendPrevTo->computeValues();
+    auto buildStack = [&](Palette* p, int slot, PresetStack& out) {
+        out.clear();
+        if (p == nullptr) return;
+        auto stack = p->getBlendStack();
+        if (stack.size() < 2) return;
+        for (auto& e : stack) {
+            Preset* pr = b->getPresetById(p->getPresetIdForState(e.first, slot), true);
+            if (pr != nullptr) pr->computeValues();
+            out.add({ pr, e.second });
+        }
+    };
+    buildStack(Palette::resolve(pid, slotFrom->intValue(), cue), slotFrom->intValue(), stackFrom);
+    buildStack(Palette::resolve(pid, slotTo->intValue(), cue), slotTo->intValue(), stackTo);
 }
 
-// Per channel: interpolate previous to current by blendAmount; a channel in only one state, or a release (-1), snaps at the midpoint.
-static void mixPaletteValues(HashMap<ChannelType*, float>& cur, Preset* prev, SubFixture* sf, float blend) {
-    std::shared_ptr<HashMap<ChannelType*, float>> pv = prev != nullptr ? prev->getSubFixtureValues(sf) : nullptr;
-    Array<ChannelType*> drop;
-    Array<std::pair<ChannelType*, float>> set;
-    for (auto it = cur.begin(); it != cur.end(); it.next()) {
-        ChannelType* k = it.getKey();
-        float c = it.getValue();
-        if (pv != nullptr && pv->contains(k)) {
-            float a = pv->getReference(k);
-            set.add({ k, (a < 0 || c < 0) ? (blend < 0.5f ? a : c) : a + (c - a) * blend });
-        }
-        else if (blend < 0.5f) {
-            drop.add(k);
-        }
+// Per channel, share-weighted average over the states that have it. A channel appears when those shares reach half;
+// a release (-1) counts as a state: released when release shares are at least half of the shares that have the channel, else ignored.
+static void mixPaletteValues(HashMap<ChannelType*, float>& out, const CommandValue::PresetStack& stack, SubFixture* sf) {
+    Array<std::shared_ptr<HashMap<ChannelType*, float>>> pvs;
+    Array<ChannelType*> keys;
+    for (auto& e : stack) {
+        auto pv = e.first != nullptr ? e.first->getSubFixtureValues(sf) : nullptr;
+        pvs.add(pv);
+        if (pv != nullptr) for (auto it = pv->begin(); it != pv->end(); it.next()) keys.addIfNotAlreadyThere(it.getKey());
     }
-    if (pv != nullptr && blend < 0.5f) {
-        for (auto it = pv->begin(); it != pv->end(); it.next()) {
-            if (!cur.contains(it.getKey())) set.add({ it.getKey(), it.getValue() });
+    out.clear();
+    const float eps = 1e-4f;
+    for (auto* k : keys) {
+        float have = 0, rel = 0, sum = 0;
+        for (int i = 0; i < stack.size(); i++) {
+            if (pvs[i] == nullptr || !pvs[i]->contains(k)) continue;
+            float v = pvs[i]->getReference(k), sh = stack[i].second;
+            have += sh;
+            if (v < 0) rel += sh; else sum += sh * v;
         }
+        if (have < 0.5f - eps) continue;
+        if (2 * rel >= have - eps) out.set(k, -1.f);
+        else out.set(k, sum / (have - rel));
     }
-    for (auto* k : drop) cur.remove(k);
-    for (auto& s : set) cur.set(s.first, s.second);
 }
 
 void CommandValue::applyPaletteBlend(SubFixture* sf, HashMap<ChannelType*, float>& valuesFrom, HashMap<ChannelType*, float>& valuesTo) {
-    if (blendAmount >= 1.f) return;
-    if (blendPrevFrom != nullptr) mixPaletteValues(valuesFrom, blendPrevFrom, sf, blendAmount);
-    if (blendPrevTo != nullptr) mixPaletteValues(valuesTo, blendPrevTo, sf, blendAmount);
+    if (!stackFrom.isEmpty()) mixPaletteValues(valuesFrom, stackFrom, sf);
+    if (!stackTo.isEmpty()) mixPaletteValues(valuesTo, stackTo, sf);
 }

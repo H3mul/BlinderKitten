@@ -24,28 +24,31 @@ void PaletteRuntime::stateChanged(Palette* p)
 {
 	int cur = p->currentState->intValue();
 	if (Engine::mainEngine != nullptr && Engine::mainEngine->isLoadingFile) {
-		p->shownState = cur;
-		p->fromState = 0; p->blendTo = 0; p->blend = 1; p->fading = false;
+		p->baseState = cur;
+		p->layers.clear();
+		p->baseFrom = 0; p->baseT = 1; p->fading = false;
 		return;
 	}
-	if (p->manualWrite) { // setBlend drives the blend itself
-		p->shownState = cur;
-		return;
-	}
+	if (p->manualWrite) return; // the dominant state written after a layer change
 
+	// external change: acts on the base, the layers stay on top
 	double secs = p->getFadeSeconds();
-	int prev = p->shownState > 0 ? p->shownState : cur;
+	int prev = p->getBase();
 	if (secs > 0 && prev != cur) {
 		// a change mid-fade pops to the previous target (prev) and fades from there
-		p->fromState = prev; p->blendTo = cur; p->blend = 0;
+		p->baseFrom = prev; p->baseState = cur; p->baseT = 0;
 		p->fading = true;
 		p->fadeStart = Time::getMillisecondCounterHiRes();
 		p->fadeLen = secs * 1000.0;
 	}
 	else {
-		p->fromState = 0; p->blendTo = 0; p->blend = 1; p->fading = false;
+		p->baseFrom = 0; p->baseState = cur; p->baseT = 1; p->fading = false;
 	}
-	p->shownState = cur;
+	if (!p->layers.isEmpty()) { // currentState stays the dominant state
+		p->manualWrite = true;
+		p->currentState->setValue(jlimit(1, jmax(1, p->states.items.size()), p->getDominantState()));
+		p->manualWrite = false;
+	}
 
 	BKEngine* e = dynamic_cast<BKEngine*>(Engine::mainEngine);
 	if (e != nullptr && e->defaultPaletteId->intValue() == p->registeredId) Brain::getInstance()->defaultValuesNeedRefresh = true;
@@ -54,23 +57,58 @@ void PaletteRuntime::stateChanged(Palette* p)
 	get().markPending(p);
 }
 
-void PaletteRuntime::setBlend(Palette* p, int stateA, int stateB, float value)
+int PaletteRuntime::newOwnerId()
 {
-	int n = jmax(1, p->states.items.size());
-	int a = jlimit(1, n, stateA);
-	int b = jlimit(1, n, stateB);
-	float v = jlimit(0.f, 1.f, value);
-	p->fading = false;
-	int target;
-	if (v <= 0) { p->fromState = 0; p->blendTo = 0; p->blend = 1; target = a; }
-	else if (v >= 1) { p->fromState = 0; p->blendTo = 0; p->blend = 1; target = b; }
-	else { p->fromState = a; p->blendTo = b; p->blend = v; target = v < 0.5f ? a : b; }
+	return ++get().nextOwner;
+}
 
+// After any layer change: dominant state into currentState (no timed fade), then refresh.
+void PaletteRuntime::layersChanged(Palette* p)
+{
+	int target = jlimit(1, jmax(1, p->states.items.size()), p->getDominantState());
 	p->manualWrite = true;
-	p->setStateIndex(target);
+	p->currentState->setValue(target);
 	p->manualWrite = false;
-	p->shownState = target;
-	get().markPending(p);
+	markPending(p);
+}
+
+void PaletteRuntime::setLayer(Palette* p, int ownerId, int targetState, float weight, int baseIfFirst)
+{
+	float w = jlimit(0.f, 1.f, weight);
+	if (w <= 0) { clearLayer(p, ownerId); return; }
+	PaletteRuntime& r = get();
+	int n = jmax(1, p->states.items.size());
+	if (p->baseState == 0) p->baseState = p->currentState->intValue();
+	if (p->layers.isEmpty() && baseIfFirst > 0) {
+		p->baseState = jlimit(1, n, baseIfFirst);
+		p->baseFrom = 0; p->baseT = 1; p->fading = false;
+	}
+	int st = jlimit(1, n, targetState);
+	for (auto& l : p->layers) {
+		if (l.ownerId != ownerId) continue;
+		l.state = st; l.weight = w;
+		r.layersChanged(p);
+		return;
+	}
+	p->layers.add({ ownerId, st, w, ++r.nextLayerSeq });
+	r.layersChanged(p);
+}
+
+void PaletteRuntime::clearLayer(Palette* p, int ownerId)
+{
+	for (int i = p->layers.size(); --i >= 0;) {
+		if (p->layers.getReference(i).ownerId == ownerId) {
+			p->layers.remove(i);
+			get().layersChanged(p);
+			return;
+		}
+	}
+}
+
+void PaletteRuntime::clearOwner(int ownerId)
+{
+	if (PaletteManager::getInstanceWithoutCreating() == nullptr) return;
+	for (auto* p : PaletteManager::getInstance()->items) clearLayer(p, ownerId);
 }
 
 void PaletteRuntime::markPending(Palette* p)
@@ -102,11 +140,11 @@ void PaletteRuntime::timerCallback()
 		if (p == nullptr || !p->fading) { fading.removeFirstMatchingValue(id); continue; }
 		double t = (now - p->fadeStart) / jmax(1.0, p->fadeLen);
 		if (t >= 1) {
-			p->blend = 1; p->fromState = 0; p->blendTo = 0; p->fading = false;
+			p->baseT = 1; p->baseFrom = 0; p->fading = false;
 			fading.removeFirstMatchingValue(id);
 		}
 		else {
-			p->blend = (float)t;
+			p->baseT = (float)t;
 		}
 		refresh(p);
 	}
@@ -209,7 +247,7 @@ int PaletteRuntime::beginHold()
 void PaletteRuntime::holdPalette(int holdId, Palette* p, int appliedState)
 {
 	PaletteRuntime& r = get();
-	r.holds.add({ holdId, p->registeredId, appliedState, p->currentState->intValue() });
+	r.holds.add({ holdId, p->registeredId, appliedState, p->getBase() });
 	p->setStateIndex(appliedState);
 }
 
@@ -237,6 +275,6 @@ void PaletteRuntime::releaseHold(int holdId)
 			continue;
 		}
 		Palette* p = Brain::getInstance()->getPaletteById(pid); // may have been deleted during the hold
-		if (p != nullptr && p->currentState->intValue() == h.applied) p->setStateIndex(h.prior);
+		if (p != nullptr && p->getBase() == h.applied) p->setStateIndex(h.prior);
 	}
 }

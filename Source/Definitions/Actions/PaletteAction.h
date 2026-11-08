@@ -19,8 +19,8 @@ public:
     IntParameter* stateA = nullptr;   // blend: state at fader 0
     IntParameter* stateB = nullptr;   // blend: state at fader 1
 
-    // global blend fader: each palette's state when the fader left 0 (palette id -> state index), cleared at 0; not saved
-    HashMap<int, int> blendBase;
+    // blend faders own one layer per palette under this id (dropped with the action); not saved
+    int ownerId = 0;
 
     // momentary shift: holds on PaletteRuntime's per-palette stacks, released on value 0 (not saved)
     int holdId = 0;
