@@ -19,6 +19,21 @@
 
 class Cuelist;
 
+// One extra source cue for "Use cue commands": applied after the main source, in list order, before the cue's own commands.
+class CueReuse :
+    public BaseItem
+{
+public:
+    CueReuse(var params = var());
+    ~CueReuse() {}
+
+    TargetParameter* cue;
+
+    void onContainerParameterChangedInternal(Parameter* p) override;
+    String getTypeString() const override { return "CueReuse"; }
+    static CueReuse* create(var params) { return new CueReuse(params); }
+};
+
 class Cue:
     public BaseItem,
     public ChangeBroadcaster
@@ -137,6 +152,10 @@ public:
 
     // palette ref remap for this cue's commands (A -> B)
     BaseManager<PaletteRemap> paletteRemap;
+
+    // more source cues after `reuseCue`; later sources win per channel, own commands win over all
+    BaseManager<CueReuse> moreReuse;
+    Array<Cue*> getReuseSources();
 
 };
 

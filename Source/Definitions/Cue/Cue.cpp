@@ -30,7 +30,8 @@ Cue::Cue(var params) :
 	tasksOffCue("Tasks off"),
 	timingContainer("Timing"),
 	timecode("Timecode"),
-	paletteRemap("Palette remap")
+	paletteRemap("Palette remap"),
+	moreReuse("Use more cue commands")
 {
 	canBeDisabled = false;
 	saveAndLoadRecursiveData = true;
@@ -77,6 +78,7 @@ Cue::Cue(var params) :
 
 	timecode.selectItemWhenCreated = false;
 	paletteRemap.selectItemWhenCreated = false;
+	moreReuse.selectItemWhenCreated = false;
 	commands.selectItemWhenCreated = false;
 	tasks.selectItemWhenCreated = false;
 	tasksOffCue.selectItemWhenCreated = false;
@@ -95,6 +97,7 @@ Cue::Cue(var params) :
 	addChildControllableContainer(&moveInBlack);
 	addChildControllableContainer(&timecode);
 	addChildControllableContainer(&paletteRemap);
+	addChildControllableContainer(&moreReuse);
 
 	addChildControllableContainer(&commands);
 	addChildControllableContainer(&tasks);
@@ -236,20 +239,30 @@ void Cue::computeValues(Array<Cue*> history, Cue* callingCue) {
 	commandHistory.clear();
 	if (callingCue == nullptr) callingCue = this;
 
-	if (reuseCue->getValue() != "") {
-		Cue* original = dynamic_cast<Cue*>(reuseCue->targetContainer.get());
-		if (original != nullptr) {
-			original->computeValues(history, callingCue);
-			original->csComputing.enter();
-			for (auto it = original->computedValues.begin(); it != original->computedValues.end(); it.next()) {
-				computedValues.set(it.getKey(), it.getValue());
-			}
-			for (auto it = original->channelToCommand.begin(); it != original->channelToCommand.end(); it.next()) {
-				channelToCommand.set(it.getKey(), it.getValue());
-			}
-			commandHistory.addArray(original->commandHistory);
-			original->csComputing.exit();
+	for (Cue* original : getReuseSources()) {
+		// compute the source for this caller, then put the source's own output back untouched
+		original->csComputing.enter();
+		HashMap<SubFixtureChannel*, std::shared_ptr<ChannelValue>> savedValues;
+		HashMap<SubFixtureChannel*, Command*> savedChannels;
+		Array<Command*> savedHistory = original->commandHistory;
+		double savedTiming = original->maxTiming;
+		savedValues.swapWith(original->computedValues);
+		savedChannels.swapWith(original->channelToCommand);
+
+		original->computeValues(history, callingCue);
+		for (auto it = original->computedValues.begin(); it != original->computedValues.end(); it.next()) {
+			computedValues.set(it.getKey(), it.getValue());
 		}
+		for (auto it = original->channelToCommand.begin(); it != original->channelToCommand.end(); it.next()) {
+			channelToCommand.set(it.getKey(), it.getValue());
+		}
+		commandHistory.addArray(original->commandHistory);
+
+		original->computedValues.swapWith(savedValues);
+		original->channelToCommand.swapWith(savedChannels);
+		original->commandHistory = savedHistory;
+		original->maxTiming = savedTiming;
+		original->csComputing.exit();
 	}
 
 	checkParentCuelist();
@@ -600,6 +613,35 @@ void Cue::writeTimeStamp()
 	});
 }
 
+CueReuse::CueReuse(var params) :
+	BaseItem(params.getProperty("name", "Source"))
+{
+	itemDataType = "CueReuse";
+	cue = addTargetParameter("Cue", "The commands of this cue are applied before this cue; later sources win", CuelistManager::getInstance());
+	cue->targetType = TargetParameter::CONTAINER;
+	cue->maxDefaultSearchLevel = 2;
+	cue->typesFilter = StringArray("Cue");
+}
+
+void CueReuse::onContainerParameterChangedInternal(Parameter* p)
+{
+	if (p == cue || p == enabled) { Brain::getInstance()->liveEditChanged(); }
+}
+
+// main source first, then the extra enabled ones in list order; missing or empty targets are skipped
+Array<Cue*> Cue::getReuseSources()
+{
+	Array<Cue*> ret;
+	if (reuseCue->getValue() != "") {
+		if (Cue* c = dynamic_cast<Cue*>(reuseCue->targetContainer.get())) ret.add(c);
+	}
+	for (auto* r : moreReuse.items) {
+		if (!r->enabled->boolValue()) continue;
+		if (Cue* c = dynamic_cast<Cue*>(r->cue->targetContainer.get())) ret.add(c);
+	}
+	return ret;
+}
+
 Array<Task*> Cue::getTasks()
 {
 	Array<Cue*> histo;
@@ -611,9 +653,8 @@ Array<Task*> Cue::getTasks(Array<Cue*> history)
 	Array<Task*> ret;
 	if (history.contains(this)) { return ret; }
 	history.add(this);
-	Cue* original = dynamic_cast<Cue*>(reuseCue->targetContainer.get());
-	if (original != nullptr) {
-		ret = original->getTasks(history);
+	for (Cue* original : getReuseSources()) {
+		ret.addArray(original->getTasks(history));
 	}
 	for (Task* t : tasks.items) {
 		ret.add(t);
@@ -632,9 +673,8 @@ Array<Task*> Cue::getOffTasks(Array<Cue*> history)
 	Array<Task*> ret;
 	if (history.contains(this)) { return ret; }
 	history.add(this);
-	Cue* original = dynamic_cast<Cue*>(reuseCue->targetContainer.get());
-	if (original != nullptr) {
-		ret = original->getOffTasks(history);
+	for (Cue* original : getReuseSources()) {
+		ret.addArray(original->getOffTasks(history));
 	}
 	for (Task* t : tasksOffCue.items) {
 		ret.add(t);
@@ -677,9 +717,10 @@ String Cue::getCommandsText(bool useName, Array<Cue*> history)
 	String ret = "";
 	if (history.contains(this)) { return ret; }
 	history.add(this);
-	Cue* original = dynamic_cast<Cue*>(reuseCue->targetContainer.get());
-	if (original != nullptr) {
-		ret += original->getCommandsText(useName, history);
+	for (Cue* original : getReuseSources()) {
+		String t = original->getCommandsText(useName, history);
+		if (ret != "" && t != "") { ret += "\n"; }
+		ret += t;
 	}
 	for (int i = 0; i < commands.items.size(); i++) {
 		if (ret != "") { ret += "\n"; }
