@@ -2,6 +2,8 @@
 #include "Palette.h"
 #include "PaletteManager.h"
 #include "PaletteRemap.h"
+#include "PaletteRuntime.h"
+#include "../TimingPreset/TimingPreset.h"
 #include "../Cue/Cue.h"
 #include "../../Brain.h"
 
@@ -25,9 +27,19 @@ void PaletteState::applySlotLabels(int count, const StringArray& names)
 		String label = "Slot " + String(i + 1);
 		if (i < names.size() && names[i].isNotEmpty()) label += " (" + names[i] + ")";
 		slots[i]->description = "Preset id of " + label + " in this state (0 = none)";
+		if (slots[i]->intValue() > 0 && Brain::getInstance()->getPresetById(slots[i]->intValue()) == nullptr) slots[i]->description += " - MISSING PRESET";
 		slots[i]->hideInEditor = i >= count;
 	}
 	queuedNotifier.addMessage(new ContainerAsyncEvent(ContainerAsyncEvent::ControllableContainerNeedsRebuild, this));
+}
+
+void PaletteState::onContainerParameterChangedInternal(Parameter* p)
+{
+	// keep the "missing preset" note of an edited slot current
+	if (dynamic_cast<IntParameter*>(p) == nullptr || !slots.contains((IntParameter*)p)) return;
+	IntParameter* sp = (IntParameter*)p;
+	sp->description = sp->description.upToFirstOccurrenceOf(" - MISSING PRESET", false, false);
+	if (sp->intValue() > 0 && Brain::getInstance()->getPresetById(sp->intValue()) == nullptr) sp->description += " - MISSING PRESET";
 }
 
 PaletteStateManager::PaletteStateManager() :
@@ -67,6 +79,8 @@ Palette::Palette(var params) :
 	slotCount = addIntParameter("Slots", "Number of slots (roles) of this palette", 2, 1, PaletteState::maxSlots);
 	slotNames = addStringParameter("Slot names", "Comma separated slot labels, e.g. base,accent. The slot index is its role.", "base,accent");
 	currentState = addIntParameter("Current state", "Position of the active state (1 = first)", 1, 1);
+	fadeTime = addFloatParameter("Fade time", "Seconds to fade between states, 0 = snap. Ignored while a timing preset is set and found.", 0, 0);
+	timingPresetId = addIntParameter("Timing preset", "ID of a timing preset whose fade time is used (0 = none). Share one preset to control several palettes.", 0, 0);
 
 	states.selectItemWhenCreated = false;
 	addChildControllableContainer(&states);
@@ -91,7 +105,7 @@ void Palette::onContainerParameterChangedInternal(Parameter* p)
 		applySlotLabels();
 	}
 	if (p == currentState) {
-		Brain::getInstance()->paletteChanged();
+		PaletteRuntime::stateChanged(this);
 	}
 }
 
@@ -104,6 +118,7 @@ void Palette::onControllableFeedbackUpdateInternal(ControllableContainer* cc, Co
 void Palette::afterLoadJSONDataInternal()
 {
 	BaseItem::afterLoadJSONDataInternal();
+	shownState = currentState->intValue();
 	applySlotLabels();
 }
 
@@ -140,10 +155,25 @@ bool Palette::hasSlot(int slot) const
 
 int Palette::getPresetId(int slot)
 {
+	return getPresetIdForState(isBlending() && blendTo > 0 ? blendTo : currentState->intValue(), slot);
+}
+
+int Palette::getPresetIdForState(int state, int slot)
+{
 	if (!hasSlot(slot) || states.items.size() == 0) return 0;
-	int idx = jlimit(1, states.items.size(), currentState->intValue());
+	int idx = jlimit(1, states.items.size(), state);
 	PaletteState* s = states.items[idx - 1];
 	return s != nullptr ? s->slots[slot - 1]->intValue() : 0;
+}
+
+float Palette::getFadeSeconds()
+{
+	int tid = timingPresetId->intValue();
+	if (tid > 0) {
+		TimingPreset* t = Brain::getInstance()->getTimingPresetById(tid);
+		if (t != nullptr) return t->fadeFrom->floatValue();
+	}
+	return fadeTime->floatValue();
 }
 
 void Palette::setStateIndex(int oneBased)
@@ -160,17 +190,22 @@ int Palette::findStateIndex(const String& name)
 	return 0;
 }
 
-int Palette::resolveSlot(int paletteId, int slot, Cue* cue)
+Palette* Palette::resolve(int paletteId, int slot, Cue* cue)
 {
 	Brain* b = Brain::getInstance();
 	if (cue != nullptr) {
 		for (auto* r : cue->paletteRemap.items) {
 			if (r->fromId->intValue() != paletteId) continue;
 			Palette* target = b->getPaletteById(r->toId->intValue());
-			if (target != nullptr && target->hasSlot(slot)) return target->getPresetId(slot);
+			if (target != nullptr && target->hasSlot(slot)) return target;
 			break; // target missing or too short: fall through to the original palette
 		}
 	}
-	Palette* p = b->getPaletteById(paletteId);
+	return b->getPaletteById(paletteId);
+}
+
+int Palette::resolveSlot(int paletteId, int slot, Cue* cue)
+{
+	Palette* p = resolve(paletteId, slot, cue);
 	return p != nullptr ? p->getPresetId(slot) : 0;
 }

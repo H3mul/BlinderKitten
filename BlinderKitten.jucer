@@ -891,6 +891,11 @@
           <FILE id="iu2Wwm" name="PaletteManager.cpp" compile="1" resource="0"
                 file="Source/Definitions/Palette/PaletteManager.cpp"/>
           <FILE id="7NFpJA" name="PaletteManager.h" compile="0" resource="0" file="Source/Definitions/Palette/PaletteManager.h"/>
+          <FILE id="pRt2Rn" name="PaletteRuntime.cpp" compile="1" resource="0"
+                file="Source/Definitions/Palette/PaletteRuntime.cpp"/>
+          <FILE id="pRt2Rh" name="PaletteRuntime.h" compile="0" resource="0" file="Source/Definitions/Palette/PaletteRuntime.h"/>
+          <FILE id="pCr3Rn" name="PaletteCuelistRefresh.cpp" compile="1" resource="0"
+                file="Source/Definitions/Palette/PaletteCuelistRefresh.cpp"/>
           <FILE id="xepV8C" name="PaletteManagerUI.cpp" compile="1" resource="0"
                 file="Source/Definitions/Palette/PaletteManagerUI.cpp"/>
           <FILE id="yVYLbI" name="PaletteManagerUI.h" compile="0" resource="0" file="Source/Definitions/Palette/PaletteManagerUI.h"/>

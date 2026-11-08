@@ -112,6 +112,7 @@ void MapperStep::computeValues(Array<SubFixture*> SubFixtures) {
 
 			}
 
+			cv->applyPaletteBlend(SubFixtures[indexFixt], *valuesFrom, *valuesTo);
 			if (cv->presetOrValue->getValue() == "value") {
 				valuesFrom->set(rawChan, cv->valueFrom->getValue());
 				valuesTo->set(rawChan, cv->valueTo->getValue());

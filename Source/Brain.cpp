@@ -22,6 +22,7 @@
 #include "Definitions/CurvePreset/CurvePreset.h"
 #include "Definitions/TimingPreset/TimingPreset.h"
 #include "Definitions/Palette/Palette.h"
+#include "Definitions/Palette/PaletteRuntime.h"
 #include "Definitions/Tempo/Tempo.h"
 #include "Definitions/BKPathPreset/BKPathPreset.h"
 #include "Definitions/Effect/Effect.h"
@@ -428,7 +429,7 @@ void Brain::brainLoop() {
 
     if (defaultValuesNeedRefresh) {
         defaultValuesNeedRefresh = false;
-        int presetId = dynamic_cast<BKEngine*>(Engine::mainEngine)->defaultPresetId->intValue();
+        int presetId = PaletteRuntime::defaultPresetId();
         Preset* def = getPresetById(presetId);
         if (def != nullptr) def->computeValues();
 
@@ -605,6 +606,7 @@ void Brain::registerPreset(Preset* target, int askedId) {
     target->registeredId = newId;
     if (currentId != newId && currentId != 0) {
         replacePresetIdEverywhere(currentId, newId);
+        PaletteRuntime::presetRenumbered(currentId, newId);
     }
 
 }
@@ -613,6 +615,7 @@ void Brain::unregisterPreset(Preset* p) {
     ScopedLock lock(usingLibraries);
     if (presets.containsValue(p)) {
         presets.removeValue(p);
+        if (!isClearing) PaletteRuntime::presetsChanged();
     }
     if (!Brain::getInstance()->isClearing && PresetGridView::getInstanceWithoutCreating() != nullptr) PresetGridView::getInstance()->updateCells();
 }

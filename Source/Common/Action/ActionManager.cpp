@@ -197,6 +197,7 @@ ActionFactory::ActionFactory()
     defs.add(Factory<Action>::Definition::createDef("Palette", "Previous palette state", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_PREVIOUS));
     defs.add(Factory<Action>::Definition::createDef("Palette", "Shift all palettes to state", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_SHIFT_ALL));
     defs.add(Factory<Action>::Definition::createDef("Palette", "Shift all palettes to state (momentary)", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_SHIFT_ALL_HOLD));
+    defs.add(Factory<Action>::Definition::createDef("Palette", "Blend palette states (fader)", &PaletteAction::create)->addParam("actionType", PaletteAction::PAL_BLEND));
     defs.add(Factory<Action>::Definition::createDef("Tempo", "Tap", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_TAP));
     defs.add(Factory<Action>::Definition::createDef("Tempo", "Set BPM", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_SET));
     defs.add(Factory<Action>::Definition::createDef("Tempo", "Set BPM static", &TempoAction::create)->addParam("actionType", TempoAction::TEMPO_SETAT));

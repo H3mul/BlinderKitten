@@ -472,6 +472,7 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 				
 				}
 
+				cv->applyPaletteBlend(sf, *valuesFrom, *valuesTo);
 				if (cv->presetOrValue->stringValue() == "value") {
 					valuesFrom->set(rawChan, cv->valueFrom->getValue());
 					valuesTo->set(rawChan, cv->valueTo->getValue());

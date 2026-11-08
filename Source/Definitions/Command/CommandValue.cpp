@@ -123,4 +123,50 @@ void CommandValue::resolvePalette(Cue* cue, Preset*& from, Preset*& to) {
     to = b->getPresetById(Palette::resolveSlot(pid, slotTo->intValue(), cue), true);
     if (from != nullptr) from->computeValues();
     if (to != nullptr) to->computeValues();
+
+    blendPrevFrom = blendPrevTo = nullptr;
+    blendAmount = 1.f;
+    Palette* pf = Palette::resolve(pid, slotFrom->intValue(), cue);
+    Palette* pt = Palette::resolve(pid, slotTo->intValue(), cue);
+    if (pf != nullptr && pf->isBlending()) {
+        blendPrevFrom = b->getPresetById(pf->getPresetIdForState(pf->fromState, slotFrom->intValue()), true);
+        blendAmount = pf->blend;
+    }
+    if (pt != nullptr && pt->isBlending()) {
+        blendPrevTo = b->getPresetById(pt->getPresetIdForState(pt->fromState, slotTo->intValue()), true);
+        blendAmount = pt->blend;
+    }
+    if (blendPrevFrom != nullptr) blendPrevFrom->computeValues();
+    if (blendPrevTo != nullptr) blendPrevTo->computeValues();
+}
+
+// Per channel: interpolate previous to current by blendAmount; a channel in only one state, or a release (-1), snaps at the midpoint.
+static void mixPaletteValues(HashMap<ChannelType*, float>& cur, Preset* prev, SubFixture* sf, float blend) {
+    std::shared_ptr<HashMap<ChannelType*, float>> pv = prev != nullptr ? prev->getSubFixtureValues(sf) : nullptr;
+    Array<ChannelType*> drop;
+    Array<std::pair<ChannelType*, float>> set;
+    for (auto it = cur.begin(); it != cur.end(); it.next()) {
+        ChannelType* k = it.getKey();
+        float c = it.getValue();
+        if (pv != nullptr && pv->contains(k)) {
+            float a = pv->getReference(k);
+            set.add({ k, (a < 0 || c < 0) ? (blend < 0.5f ? a : c) : a + (c - a) * blend });
+        }
+        else if (blend < 0.5f) {
+            drop.add(k);
+        }
+    }
+    if (pv != nullptr && blend < 0.5f) {
+        for (auto it = pv->begin(); it != pv->end(); it.next()) {
+            if (!cur.contains(it.getKey())) set.add({ it.getKey(), it.getValue() });
+        }
+    }
+    for (auto* k : drop) cur.remove(k);
+    for (auto& s : set) cur.set(s.first, s.second);
+}
+
+void CommandValue::applyPaletteBlend(SubFixture* sf, HashMap<ChannelType*, float>& valuesFrom, HashMap<ChannelType*, float>& valuesTo) {
+    if (blendAmount >= 1.f) return;
+    if (blendPrevFrom != nullptr) mixPaletteValues(valuesFrom, blendPrevFrom, sf, blendAmount);
+    if (blendPrevTo != nullptr) mixPaletteValues(valuesTo, blendPrevTo, sf, blendAmount);
 }

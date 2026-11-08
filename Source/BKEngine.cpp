@@ -140,6 +140,10 @@ BKEngine::BKEngine() :
 	tapTempoHistory->addParameterListener(this);
 	defaultPresetId = genericSettingsContainer.addIntParameter("Default preset ID", "ID of the preset to use as default value", 0, 0);
 	defaultPresetId->addParameterListener(this);
+	defaultPaletteId = genericSettingsContainer.addIntParameter("Default palette ID", "ID of a palette whose slot replaces the default preset (0 = off)", 0, 0);
+	defaultPaletteId->addParameterListener(this);
+	defaultPaletteSlot = genericSettingsContainer.addIntParameter("Default palette slot", "Slot of the default palette used as default values", 1, 1, 8);
+	defaultPaletteSlot->addParameterListener(this);
 
 	faderSelectionMode = virtualParamsContainer.addEnumParameter("Faders selection mode", "Single copies elements on only one element, column assign target to all elements in selected column");
 	faderSelectionMode->addOption("Single", "single")->addOption("Column", "column");
@@ -527,6 +531,8 @@ void BKEngine::clearInternal()
 
 	tapTempoHistory->resetValue();
 	defaultPresetId->resetValue();
+	defaultPaletteId->resetValue();
+	defaultPaletteSlot->resetValue();
 	encodersNumber->resetValue();
 	gridCols->resetValue();
 	gridRows->resetValue();
@@ -2185,7 +2191,7 @@ void BKEngine::parameterValueChanged(Parameter* p) {
 	} else if (p == encodersNumber) {
 		Encoders::getInstance()->initEncoders();
 	}
-	else if (p == defaultPresetId) {
+	else if (p == defaultPresetId || p == defaultPaletteId || p == defaultPaletteSlot) {
 		Brain::getInstance()->defaultValuesNeedRefresh = true;
 	}
 

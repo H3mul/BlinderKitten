@@ -60,6 +60,8 @@ public:
 	ControllableContainer genericSettingsContainer;
 	IntParameter* tapTempoHistory;
 	IntParameter* defaultPresetId;
+	IntParameter* defaultPaletteId;   // palette whose slot replaces the default preset (0 = off)
+	IntParameter* defaultPaletteSlot;
 
 
 	ControllableContainer conductorInfosContainer;

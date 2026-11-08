@@ -200,6 +200,8 @@ public:
     void go(Cue* c, float forcedDelay, float forcedFade);
     // Re-resolve and re-apply the running cue instantly (no tasks, no timing, no chaser step); used when a palette changes state.
     void refreshActiveCue();
+    // Palette v2 (defined in Palette/PaletteCuelistRefresh.cpp): same, but only the tracked cues that ref one of these palettes.
+    void refreshPaletteRefs(const Array<int>& paletteIds);
     void goBack();
     void goBack(float forcedDelay, float forcedFade);
     void goRandom();

@@ -13,6 +13,8 @@
 
 class Cue;
 class Preset;
+class SubFixture;
+class ChannelType;
 
 class CommandValue:
     public BaseItem,
@@ -55,6 +57,11 @@ class CommandValue:
     bool usesPreset();
     // Palette value type: resolve slotFrom/slotTo to presets (cue = owning cue for its remap, may be null)
     void resolvePalette(Cue* cue, Preset*& from, Preset*& to);
+    // While a palette fades: mix the previous state's values into the current ones (no-op otherwise). Call after the preset values are filled.
+    void applyPaletteBlend(SubFixture* sf, HashMap<ChannelType*, float>& valuesFrom, HashMap<ChannelType*, float>& valuesTo);
+    Preset* blendPrevFrom = nullptr;
+    Preset* blendPrevTo = nullptr;
+    float blendAmount = 1.f;
 
     void afterLoadJSONDataInternal();
     void onContainerParameterChangedInternal(Parameter* p);

@@ -1,5 +1,6 @@
 #include "PaletteAction.h"
 #include "../Palette/PaletteManager.h"
+#include "../Palette/PaletteRuntime.h"
 #include "../../Brain.h"
 
 PaletteAction::PaletteAction(var params) :
@@ -9,6 +10,14 @@ PaletteAction::PaletteAction(var params) :
 
     if (actionType == PAL_SET || actionType == PAL_NEXT || actionType == PAL_PREVIOUS) {
         paletteId = addIntParameter("Palette", "ID of the target palette", 1, 1);
+    }
+    if (actionType == PAL_BLEND) {
+        paletteId = addIntParameter("Palette", "ID of the palette to blend, 0 = every palette", 0, 0);
+        stateA = addIntParameter("State A", "State shown with the fader at 0 (1 = first)", 1, 1);
+        stateB = addIntParameter("State B", "State shown with the fader at 1 (1 = first)", 2, 1);
+    }
+    if (actionType == PAL_SHIFT_ALL_HOLD) {
+        holdId = PaletteRuntime::beginHold();
     }
     if (actionType == PAL_SET) {
         stateIndex = addIntParameter("State", "Position of the state to select (1 = first)", 1, 1);
@@ -31,18 +40,11 @@ void PaletteAction::shiftAll()
     String name = stateName->stringValue();
     for (auto* p : PaletteManager::getInstance()->items) {
         int idx = p->findStateIndex(name);
-        if (idx > 0) p->setStateIndex(idx);
+        if (idx > 0) {
+            if (actionType == PAL_SHIFT_ALL_HOLD) PaletteRuntime::holdPalette(holdId, p, idx);
+            else p->setStateIndex(idx);
+        }
     }
-}
-
-void PaletteAction::restoreSnapshot()
-{
-    for (int i = 0; i < snapshotIds.size(); i++) {
-        Palette* p = Brain::getInstance()->getPaletteById(snapshotIds[i]);
-        if (p != nullptr) p->setStateIndex(snapshotStates[i]);
-    }
-    snapshotIds.clear();
-    snapshotStates.clear();
 }
 
 void PaletteAction::setValueInternal(var value, String origin, int incrementIndex, bool isRelative)
@@ -51,16 +53,18 @@ void PaletteAction::setValueInternal(var value, String origin, int incrementInde
 
     if (actionType == PAL_SHIFT_ALL_HOLD) {
         if (val == 1) {
-            snapshotIds.clear();
-            snapshotStates.clear();
-            for (auto* p : PaletteManager::getInstance()->items) {
-                snapshotIds.add(p->registeredId);
-                snapshotStates.add(p->currentState->intValue());
-            }
+            PaletteRuntime::releaseHold(holdId); // a repeated press must not stack on itself
             shiftAll();
         }
         else if (val == 0) {
-            restoreSnapshot();
+            PaletteRuntime::releaseHold(holdId);
+        }
+        return;
+    }
+
+    if (actionType == PAL_BLEND) { // fader: every value counts
+        for (auto* p : PaletteManager::getInstance()->items) {
+            if (paletteId->intValue() == 0 || paletteId->intValue() == p->registeredId) PaletteRuntime::setBlend(p, stateA->intValue(), stateB->intValue(), val);
         }
         return;
     }

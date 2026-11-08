@@ -1843,6 +1843,12 @@
     <ClCompile Include="..\..\Source\Definitions\Palette\PaletteManager.cpp">
       <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Palette\PaletteRuntime.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Definitions\Palette\PaletteCuelistRefresh.cpp">
+      <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\Definitions\Palette\PaletteManagerUI.cpp">
       <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
     </ClCompile>
@@ -5830,6 +5836,9 @@
       <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\Palette\PaletteManager.h">
+      <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Definitions\Palette\PaletteRuntime.h">
       <Filter>BlinderKitten\Source\Definitions\Palette</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Definitions\Palette\PaletteManagerUI.h">
