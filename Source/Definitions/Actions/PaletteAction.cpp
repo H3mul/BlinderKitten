@@ -22,7 +22,7 @@ PaletteAction::PaletteAction(var params) :
     if (actionType == PAL_SET) {
         stateIndex = addIntParameter("State", "Position of the state to select (1 = first)", 1, 1);
     }
-    if (actionType == PAL_SHIFT_ALL || actionType == PAL_SHIFT_ALL_HOLD) {
+    if (actionType == PAL_SHIFT_ALL || actionType == PAL_SHIFT_ALL_HOLD || actionType == PAL_BLEND_ALL) {
         stateName = addStringParameter("State name", "Every palette that has a state with this exact name is set to it", "reverse");
     }
 }
@@ -47,6 +47,23 @@ void PaletteAction::shiftAll()
     }
 }
 
+void PaletteAction::blendAll(float value)
+{
+    String name = stateName->stringValue();
+    if (value > 0 && blendBase.size() == 0) { // fader left 0: record every palette that has the named state
+        for (auto* p : PaletteManager::getInstance()->items) {
+            if (p->findStateIndex(name) > 0) blendBase.set(p->registeredId, p->currentState->intValue());
+        }
+    }
+    for (HashMap<int, int>::Iterator it(blendBase); it.next();) {
+        Palette* p = Brain::getInstance()->getPaletteById(it.getKey()); // may have been deleted meanwhile
+        if (p == nullptr) continue;
+        int b = p->findStateIndex(name);
+        if (b > 0) PaletteRuntime::setBlend(p, it.getValue(), b, value);
+    }
+    if (value <= 0) blendBase.clear();
+}
+
 void PaletteAction::setValueInternal(var value, String origin, int incrementIndex, bool isRelative)
 {
     float val = value;
@@ -59,6 +76,11 @@ void PaletteAction::setValueInternal(var value, String origin, int incrementInde
         else if (val == 0) {
             PaletteRuntime::releaseHold(holdId);
         }
+        return;
+    }
+
+    if (actionType == PAL_BLEND_ALL) { // fader: every value counts
+        blendAll(val);
         return;
     }
 

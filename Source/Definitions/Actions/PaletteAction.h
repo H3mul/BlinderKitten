@@ -9,7 +9,7 @@ public:
     PaletteAction(var params = var());
     ~PaletteAction();
 
-    enum ActionType { PAL_SET, PAL_NEXT, PAL_PREVIOUS, PAL_SHIFT_ALL, PAL_SHIFT_ALL_HOLD, PAL_BLEND };
+    enum ActionType { PAL_SET, PAL_NEXT, PAL_PREVIOUS, PAL_SHIFT_ALL, PAL_SHIFT_ALL_HOLD, PAL_BLEND, PAL_BLEND_ALL };
     ActionType actionType;
 
     IntParameter* paletteId = nullptr;
@@ -19,6 +19,9 @@ public:
     IntParameter* stateA = nullptr;   // blend: state at fader 0
     IntParameter* stateB = nullptr;   // blend: state at fader 1
 
+    // global blend fader: each palette's state when the fader left 0 (palette id -> state index), cleared at 0; not saved
+    HashMap<int, int> blendBase;
+
     // momentary shift: holds on PaletteRuntime's per-palette stacks, released on value 0 (not saved)
     int holdId = 0;
 
@@ -26,6 +29,7 @@ public:
     void setValueInternal(var value, String origin, int incrementIndex, bool isRelative) override;
 
     void shiftAll();
+    void blendAll(float value);
 
     static PaletteAction* create(var params) { return new PaletteAction(params); }
 };
