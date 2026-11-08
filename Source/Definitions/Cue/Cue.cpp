@@ -649,6 +649,16 @@ Array<Cue*> Cue::getReuseSources(Array<bool>* hostTiming)
 	return ret;
 }
 
+Array<Cue*> Cue::getRemapCues(Array<Cue*> history)
+{
+	Array<Cue*> ret;
+	if (history.contains(this)) return ret;
+	history.add(this);
+	ret.add(this);
+	for (Cue* src : getReuseSources()) ret.addArray(src->getRemapCues(history));
+	return ret;
+}
+
 bool Cue::refsPalettes(const Array<int>& paletteIds, Array<Cue*> history)
 {
 	if (history.contains(this)) return false;

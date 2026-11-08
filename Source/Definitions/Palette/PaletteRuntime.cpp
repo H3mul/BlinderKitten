@@ -173,8 +173,10 @@ std::shared_ptr<PaletteRuntime::Consumers> PaletteRuntime::scan(Palette* p)
 		Cuelist* cl = it.getValue();
 		if (cl == nullptr) continue;
 		for (auto* cue : cl->cues.items) {
-			for (auto* r : cue->paletteRemap.items) {
-				if (r->toId->intValue() == p->registeredId) c->paletteIds.addIfNotAlreadyThere(r->fromId->intValue());
+			for (Cue* rc : cue->getRemapCues()) {
+				for (auto* r : rc->paletteRemap.items) {
+					if (r->toId->intValue() == p->registeredId) c->paletteIds.addIfNotAlreadyThere(r->fromId->intValue());
+				}
 			}
 		}
 	}

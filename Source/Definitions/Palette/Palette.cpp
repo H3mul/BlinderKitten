@@ -238,11 +238,13 @@ Palette* Palette::resolve(int paletteId, int slot, Cue* cue)
 {
 	Brain* b = Brain::getInstance();
 	if (cue != nullptr) {
-		for (auto* r : cue->paletteRemap.items) {
-			if (r->fromId->intValue() != paletteId) continue;
-			Palette* target = b->getPaletteById(r->toId->intValue());
-			if (target != nullptr && target->hasSlot(slot)) return target;
-			break; // target missing or too short: fall through to the original palette
+		for (Cue* c : cue->getRemapCues()) {
+			for (auto* r : c->paletteRemap.items) {
+				if (r->fromId->intValue() != paletteId) continue;
+				Palette* target = b->getPaletteById(r->toId->intValue());
+				if (target != nullptr && target->hasSlot(slot)) return target;
+				return b->getPaletteById(paletteId); // target missing or too short: fall through to the original palette
+			}
 		}
 	}
 	return b->getPaletteById(paletteId);
