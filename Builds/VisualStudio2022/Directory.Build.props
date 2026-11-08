@@ -1,0 +1,5 @@
+<Project>
+  <!-- Machine-specific overrides (git-excluded), e.g. a JUCE modules include path. -->
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.local.props" Condition="Exists('$(MSBuildThisFileDirectory)Directory.Build.local.props')" />
+  <Import Project="$(MSBuildThisFileDirectory)Precompiled.props" />
+</Project>

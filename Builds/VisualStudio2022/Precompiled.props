@@ -1,0 +1,12 @@
+<Project>
+  <!-- Debug builds only: faster incremental builds with a precompiled JuceHeader.h.
+       Imported by Directory.Build.props. See Precompiled.targets. -->
+  <PropertyGroup>
+    <BKPchDir>$(MSBuildThisFileDirectory)pch\</BKPchDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)' == 'Debug'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(BKPchDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>

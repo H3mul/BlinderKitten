@@ -1,0 +1,21 @@
+<Project>
+  <!-- Imported by Directory.Build.targets (after the project's items exist, so Update works).
+       Debug builds only. Turns on a precompiled JuceHeader.h for BlinderKitten's own C++ sources.
+       JUCE and organicui module files, JuceLibraryCode and .c files keep their normal settings.
+       Disable: msbuild /p:BKPch=false -->
+  <PropertyGroup>
+    <BKPch Condition="'$(BKPch)' == ''">true</BKPch>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(BKPch)' == 'true' And '$(Configuration)' == 'Debug'">
+    <ClCompile Include="$(BKPchDir)BKPrecompiled.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeaderFile>BKPrecompiled.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles></ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Update="..\..\Source\**\*.cpp">
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>BKPrecompiled.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>BKPrecompiled.h</ForcedIncludeFiles>
+    </ClCompile>
+  </ItemGroup>
+</Project>
