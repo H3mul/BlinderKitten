@@ -16,6 +16,7 @@
 - Fixtures
 - Groups
 - Presets
+- Palettes
 - Timing presets
 - Curve preset
 - Cuelists
