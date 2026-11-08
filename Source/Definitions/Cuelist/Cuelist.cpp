@@ -997,8 +997,11 @@ void Cuelist::flash(bool setOn, bool withTiming, bool swop) {
 	if (setOn) {
 		TSOffFlash = 0;
 		TSOffFlashEnd = 0;
+		bool alreadyFlashing = isFlashing;
 		isFlashing = true;
 		CScuesAB.enter();
+		// only a flash that finds the cuelist idle owns its start; repeated presses keep the first answer
+		if (!alreadyFlashing) flashStartedCuelist = (cueA == nullptr);
 		if (cueA == nullptr) {
 			if (withTiming) {
 				go();
@@ -1037,7 +1040,9 @@ void Cuelist::flash(bool setOn, bool withTiming, bool swop) {
 			cueA->csComputing.exit();
 		}
 		CScuesAB.exit();
-		if (!userPressedGo) {
+		bool stopIt = flashStartedCuelist && !userPressedGo;
+		flashStartedCuelist = false;
+		if (stopIt) {
 			if (withTiming) {
 				off();
 			}
