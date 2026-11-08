@@ -97,6 +97,7 @@ ActionFactory::ActionFactory()
     defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Flash", &EffectAction::create)->addParam("actionType", EffectAction::FX_FLASH));
     defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Swop", &EffectAction::create)->addParam("actionType", EffectAction::FX_SWOP));
     defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Size", &EffectAction::create)->addParam("actionType", EffectAction::FX_SIZE));
+    defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Master", &EffectAction::create)->addParam("actionType", EffectAction::FX_MASTER));
     defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Speed", &EffectAction::create)->addParam("actionType", EffectAction::FX_SPEED));
     defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Double Speed", &EffectAction::create)->addParam("actionType", EffectAction::FX_DOUBLESPEED));
     defs.add(Factory<Action>::Definition::createDef("Effect", "Effect Half Speed", &EffectAction::create)->addParam("actionType", EffectAction::FX_HALFSPEED));

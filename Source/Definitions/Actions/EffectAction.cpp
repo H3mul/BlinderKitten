@@ -19,6 +19,12 @@ EffectAction::EffectAction(var params) :
 
     targetId = addIntParameter("Effect ID", "Id oth the target effect", 0, 0);
 
+    if (actionType == FX_MASTER) {
+        targetId->setValue(1);
+        masterAll = addBoolParameter("All effects", "Dampen every effect. Otherwise only effects from Effect ID thru To ID", true);
+        masterTo = addIntParameter("To ID", "Last effect id of the range (ignored when All effects)", 1, 0);
+    }
+
     if (actionType == FX_SPEED) {
         maxSpeed = addFloatParameter("Max Speed", "Speed when your fader is up high", 600, 0);
     }
@@ -58,6 +64,26 @@ void EffectAction::triggerInternal()
 }
 
 void EffectAction::setValueInternal(var value, String origin, int incrementIndex, bool isRelative) {
+    if (actionType == FX_MASTER) {
+        Brain* b = Brain::getInstance();
+        bool all = masterAll->boolValue();
+        int from = targetId->intValue();
+        int to = jmax(from, masterTo->intValue());
+        float cur = b->effectMaster;
+        if (!all) { Effect* e = b->getEffectById(from); cur = e != nullptr ? e->masterMult : 1; }
+        float val = value;
+        bool incrementOk = incrementIndex == 0 || incrementIndex == validIncrementIndex;
+        if (isRelative) {
+            b->effectMasterController = origin;
+            b->setEffectMaster(cur + val, all, from, to);
+        }
+        else if ((incrementOk && b->effectMasterController == origin) || abs(cur - val) < 0.05) {
+            b->effectMasterController = origin;
+            b->setEffectMaster(val, all, from, to);
+            validIncrementIndex = incrementIndex + 1;
+        }
+        return;
+    }
     Effect* target = Brain::getInstance()->getEffectById(targetId->getValue());
     if (target == nullptr) return;
 
@@ -236,6 +262,13 @@ void EffectAction::setValueInternal(var value, String origin, int incrementIndex
 var EffectAction::getValue()
 {
     var val = var();
+
+    if (actionType == FX_MASTER) {
+        Brain* b = Brain::getInstance();
+        if (masterAll->boolValue()) return b->effectMaster;
+        Effect* e = b->getEffectById(targetId->intValue());
+        return e != nullptr ? e->masterMult : 1.f;
+    }
 
     Effect* target = Brain::getInstance()->getEffectById(targetId->getValue());
     if (target == nullptr) return val;

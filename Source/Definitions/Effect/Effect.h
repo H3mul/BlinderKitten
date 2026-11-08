@@ -86,6 +86,7 @@ public:
     MultiplicatorLinkManager speedMult;
     MultiplicatorLinkManager sizeMult;
     float currentSizeMult = 1;
+    float masterMult = 1; // set by Effect Master action (thru ids), transient
 
     String getTypeString() const override { return objectType; }
 

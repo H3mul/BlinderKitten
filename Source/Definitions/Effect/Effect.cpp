@@ -414,6 +414,7 @@ float Effect::applyToChannel(SubFixtureChannel* fc, float currentVal, double now
 		if (isFlashing) { size = flashValue->floatValue(); }
 
 		size *= fadeSize;
+		size *= masterMult * Brain::getInstance()->effectMaster;
 
 		if (p->effectMode->getValue() == "relative") {
 			value *= (double)size;
