@@ -228,7 +228,7 @@ void Cue::computeValues() {
 	computeValues(histo, this);
 }
 
-void Cue::computeValues(Array<Cue*> history, Cue* callingCue) {
+void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOverride) {
 	if (history.contains(this)) return;
 	history.add(this);
 	csComputing.enter();
@@ -239,7 +239,12 @@ void Cue::computeValues(Array<Cue*> history, Cue* callingCue) {
 	commandHistory.clear();
 	if (callingCue == nullptr) callingCue = this;
 
-	for (Cue* original : getReuseSources()) {
+	Array<bool> hostTiming;
+	Array<Cue*> sources = getReuseSources(&hostTiming);
+	for (int s = 0; s < sources.size(); s++) {
+		Cue* original = sources[s];
+		Cuelist* srcOverride = cuelistOverride;
+		if (hostTiming[s]) { callingCue->checkParentCuelist(); srcOverride = callingCue->parentCuelist; }
 		// compute the source for this caller, then put the source's own output back untouched
 		original->csComputing.enter();
 		HashMap<SubFixtureChannel*, std::shared_ptr<ChannelValue>> savedValues;
@@ -249,7 +254,7 @@ void Cue::computeValues(Array<Cue*> history, Cue* callingCue) {
 		savedValues.swapWith(original->computedValues);
 		savedChannels.swapWith(original->channelToCommand);
 
-		original->computeValues(history, callingCue);
+		original->computeValues(history, callingCue, srcOverride);
 		for (auto it = original->computedValues.begin(); it != original->computedValues.end(); it.next()) {
 			computedValues.set(it.getKey(), it.getValue());
 		}
@@ -270,7 +275,7 @@ void Cue::computeValues(Array<Cue*> history, Cue* callingCue) {
 	for (int i = 0; i < cs.size(); i++) {
 		commandHistory.removeAllInstancesOf(cs[i]);
 		commandHistory.add(cs[i]);
-		cs[i]->computeValues(parentCuelist, callingCue);
+		cs[i]->computeValues(cuelistOverride != nullptr ? cuelistOverride : parentCuelist, callingCue);
 		maxTiming = std::max(maxTiming, cs[i]->maxTiming);
 		for (auto it = cs[i]->computedValues.begin(); it != cs[i]->computedValues.end(); it.next()) {
 			SubFixtureChannel* fc = it.getKey();
@@ -621,23 +626,24 @@ CueReuse::CueReuse(var params) :
 	cue->targetType = TargetParameter::CONTAINER;
 	cue->maxDefaultSearchLevel = 2;
 	cue->typesFilter = StringArray("Cue");
+	useHostTiming = addBoolParameter("Use host timing", "Use the cuelist timing (preset, raw or filtered) of the cue that includes this one, instead of the cuelist this cue belongs to", false);
 }
 
 void CueReuse::onContainerParameterChangedInternal(Parameter* p)
 {
-	if (p == cue || p == enabled) { Brain::getInstance()->liveEditChanged(); }
+	if (p == cue || p == enabled || p == useHostTiming) { Brain::getInstance()->liveEditChanged(); }
 }
 
 // main source first, then the extra enabled ones in list order; missing or empty targets are skipped
-Array<Cue*> Cue::getReuseSources()
+Array<Cue*> Cue::getReuseSources(Array<bool>* hostTiming)
 {
 	Array<Cue*> ret;
 	if (reuseCue->getValue() != "") {
-		if (Cue* c = dynamic_cast<Cue*>(reuseCue->targetContainer.get())) ret.add(c);
+		if (Cue* c = dynamic_cast<Cue*>(reuseCue->targetContainer.get())) { ret.add(c); if (hostTiming) hostTiming->add(false); }
 	}
 	for (auto* r : moreReuse.items) {
 		if (!r->enabled->boolValue()) continue;
-		if (Cue* c = dynamic_cast<Cue*>(r->cue->targetContainer.get())) ret.add(c);
+		if (Cue* c = dynamic_cast<Cue*>(r->cue->targetContainer.get())) { ret.add(c); if (hostTiming) hostTiming->add(r->useHostTiming->boolValue()); }
 	}
 	return ret;
 }

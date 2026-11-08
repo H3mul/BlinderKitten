@@ -28,6 +28,7 @@ public:
     ~CueReuse() {}
 
     TargetParameter* cue;
+    BoolParameter* useHostTiming;
 
     void onContainerParameterChangedInternal(Parameter* p) override;
     String getTypeString() const override { return "CueReuse"; }
@@ -95,7 +96,8 @@ public:
     void controllableStateChanged(Controllable* c) override;
 
     void computeValues();
-    void computeValues(Array<Cue*> history, Cue* callingCue);
+    // cuelistOverride: cuelist whose timing the commands use instead of this cue's own cuelist (host timing)
+    void computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOverride = nullptr);
     void update(double now);
     void go();
     void go(float forcedDelay, float forcedFade);
@@ -155,7 +157,7 @@ public:
 
     // more source cues after `reuseCue`; later sources win per channel, own commands win over all
     BaseManager<CueReuse> moreReuse;
-    Array<Cue*> getReuseSources();
+    Array<Cue*> getReuseSources(Array<bool>* hostTiming = nullptr);
 
 };
 
