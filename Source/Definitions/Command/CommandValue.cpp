@@ -43,6 +43,8 @@ CommandValue::CommandValue(var params) :
     slotFrom = addIntParameter("Slot From", "Slot of the palette for the first element", 1, 1, PaletteState::maxSlots);
     slotTo = addIntParameter("Slot To", "Slot of the palette for the last element", 2, 1, PaletteState::maxSlots);
 
+    stateName = addStringParameter("State override", "Name of a palette state to play instead of the palette's live state. Palettes without that state stay live. Empty = live.", "");
+
     symmetry = addBoolParameter("Symmetry", "Apply value with symmetry ?", false);
     randomize = addBoolParameter("Randomize", "Randomize values", false);
 
@@ -79,6 +81,7 @@ void CommandValue::updateDisplay()
     paletteId->hideInEditor = !pal;
     slotFrom->hideInEditor = !pal;
     slotTo->hideInEditor = !(th && pal);
+    stateName->hideInEditor = !pal;
 
     symmetry->hideInEditor = !th || randomize->boolValue();
     randomize->hideInEditor = !th;
@@ -127,6 +130,16 @@ void CommandValue::resolvePalette(Cue* cue, Preset*& from, Preset*& to) {
     auto buildStack = [&](Palette* p, int slot, PresetStack& out) {
         out.clear();
         if (p == nullptr) return;
+        String sn = stateName->stringValue();
+        if (sn.isNotEmpty()) {
+            int st = p->findStateIndex(sn);
+            if (st > 0) { // override: that state at full share, whatever the base and layers are
+                Preset* pr = b->getPresetById(p->getPresetIdForState(st, slot), true);
+                if (pr != nullptr) pr->computeValues();
+                out.add({ pr, 1.f });
+                return;
+            }
+        }
         auto stack = p->getBlendStack();
         // one entry is the plain current state, unless the base fade is at its very start (only the old state has a share)
         if (stack.size() < 2 && (stack.isEmpty() || stack[0].first == p->currentState->intValue())) return;

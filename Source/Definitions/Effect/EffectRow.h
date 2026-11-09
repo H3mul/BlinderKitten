@@ -31,6 +31,10 @@ class EffectRow:
     Automation curve;
     FloatParameter* curveOrigin;
     IntParameter* presetId;
+    StringParameter* paletteState; // non-empty: palette row, drives blend layers toward this state instead of channels
+    int paletteOwnerId = 0;
+    float lastPaletteWeight = -1;
+    void clearPaletteLayers();
     FloatParameter* chaserFade;
     IntParameter* chaserBuddying;
     FloatParameter* speed;
