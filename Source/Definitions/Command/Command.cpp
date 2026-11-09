@@ -651,7 +651,8 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 Command::ShiftTable* Command::buildShiftTable(CommandValue* cv, Palette* p, int state)
 {
 	Brain* b = Brain::getInstance();
-	auto* t = new ShiftTable{ cv, p, state, Time::getMillisecondCounterHiRes(), {} };
+	auto* t = new ShiftTable();
+	t->cv = cv; t->palette = p; t->state = state; t->built = Time::getMillisecondCounterHiRes();
 	Preset* pFrom = b->getPresetById(p->getPresetIdForState(state, cv->slotFrom->intValue()), true);
 	Preset* pTo = b->getPresetById(p->getPresetIdForState(state, cv->slotTo->intValue()), true);
 	if (pFrom != nullptr) pFrom->computeValues();
