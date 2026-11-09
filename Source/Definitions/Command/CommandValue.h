@@ -42,7 +42,8 @@ class CommandValue:
     IntParameter* paletteId;
     IntParameter* slotFrom;
     IntParameter* slotTo;
-    StringParameter* stateName; // palette ref: named state override (empty = live)
+    IntParameter* paletteIdTo;      // Palette shift: last id of the palette range (thru); 0 = all palettes when paletteId is 0
+    StringParameter* stateName;     // Palette shift: name of the palette state to play
     FloatParameter* valueTo;
     BoolParameter* symmetry;
     BoolParameter* randomize;

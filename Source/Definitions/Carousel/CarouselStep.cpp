@@ -15,6 +15,8 @@
 #include "../SubFixture/SubFixtureChannel.h"
 #include "../Preset/Preset.h"
 #include "../../Brain.h"
+#include "../Palette/Palette.h"
+#include "../Palette/PaletteManager.h"
 
 CarouselStep::CarouselStep(var params) :
     BaseItem(params.getProperty("name", "CarouselStep")),
@@ -77,6 +79,41 @@ void CarouselStep::updateDisplay() {
 }
 
 
+// Palette shift: the values are resolved per channel when the carousel applies (Carousel::applyToChannel); here only the channels are declared,
+// those set by the named state's presets in every palette of the range that has the state.
+void CarouselStep::computeShift(CommandValue* cv, Array<SubFixture*>& SubFixtures) {
+	String state = cv->stateName->stringValue();
+	if (state.isEmpty()) return;
+	int lo = cv->paletteId->intValue();
+	int hi = jmax(lo, cv->thru->boolValue() ? cv->paletteIdTo->intValue() : lo);
+	Brain* b = Brain::getInstance();
+	for (auto* p : PaletteManager::getInstance()->items) {
+		if (lo > 0 && (p->registeredId < lo || p->registeredId > hi)) continue;
+		int st = p->findStateIndex(state);
+		if (st <= 0) continue;
+		for (int slot = 1; slot <= p->slotCount->intValue(); slot++) {
+			Preset* pr = b->getPresetById(p->getPresetIdForState(st, slot), true);
+			if (pr == nullptr) continue;
+			pr->computeValues();
+			for (SubFixture* sf : SubFixtures) {
+				auto vals = pr->getSubFixtureValues(sf);
+				if (vals == nullptr) continue;
+				for (auto it = vals->begin(); it != vals->end(); it.next()) {
+					if (!sf->channelsMap.contains(it.getKey())) continue;
+					SubFixtureChannel* fchan = sf->channelsMap.getReference(it.getKey());
+					if (!computedValues.contains(fchan)) computedValues.set(fchan, std::make_shared<ChannelValue>());
+					auto cvv = computedValues.getReference(fchan);
+					cvv->values.set(1, -1);
+					cvv->paletteShift = true;
+					cvv->shiftState = state;
+					cvv->shiftLo = lo;
+					cvv->shiftHi = hi;
+				}
+			}
+		}
+	}
+}
+
 void CarouselStep::computeValues(Array<SubFixture*> &SubFixtures) {
 	double now = Time::getMillisecondCounterHiRes();
 	//LOG("compute carouselStep");
@@ -91,6 +128,7 @@ void CarouselStep::computeValues(Array<SubFixture*> &SubFixtures) {
 	for (int commandIndex = 0; commandIndex < commandValues.size(); commandIndex++) {
 		CommandValue* cv = commandValues[commandIndex];
 		if (!cv -> enabled->boolValue()) continue;
+		if (cv->presetOrValue->getValueData() == "paletteshift") { computeShift(cv, SubFixtures); continue; }
 		bool symValues = cv->symmetry->getValue();
 		Preset* pFrom = nullptr;
 		Preset* pTo = nullptr;

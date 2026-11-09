@@ -25,6 +25,7 @@ CommandValue::CommandValue(var params) :
     presetOrValue->addOption("Preset", "preset");
     presetOrValue->addOption("Release", "release");
     presetOrValue->addOption("Palette", "palette");
+    presetOrValue->addOption("Palette shift", "paletteshift");
 
     channelType = addTargetParameter("Channel type", "Type of Channel", ChannelFamilyManager::getInstance());
     channelType->maxDefaultSearchLevel = 2;
@@ -43,7 +44,8 @@ CommandValue::CommandValue(var params) :
     slotFrom = addIntParameter("Slot From", "Slot of the palette for the first element", 1, 1, PaletteState::maxSlots);
     slotTo = addIntParameter("Slot To", "Slot of the palette for the last element", 2, 1, PaletteState::maxSlots);
 
-    stateName = addStringParameter("State override", "Name of a palette state to play instead of the palette's live state. Palettes without that state stay live. Empty = live.", "");
+    paletteIdTo = addIntParameter("Palette To", "Last palette id of the range the shift applies to", 0, 0);
+    stateName = addStringParameter("State", "Name of the palette state to play, for the palette slot each fixture already has from its cue. Palettes without that state stay as they are.", "");
 
     symmetry = addBoolParameter("Symmetry", "Apply value with symmetry ?", false);
     randomize = addBoolParameter("Randomize", "Randomize values", false);
@@ -78,16 +80,18 @@ void CommandValue::updateDisplay()
 
     presetIdFrom->hideInEditor = !(prst);
     presetIdTo->hideInEditor = !(th && prst);
-    paletteId->hideInEditor = !pal;
+    bool shift = presetOrValue->getValue() == "paletteshift";
+    paletteId->hideInEditor = !(pal || shift);
+    paletteIdTo->hideInEditor = !(th && shift);
     slotFrom->hideInEditor = !pal;
     slotTo->hideInEditor = !(th && pal);
-    stateName->hideInEditor = !pal;
+    stateName->hideInEditor = !shift;
 
-    symmetry->hideInEditor = !th || randomize->boolValue();
-    randomize->hideInEditor = !th;
+    symmetry->hideInEditor = !th || randomize->boolValue() || shift;
+    randomize->hideInEditor = !th || shift;
 
     thru->hideInEditor = rel;
-    HTPOverride->hideInEditor = rel;
+    HTPOverride->hideInEditor = rel || shift;
 
     stepSize->hideInEditor = !shouldShowStepSize;
 
@@ -130,16 +134,6 @@ void CommandValue::resolvePalette(Cue* cue, Preset*& from, Preset*& to) {
     auto buildStack = [&](Palette* p, int slot, PresetStack& out) {
         out.clear();
         if (p == nullptr) return;
-        String sn = stateName->stringValue();
-        if (sn.isNotEmpty()) {
-            int st = p->findStateIndex(sn);
-            if (st > 0) { // override: that state at full share, whatever the base and layers are
-                Preset* pr = b->getPresetById(p->getPresetIdForState(st, slot), true);
-                if (pr != nullptr) pr->computeValues();
-                out.add({ pr, 1.f });
-                return;
-            }
-        }
         auto stack = p->getBlendStack();
         // one entry is the plain current state, unless the base fade is at its very start (only the old state has a share)
         if (stack.size() < 2 && (stack.isEmpty() || stack[0].first == p->currentState->intValue())) return;

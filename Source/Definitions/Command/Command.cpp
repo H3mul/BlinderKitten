@@ -25,6 +25,7 @@
 #include "Definitions/Preset/Preset.h"
 #include "Definitions/Fixture/Fixture.h"
 #include "Definitions/Group/Group.h"
+#include "Definitions/Palette/Palette.h"
 
 struct CommandTimingParameters {
 	bool delayThru = false;
@@ -149,6 +150,8 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 	isComputing.enter();
 	computedValues.clear();
 	channelToCommandValue.clear();
+	lastCue = callingCue;
+	{ ScopedLock sl(shiftLock); shiftTables.clear(); }
 
 	if (!enabled->boolValue()) {
 		isComputing.exit();
@@ -642,6 +645,76 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 		}
 	}
 	isComputing.exit();
+}
+
+// Palette shift: mirrors the value path of computeValues (preset of the state's slots, thru, symmetry, positions) for one state. Randomize is ignored.
+Command::ShiftTable* Command::buildShiftTable(CommandValue* cv, Palette* p, int state)
+{
+	Brain* b = Brain::getInstance();
+	auto* t = new ShiftTable{ cv, p, state, Time::getMillisecondCounterHiRes(), {} };
+	Preset* pFrom = b->getPresetById(p->getPresetIdForState(state, cv->slotFrom->intValue()), true);
+	Preset* pTo = b->getPresetById(p->getPresetIdForState(state, cv->slotTo->intValue()), true);
+	if (pFrom != nullptr) pFrom->computeValues();
+	if (pTo != nullptr) pTo->computeValues();
+
+	Array<SubFixture*> sfs = selection.computedSelectedSubFixtures;
+	bool thru = cv->thru->boolValue() && sfs.size() > 1;
+	bool sym = cv->symmetry->boolValue();
+	float maxPos = 0;
+	for (auto* sf : sfs) if (selection.subFixtureToPosition.contains(sf)) maxPos = jmax(maxPos, selection.subFixtureToPosition.getReference(sf));
+
+	for (int i = 0; i < sfs.size(); i++) {
+		SubFixture* sf = sfs[i];
+		float pos = i / (float)(sfs.size() - 1);
+		if (std::isnan(pos)) pos = 0;
+		bool useNormalized = false;
+		if (selection.subFixtureToPosition.contains(sf)) { useNormalized = true; pos = selection.subFixtureToPosition.getReference(sf); }
+		float posSym = maxPos > 0 ? jmap(pos, 0.f, maxPos, 0.f, 1.f) * 2 : 0.f;
+		posSym = posSym > 1 ? 2 - posSym : posSym;
+
+		auto from = pFrom != nullptr ? pFrom->getSubFixtureValues(sf) : nullptr;
+		auto to = pTo != nullptr ? pTo->getSubFixtureValues(sf) : nullptr;
+		if (from == nullptr) continue;
+		for (auto it = from->begin(); it != from->end(); it.next()) {
+			ChannelType* ct = it.getKey();
+			if (!sf->channelsMap.contains(ct)) continue;
+			float val = it.getValue();
+			if (thru) {
+				float valueTo = (to != nullptr && to->contains(ct)) ? to->getReference(ct) : val;
+				float position = pos;
+				if (sym) position = useNormalized ? posSym : Brain::symPosition(i, sfs.size());
+				val = jmap(position, val, valueTo);
+			}
+			t->values.set(sf->channelsMap.getReference(ct), val);
+		}
+	}
+	return t;
+}
+
+float Command::shiftValueFor(SubFixtureChannel* fc, const String& stateName, int idLo, int idHi)
+{
+	ScopedTryLock stl(isComputing); // mid-recompute: pass through for this frame
+	if (!stl.isLocked() || !channelToCommandValue.contains(fc)) return -1;
+	CommandValue* cv = channelToCommandValue.getReference(fc);
+	if (cv == nullptr || cv->presetOrValue->getValueData() != "palette") return -1;
+	int pid = cv->paletteId->intValue();
+	Palette* p = Palette::resolve(pid, cv->slotFrom->intValue(), lastCue);
+	if (p == nullptr) return -1;
+	if (idLo > 0) {
+		int hi = jmax(idLo, idHi);
+		bool inRange = (pid >= idLo && pid <= hi) || (p->registeredId >= idLo && p->registeredId <= hi);
+		if (!inRange) return -1;
+	}
+	int state = p->findStateIndex(stateName);
+	if (state <= 0) return -1;
+
+	ScopedLock sl(shiftLock);
+	double now = Time::getMillisecondCounterHiRes();
+	ShiftTable* t = nullptr;
+	for (auto* x : shiftTables) if (x->cv == cv && x->palette == p && x->state == state) { t = x; break; }
+	if (t != nullptr && now - t->built > 250) { shiftTables.removeObject(t); t = nullptr; }
+	if (t == nullptr) t = shiftTables.add(buildShiftTable(cv, p, state));
+	return t->values.contains(fc) ? t->values.getReference(fc) : -1;
 }
 
 void Command::onControllableFeedbackUpdate(ControllableContainer* cc, Controllable* c) {

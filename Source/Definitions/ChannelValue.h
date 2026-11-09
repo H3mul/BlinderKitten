@@ -50,6 +50,11 @@ public:
     float moveInBlackDelay = 0;
 
     Command* parentCommand = nullptr;
+
+    // Carousel palette shift placeholder: end/start resolved at apply time (see Command::shiftValueFor)
+    bool paletteShift = false;
+    String shiftState;
+    int shiftLo = 0, shiftHi = 0;
     SubFixtureChannel* targetSubFixtureChannel = nullptr;
 
     float pathLength = 0;
