@@ -24,6 +24,7 @@ class ChannelValue;
 class SubFixtureChannel;
 class Cuelist;
 class Cue;
+class Palette;
 class CommandSelection;
 class ChannelType;
 
@@ -49,6 +50,11 @@ public:
     HashMap<SubFixtureChannel*, std::shared_ptr<ChannelValue>> computedValues;
     HashMap<SubFixtureChannel*, CommandValue*> channelToCommandValue;
     CriticalSection isComputing;
+
+    struct ShiftTable { CommandValue* cv; Palette* palette; int state; double built; HashMap<SubFixtureChannel*, float> values; };
+    OwnedArray<ShiftTable> shiftTables; // short-lived cache (250 ms) of shifted values
+    CriticalSection shiftLock;
+    ShiftTable* buildShiftTable(CommandValue* cv, Palette* p, int state);
     bool toDelete = false;
 
     String getTypeString() const override { return objectType; }
@@ -59,6 +65,11 @@ public:
     double maxTiming;
     void computeValues();
     void computeValues(Cuelist* cl, Cue* c, Programmer* p = nullptr);
+
+    // Palette shift (carousel): the value this command would give fc if the palette it refs for fc were in the state named stateName,
+    // using this command's own slots and thru. -1 = no result (not a palette value, palette outside [idLo, idHi] (0 = all), no such state, or computing).
+    float shiftValueFor(SubFixtureChannel* fc, const String& stateName, int idLo, int idHi);
+    Cue* lastCue = nullptr; // callingCue of the last compute (not owned), for the palette remap
 
     void onControllableFeedbackUpdate(ControllableContainer*, Controllable*) override;
     void triggerTriggered(Trigger* t);

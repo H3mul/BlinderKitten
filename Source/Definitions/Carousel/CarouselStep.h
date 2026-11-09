@@ -36,6 +36,7 @@ class CarouselStep:
     CommandValueManager values;
 
     void computeValues(Array<SubFixture*> &SubFixtures);
+    void computeShift(CommandValue* cv, Array<SubFixture*>& SubFixtures); // Palette shift: declare the channels the named state can set
     HashMap<SubFixtureChannel*, std::shared_ptr<ChannelValue>> computedValues;
     HashMap<SubFixtureChannel*, CarouselStep*> chanToPreviousStep;
     HashMap<SubFixtureChannel*, CarouselStep*> chanToNextStep;
