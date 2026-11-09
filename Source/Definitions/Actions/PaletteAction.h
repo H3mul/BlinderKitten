@@ -9,7 +9,7 @@ public:
     PaletteAction(var params = var());
     ~PaletteAction();
 
-    enum ActionType { PAL_SET, PAL_NEXT, PAL_PREVIOUS, PAL_SHIFT_ALL, PAL_SHIFT_ALL_HOLD, PAL_BLEND, PAL_BLEND_ALL };
+    enum ActionType { PAL_SET, PAL_NEXT, PAL_PREVIOUS, PAL_SHIFT_ALL, PAL_SHIFT_ALL_HOLD, PAL_BLEND, PAL_BLEND_ALL, PAL_RESET_ALL };
     ActionType actionType;
 
     IntParameter* paletteId = nullptr;

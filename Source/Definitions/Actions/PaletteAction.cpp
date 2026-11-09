@@ -89,6 +89,12 @@ void PaletteAction::setValueInternal(var value, String origin, int incrementInde
 
     if (val != 1) return; // press only
 
+    if (actionType == PAL_RESET_ALL) {
+        PaletteRuntime::clearHolds();
+        for (auto* p : PaletteManager::getInstance()->items) p->setStateIndex(1);
+        return;
+    }
+
     if (actionType == PAL_SHIFT_ALL) {
         shiftAll();
         return;

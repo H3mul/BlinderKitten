@@ -41,6 +41,7 @@ public:
     static int beginHold();
     static void holdPalette(int holdId, Palette* p, int appliedState);
     static void releaseHold(int holdId);
+    static void clearHolds(); // drop every hold without restoring (reset action)
 
 private:
     PaletteRuntime() {}

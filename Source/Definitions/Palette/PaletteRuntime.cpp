@@ -288,3 +288,8 @@ void PaletteRuntime::releaseHold(int holdId)
 		if (p != nullptr && p->getBase() == h.applied) p->setStateIndex(h.prior);
 	}
 }
+
+void PaletteRuntime::clearHolds()
+{
+	get().holds.clear();
+}
