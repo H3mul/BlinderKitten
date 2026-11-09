@@ -26,7 +26,9 @@ void PaletteRemap::onContainerParameterChangedInternal(Parameter* p)
 void PaletteRemap::afterLoadJSONDataInternal()
 {
 	BaseItem::afterLoadJSONDataInternal();
-	updateNote();
+	// palettes may not be registered yet (cues load before them): check again once the load is done
+	WeakReference<Parameter> alive(note);
+	MessageManager::callAsync([this, alive]() { if (alive != nullptr) updateNote(); });
 }
 
 void PaletteRemap::updateNote()
