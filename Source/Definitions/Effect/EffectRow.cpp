@@ -15,6 +15,7 @@
 #include "../SubFixture/SubFixtureChannel.h"
 #include "Effect.h"
 #include "Brain.h"
+#include "../Palette/PaletteRuntime.h"
 
 EffectRow::EffectRow(var params) :
     BaseItem(params.getProperty("name", "EffectRow")),
@@ -60,6 +61,8 @@ EffectRow::EffectRow(var params) :
 
     curveContainer.saveAndLoadRecursiveData = true;
 
+    paletteState = addStringParameter("Palette state", "Palette row: name of the palette state to blend every palette toward with this curve (size = depth). Empty = normal channel row.", "");
+
     addChildControllableContainer(&curveContainer);
     addChildControllableContainer(&selection);
     addChildControllableContainer(&paramContainer);
@@ -86,7 +89,15 @@ EffectRow::EffectRow(var params) :
 
 EffectRow::~EffectRow()
 {
+    clearPaletteLayers();
 };
+
+void EffectRow::clearPaletteLayers()
+{
+    // on the message thread, in order with the queued setLayer calls from Effect::updatePaletteRows
+    if (paletteOwnerId > 0) { int id = paletteOwnerId; MessageManager::callAsync([id]() { PaletteRuntime::clearOwner(id); }); }
+    lastPaletteWeight = -1;
+}
 
 void EffectRow::checkParentEffect()
 {
@@ -98,6 +109,7 @@ void EffectRow::checkParentEffect()
 void EffectRow::computeData() {
     isComputing.enter();
     computedPositions.clear();
+    if (paletteState->stringValue().isNotEmpty()) { maxOffset = 0; isComputing.exit(); return; } // palette row: no channels
     selection.computeSelection();
     if (!enabled->boolValue()) {
         isComputing.exit();

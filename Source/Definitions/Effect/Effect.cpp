@@ -18,6 +18,9 @@
 #include "../CurvePreset/CurvePreset.h"
 #include "UI/GridView/EffectGridView.h"
 #include "BKEngine.h"
+#include "../Palette/PaletteRuntime.h"
+#include "../Palette/PaletteManager.h"
+#include "../Palette/Palette.h"
 #include "Definitions/Interface/InterfaceIncludes.h"
 
 Effect::Effect(var params) :
@@ -231,6 +234,7 @@ void Effect::stop(float forcedFade) {
 }
 
 void Effect::kill() {
+	for (EffectRow* r : values.items) r->clearPaletteLayers();
 	userPressedGo = false;
 	isOn = false;
 	isEffectOn->setValue(false);
@@ -269,6 +273,8 @@ void Effect::update(double now) {
 			currentPosition->setValue(fmodf(totalElapsed, 1.0));
 		}
 
+		updatePaletteRows(now);
+
 		if (TSEndFadeOut > 0 && TSEndFadeOut < now) {
 			kill();
 		}
@@ -278,6 +284,53 @@ void Effect::update(double now) {
 	}
 	else {
 		currentPosition->setValue(0);
+	}
+}
+
+// Palette rows: the row curve at the effect phase, times the effect size, is the weight of a blend layer toward the named state on every palette that has it.
+void Effect::updatePaletteRows(double now) {
+	float fadeSize = 1;
+	if (TSStartFadeIn < now && TSEndFadeIn > now) fadeSize = jmap(now, TSStartFadeIn, TSEndFadeIn, 0.0, 1.0);
+	if (TSStartFadeOut < now && TSEndFadeOut > now) fadeSize = jmap(now, TSStartFadeOut, TSEndFadeOut, 1.0, 0.0);
+	float size = isFlashing ? flashValue->floatValue() : sizeValue->floatValue() * currentSizeMult;
+	size *= fadeSize * masterMult * Brain::getInstance()->effectMaster;
+
+	for (EffectRow* row : values.items) {
+		String name = row->paletteState->stringValue();
+		if (name.isEmpty()) continue;
+		String mode = row->curvePresetOrValue->getValue().toString();
+		float weight = 0;
+		if (row->enabled->boolValue() && (mode == "drawed" || mode == "preset")) {
+			double offset = totalElapsed * (double)row->speed->getValue();
+			String dir = row->direction->getValueData().toString();
+			if (dir == "bounce") {
+				offset = fmod(offset, 2.0);
+				if (offset > 1) offset = 2 - offset;
+			}
+			else {
+				if (!noLoop->boolValue()) offset = fmod(offset, 1.0);
+				if (dir == "backward") offset = 1 - offset;
+			}
+			Automation* c = &row->curve;
+			if (mode == "preset") {
+				CurvePreset* pres = Brain::getInstance()->getCurvePresetById(row->presetId->getValue());
+				if (pres != nullptr) c = &pres->curve;
+			}
+			weight = jlimit(0.0f, 1.0f, ((float)c->getValueAtPosition(offset) - row->curveOrigin->floatValue()) * size);
+		}
+		if (weight == 0 && row->paletteOwnerId == 0) continue;
+		if (std::abs(weight - row->lastPaletteWeight) < 0.002f) continue;
+		row->lastPaletteWeight = weight;
+		if (row->paletteOwnerId == 0) row->paletteOwnerId = PaletteRuntime::newOwnerId();
+		// Layers belong to the message thread (resolvers read them there): hand the weight over.
+		MessageManager::callAsync([id = row->paletteOwnerId, name, weight]() {
+			auto* pm = PaletteManager::getInstanceWithoutCreating();
+			if (pm == nullptr) return;
+			for (auto* p : pm->items) {
+				int st = p->findStateIndex(name);
+				if (st > 0) PaletteRuntime::setLayer(p, id, st, weight);
+			}
+		});
 	}
 }
 

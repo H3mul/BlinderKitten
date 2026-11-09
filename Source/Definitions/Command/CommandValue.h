@@ -42,6 +42,7 @@ class CommandValue:
     IntParameter* paletteId;
     IntParameter* slotFrom;
     IntParameter* slotTo;
+    StringParameter* stateName; // palette ref: named state override (empty = live)
     FloatParameter* valueTo;
     BoolParameter* symmetry;
     BoolParameter* randomize;

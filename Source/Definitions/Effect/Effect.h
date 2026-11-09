@@ -92,6 +92,7 @@ public:
 
     void triggerTriggered(Trigger* t);
     void update(double now);
+    void updatePaletteRows(double now);
     void computeData();
     bool computed = false;
     bool computing = false;
