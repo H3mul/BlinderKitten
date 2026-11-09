@@ -13,6 +13,9 @@
 #include "Command/Command.h"
 #include "Definitions/SubFixture/SubFixtureChannel.h"
 
+class CommandValue;
+class Cue;
+
 class ChannelValue {
 public:
     ChannelValue();
@@ -50,6 +53,10 @@ public:
     float moveInBlackDelay = 0;
 
     Command* parentCommand = nullptr;
+
+    // Where a cue value came from (set by Command::computeValues): the command value that set it and the calling cue (its palette remap)
+    CommandValue* sourceValue = nullptr;
+    Cue* sourceCue = nullptr;
 
     // Carousel palette shift placeholder: end/start resolved at apply time (see Command::shiftValueFor)
     bool paletteShift = false;

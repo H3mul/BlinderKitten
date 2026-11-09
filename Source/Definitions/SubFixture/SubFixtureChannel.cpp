@@ -229,6 +229,7 @@ void SubFixtureChannel::updateVal(double now) {
 	
 	bool checkSwop = Brain::getInstance()->isSwopping && swopKillable;
 	activeCommand = nullptr;
+	activeCV = nullptr;
 
 	for (int l = 0; l< layers.size(); l++)
 		{
@@ -250,6 +251,7 @@ void SubFixtureChannel::updateVal(double now) {
 					std::shared_ptr<ChannelValue> cv = c->activeValues.contains(this) ? c->activeValues.getReference(this) : nullptr;
 					if (cv != nullptr && isApplied) {
 						activeCommand = cv->parentCommand;
+						activeCV = cv;
 						if (cv->isEnded && !c->isFlashing) {
 							overWritten = i - 1;
 						}

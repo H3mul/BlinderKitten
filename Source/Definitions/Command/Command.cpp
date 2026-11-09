@@ -150,7 +150,6 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 	isComputing.enter();
 	computedValues.clear();
 	channelToCommandValue.clear();
-	lastCue = callingCue;
 	{ ScopedLock sl(shiftLock); shiftTables.clear(); }
 
 	if (!enabled->boolValue()) {
@@ -516,6 +515,8 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 						channelToCommandValue.set(fchan, cv);
 						std::shared_ptr<ChannelValue> finalValue = computedValues.getReference(fchan);
 						finalValue->parentCommand = this;
+						finalValue->sourceValue = cv;
+						finalValue->sourceCue = callingCue;
 						finalValue->canBeTracked = !doNotTrack->boolValue();
 
 						float val = valueFrom;
@@ -692,14 +693,14 @@ Command::ShiftTable* Command::buildShiftTable(CommandValue* cv, Palette* p, int 
 	return t;
 }
 
-float Command::shiftValueFor(SubFixtureChannel* fc, const String& stateName, int idLo, int idHi)
+// v: the cuelist value playing on fc (knows its command value and calling cue). Channel updates run on a thread pool, so the steady state
+// takes only the short shiftLock; a rebuild takes isComputing first (same order as computeValues) to read the selection safely.
+float Command::shiftValueFor(ChannelValue* v, SubFixtureChannel* fc, const String& stateName, int idLo, int idHi)
 {
-	ScopedTryLock stl(isComputing); // mid-recompute: pass through for this frame
-	if (!stl.isLocked() || !channelToCommandValue.contains(fc)) return -1;
-	CommandValue* cv = channelToCommandValue.getReference(fc);
+	CommandValue* cv = v != nullptr ? v->sourceValue : nullptr;
 	if (cv == nullptr || cv->presetOrValue->getValueData() != "palette") return -1;
 	int pid = cv->paletteId->intValue();
-	Palette* p = Palette::resolve(pid, cv->slotFrom->intValue(), lastCue);
+	Palette* p = Palette::resolve(pid, cv->slotFrom->intValue(), v->sourceCue);
 	if (p == nullptr) return -1;
 	if (idLo > 0) {
 		int hi = jmax(idLo, idHi);
@@ -709,12 +710,22 @@ float Command::shiftValueFor(SubFixtureChannel* fc, const String& stateName, int
 	int state = p->findStateIndex(stateName);
 	if (state <= 0) return -1;
 
+	auto find = [&]() -> ShiftTable* {
+		double now = Time::getMillisecondCounterHiRes();
+		for (auto* x : shiftTables) if (x->cv == cv && x->palette == p && x->state == state && now - x->built <= 250) return x;
+		return nullptr;
+	};
+	{
+		ScopedLock sl(shiftLock);
+		if (auto* t = find()) return t->values.contains(fc) ? t->values.getReference(fc) : -1;
+	}
+	ScopedLock cl(isComputing);
 	ScopedLock sl(shiftLock);
-	double now = Time::getMillisecondCounterHiRes();
-	ShiftTable* t = nullptr;
-	for (auto* x : shiftTables) if (x->cv == cv && x->palette == p && x->state == state) { t = x; break; }
-	if (t != nullptr && now - t->built > 250) { shiftTables.removeObject(t); t = nullptr; }
-	if (t == nullptr) t = shiftTables.add(buildShiftTable(cv, p, state));
+	ShiftTable* t = find();
+	if (t == nullptr) {
+		for (int i = shiftTables.size(); --i >= 0;) if (shiftTables[i]->cv == cv && shiftTables[i]->palette == p && shiftTables[i]->state == state) shiftTables.remove(i);
+		t = shiftTables.add(buildShiftTable(cv, p, state));
+	}
 	return t->values.contains(fc) ? t->values.getReference(fc) : -1;
 }
 

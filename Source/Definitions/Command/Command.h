@@ -25,6 +25,7 @@ class SubFixtureChannel;
 class Cuelist;
 class Cue;
 class Palette;
+class ChannelValue;
 class CommandSelection;
 class ChannelType;
 
@@ -68,8 +69,7 @@ public:
 
     // Palette shift (carousel): the value this command would give fc if the palette it refs for fc were in the state named stateName,
     // using this command's own slots and thru. -1 = no result (not a palette value, palette outside [idLo, idHi] (0 = all), no such state, or computing).
-    float shiftValueFor(SubFixtureChannel* fc, const String& stateName, int idLo, int idHi);
-    Cue* lastCue = nullptr; // callingCue of the last compute (not owned), for the palette remap
+    float shiftValueFor(ChannelValue* v, SubFixtureChannel* fc, const String& stateName, int idLo, int idHi);
 
     void onControllableFeedbackUpdate(ControllableContainer*, Controllable*) override;
     void triggerTriggered(Trigger* t);

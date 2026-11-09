@@ -392,7 +392,8 @@ float Carousel::applyToChannel(SubFixtureChannel* fc, float currentVal, double n
 			// Palette shift steps: resolved now, from the cue command driving this channel
 			if (cVal->paletteShift || (prevStep->computedValues.contains(fc) && prevStep->computedValues.getReference(fc)->paletteShift)) {
 				Command* cmd = fc->activeCommand;
-				auto shifted = [&](ChannelValue* v) { return cmd != nullptr ? cmd->shiftValueFor(fc, v->shiftState, v->shiftLo, v->shiftHi) : -1.f; };
+				ChannelValue* cue = fc->activeCV.get();
+				auto shifted = [&](ChannelValue* v) { return (cmd != nullptr && cue != nullptr) ? cmd->shiftValueFor(cue, fc, v->shiftState, v->shiftLo, v->shiftHi) : -1.f; };
 				if (cVal->paletteShift) end = shifted(cVal.get());
 				auto pv = prevStep->computedValues.contains(fc) ? prevStep->computedValues.getReference(fc) : nullptr;
 				if (pv != nullptr && pv->paletteShift) start = shifted(pv.get());

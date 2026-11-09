@@ -101,6 +101,7 @@ public:
     Array<Cuelist*> cuelistFlashStackSnapshot;
 
     Command* activeCommand = nullptr;
+    std::shared_ptr<ChannelValue> activeCV; // the cuelist value behind activeCommand (set and read inside one update)
 
     void updateVal(double now);
 
