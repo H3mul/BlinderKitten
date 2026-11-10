@@ -21,6 +21,7 @@ InputFilter::InputFilter(var params) :
     type->addOption("Ease / lerp", "ease");
     type->addOption("Log scale", "log");
     type->addOption("Curve preset", "curve");
+    type->addOption("Invert", "invert");
 
     dampMode = addEnumParameter("Mode", "Exponential: ease-out, about 95% of the way after Time. Constant rate: fixed speed, full travel in Time");
     dampMode->addOption("Exponential", "exp");
@@ -110,6 +111,8 @@ float InputFilter::process(float in, double dt)
 {
     String t = type->getValue().toString();
 
+    if (t == "invert") return 1.0f - in;
+
     if (t == "log") {
         float b = amount->floatValue();
         if (b <= 1.0001f) return in;
@@ -164,7 +167,7 @@ float InputFilter::process(float in, double dt)
 bool InputFilter::isSettled() const
 {
     String t = type->getValue().toString();
-    if (t == "log" || t == "curve" || !initialised) return true;
+    if (t == "log" || t == "curve" || t == "invert" || !initialised) return true;
     if (t == "damping") return y == lastIn;
     return y == lastIn && easeT >= const_cast<InputFilter*>(this)->effTime();
 }
