@@ -10,6 +10,7 @@
 
 #pragma once
 #include "JuceHeader.h"
+#include "../Multiplicator/MultiplicatorLinkManager.h"
 
 class InputFilter :
     public BaseItem
@@ -29,6 +30,7 @@ public:
     FloatParameter* timeDown;  // seconds, 0 = same as time (damping only)
     FloatParameter* amount;    // log strength
     IntParameter* presetId;    // curve preset
+    MultiplicatorLinkManager timeMult; // scales Time / Time down (damping, ease)
 
     // dt in seconds; the first call after reset() takes the input as the current output.
     float process(float in, double dt);
@@ -49,6 +51,7 @@ private:
     double easeT = 0;
 
     float ease(float p) const;
+    float effTime(bool down = false);
 };
 
 class InputFilterManager :

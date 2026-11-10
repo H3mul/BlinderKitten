@@ -10,7 +10,8 @@ InputFilterManager::InputFilterManager(String name) :
 }
 
 InputFilter::InputFilter(var params) :
-    BaseItem(params.getProperty("name", "Input filter"))
+    BaseItem(params.getProperty("name", "Input filter")),
+    timeMult("Time multiplicators")
 {
     saveAndLoadRecursiveData = true;
     itemDataType = "InputFilter";
@@ -47,6 +48,9 @@ InputFilter::InputFilter(var params) :
 
     presetId = addIntParameter("Curve preset ID", "ID of the curve preset used as the input to output map", 1, 1);
 
+    timeMult.selectItemWhenCreated = false;
+    addChildControllableContainer(&timeMult);
+
     updateDisplay();
 }
 
@@ -69,6 +73,7 @@ void InputFilter::updateDisplay()
     easeShape->hideInEditor = !ease;
     easeDir->hideInEditor = !ease;
     time->hideInEditor = !(damp || ease);
+    timeMult.hideInEditor = !(damp || ease);
     logShape->hideInEditor = t != "log";
     amount->hideInEditor = t != "log";
     presetId->hideInEditor = t != "curve";
@@ -95,6 +100,12 @@ float InputFilter::ease(float p) const
     return jlimit(0.0f, 1.0f, r);
 }
 
+float InputFilter::effTime(bool down)
+{
+    float t = (down && timeDown->floatValue() > 0) ? timeDown->floatValue() : time->floatValue();
+    return t * timeMult.getValue();
+}
+
 float InputFilter::process(float in, double dt)
 {
     String t = type->getValue().toString();
@@ -116,14 +127,13 @@ float InputFilter::process(float in, double dt)
     if (!initialised) {
         initialised = true;
         y = lastIn = easeStart = in;
-        easeT = time->floatValue();
+        easeT = effTime();
         return y;
     }
 
     if (t == "damping") {
         lastIn = in;
-        float tm = time->floatValue();
-        if (in < y && timeDown->floatValue() > 0) tm = timeDown->floatValue();
+        float tm = effTime(in < y);
         if (tm <= 0) { y = in; return y; }
         if (dampMode->getValue().toString() == "rate") {
             float step = (float)(dt / tm);
@@ -138,7 +148,7 @@ float InputFilter::process(float in, double dt)
     }
 
     // ease
-    float tm = time->floatValue();
+    float tm = effTime();
     if (std::abs(in - lastIn) > 0.0005f) {
         easeStart = y;
         lastIn = in;
@@ -156,5 +166,5 @@ bool InputFilter::isSettled() const
     String t = type->getValue().toString();
     if (t == "log" || t == "curve" || !initialised) return true;
     if (t == "damping") return y == lastIn;
-    return y == lastIn && easeT >= time->floatValue();
+    return y == lastIn && easeT >= const_cast<InputFilter*>(this)->effTime();
 }
