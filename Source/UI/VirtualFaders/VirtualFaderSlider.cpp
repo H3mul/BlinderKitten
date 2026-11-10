@@ -332,12 +332,6 @@ void VirtualFaderSlider::applyValue(float value, String origin, bool isRelative)
 		actionManager.setValueAll(value, "VirtualFaders", 0, isRelative);
 		return;
 	}
-	int targId = targetId->getValue();
-
-	if (targType == "column") {
-		targType = colTargetType;
-		targId = colTargetId;
-	}
 
 	if (targId == 0) {return;}
 	//const MessageManagerLock mmLock;
