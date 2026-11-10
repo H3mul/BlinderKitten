@@ -137,7 +137,7 @@ var VirtualFaderAction::getValue()
                 Slider* s = VirtualFaderColGrid::getInstance()->rotaries.getRawDataPointer()[col]->getRawDataPointer()[number];
                 if (VirtualFaderColGrid::getInstance()->sliderToVFS.contains(s)) {
                     VirtualFaderSlider* vfs = VirtualFaderColGrid::getInstance()->sliderToVFS.getReference(s);
-                    val = vfs->getTargetValue();
+                    val = vfs->getDisplayValue();
                 }
             }
         }
@@ -151,7 +151,7 @@ var VirtualFaderAction::getValue()
             Slider* s = VirtualFaderColGrid::getInstance()->faders.getRawDataPointer()[col];
             if (VirtualFaderColGrid::getInstance()->sliderToVFS.contains(s)) {
                 VirtualFaderSlider* vfs = VirtualFaderColGrid::getInstance()->sliderToVFS.getReference(s);
-                val = vfs->getTargetValue();
+                val = vfs->getDisplayValue();
             }
         }
         break;

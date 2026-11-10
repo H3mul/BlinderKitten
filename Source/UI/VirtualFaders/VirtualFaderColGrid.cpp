@@ -804,7 +804,7 @@ void VirtualFaderColGrid::updateSlidersValues(bool forceAll)
         VirtualFaderSlider* s = sliderToVFS.getReference(faders[i]);
         float v = 0;
         if (s != nullptr) {
-            v = s->getTargetValue();
+            v = s->getDisplayValue();
             if (faders[i]->getValue() != v || forceAll) {
                 s->feedback(v, "");
             }
@@ -815,7 +815,7 @@ void VirtualFaderColGrid::updateSlidersValues(bool forceAll)
             s = sliderToVFS.getReference(rotaries[i]->getRawDataPointer()[r]);
             v = 0;
             if (s != nullptr) {
-                v = s->getTargetValue();
+                v = s->getDisplayValue();
                 if (rotaries[i]->getRawDataPointer()[r]->getValue() != v || forceAll) {
                     s->feedback(v, "");
                 }

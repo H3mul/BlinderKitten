@@ -884,6 +884,11 @@
           <FILE id="khpHjA" name="TimingPresetManagerUI.h" compile="0" resource="0"
                 file="Source/Definitions/TimingPreset/TimingPresetManagerUI.h"/>
         </GROUP>
+        <GROUP id="{5A1F0C3E-2B7D-4E58-9C41-7D3A6B2E8F10}" name="InputFilter">
+          <FILE id="iFl7Cn" name="InputFilter.cpp" compile="1" resource="0"
+                file="Source/Definitions/InputFilter/InputFilter.cpp"/>
+          <FILE id="iFl7Ch" name="InputFilter.h" compile="0" resource="0" file="Source/Definitions/InputFilter/InputFilter.h"/>
+        </GROUP>
         <GROUP id="{D6406212-C417-45C8-83FD-CA4769FAAC2C}" name="Palette">
           <FILE id="OmeXx6" name="Palette.cpp" compile="1" resource="0"
                 file="Source/Definitions/Palette/Palette.cpp"/>

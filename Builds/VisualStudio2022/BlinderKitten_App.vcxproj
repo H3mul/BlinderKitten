@@ -496,6 +496,7 @@
     <ClCompile Include="..\..\Source\Definitions\Palette\Palette.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Palette\PaletteManager.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Palette\PaletteRuntime.cpp"/>
+    <ClCompile Include="..\..\Source\Definitions\InputFilter\InputFilter.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Palette\PaletteCuelistRefresh.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Palette\PaletteManagerUI.cpp"/>
     <ClCompile Include="..\..\Source\Definitions\Palette\PaletteRemap.cpp"/>
@@ -3777,6 +3778,7 @@
     <ClInclude Include="..\..\Source\Definitions\TimingPreset\TimingPreset.h"/>
     <ClInclude Include="..\..\Source\Definitions\TimingPreset\TimingPresetManager.h"/>
     <ClInclude Include="..\..\Source\Definitions\TimingPreset\TimingPresetManagerUI.h"/>
+    <ClInclude Include="..\..\Source\Definitions\InputFilter\InputFilter.h"/>
     <ClInclude Include="..\..\Source\Definitions\Palette\Palette.h"/>
     <ClInclude Include="..\..\Source\Definitions\Palette\PaletteManager.h"/>
     <ClInclude Include="..\..\Source\Definitions\Palette\PaletteRuntime.h"/>
