@@ -71,4 +71,5 @@ private:
     std::shared_ptr<Consumers> getConsumers(Palette* p);
     std::shared_ptr<Consumers> scan(Palette* p);
     void refresh(Palette* p);
+    void refreshAll(); // several palettes changed at once: one pass over the running consumers, no scan
 };

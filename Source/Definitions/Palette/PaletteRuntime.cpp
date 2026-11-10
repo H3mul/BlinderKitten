@@ -122,12 +122,14 @@ void PaletteRuntime::flush()
 {
 	Array<int> ids = pending;
 	pending.clear();
+	bool burst = ids.size() > 1;
 	for (int id : ids) {
 		Palette* p = Brain::getInstance()->getPaletteById(id);
 		if (p == nullptr) continue;
-		refresh(p);
+		if (!burst) refresh(p);
 		if (p->fading) fading.addIfNotAlreadyThere(id);
 	}
+	if (burst) refreshAll();
 	if (!fading.isEmpty() && !isTimerRunning()) startTimerHz(30);
 }
 
@@ -135,6 +137,7 @@ void PaletteRuntime::timerCallback()
 {
 	double now = Time::getMillisecondCounterHiRes();
 	Array<int> ids = fading;
+	bool burst = ids.size() > 1;
 	for (int id : ids) {
 		Palette* p = Brain::getInstance()->getPaletteById(id);
 		if (p == nullptr || !p->fading) { fading.removeFirstMatchingValue(id); continue; }
@@ -146,8 +149,9 @@ void PaletteRuntime::timerCallback()
 		else {
 			p->baseT = (float)t;
 		}
-		refresh(p);
+		if (!burst) refresh(p);
 	}
+	if (burst) refreshAll();
 	if (fading.isEmpty()) stopTimer();
 }
 
@@ -292,4 +296,25 @@ void PaletteRuntime::releaseHold(int holdId)
 void PaletteRuntime::clearHolds()
 {
 	get().holds.clear();
+}
+
+void PaletteRuntime::refreshAll()
+{
+	Brain* b = Brain::getInstance();
+	Array<int> ids;
+	for (auto* p : PaletteManager::getInstance()->items) ids.add(p->registeredId);
+	for (auto it = b->cuelists.begin(); it != b->cuelists.end(); it.next()) {
+		Cuelist* cl = it.getValue();
+		if (cl != nullptr && cl->isCuelistOn->boolValue()) cl->refreshPaletteRefs(ids); // filters per cue by refsPalettes
+	}
+	for (auto it = b->carousels.begin(); it != b->carousels.end(); it.next()) {
+		Carousel* ca = it.getValue();
+		if (ca != nullptr && ca->isOn) ca->computeData();
+	}
+	for (auto it = b->mappers.begin(); it != b->mappers.end(); it.next()) {
+		Mapper* ma = it.getValue();
+		if (ma != nullptr && ma->isOn) ma->computeData();
+	}
+	Programmer* prog = UserInputManager::getInstance()->getProgrammer(false);
+	if (prog != nullptr) b->pleaseUpdate(prog);
 }
