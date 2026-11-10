@@ -32,4 +32,6 @@ public:
     void blendAll(float value);
 
     static PaletteAction* create(var params) { return new PaletteAction(params); }
+
+    JUCE_DECLARE_WEAK_REFERENCEABLE(PaletteAction)
 };

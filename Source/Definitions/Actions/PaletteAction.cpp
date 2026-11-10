@@ -62,6 +62,15 @@ void PaletteAction::blendAll(float value)
 
 void PaletteAction::setValueInternal(var value, String origin, int incrementIndex, bool isRelative)
 {
+    // MIDI input arrives on the MIDI thread; PaletteRuntime (holds, pending, consumers) is message-thread only.
+    // callAsync keeps press/release in order.
+    if (!MessageManager::getInstance()->isThisTheMessageThread()) {
+        MessageManager::callAsync([w = WeakReference<PaletteAction>(this), value, origin, incrementIndex, isRelative]() {
+            if (w != nullptr) w->setValueInternal(value, origin, incrementIndex, isRelative);
+        });
+        return;
+    }
+
     float val = value;
 
     if (actionType == PAL_SHIFT_ALL_HOLD) {
