@@ -27,7 +27,8 @@ VirtualFaderSlider::VirtualFaderSlider(var params) :
 	BaseItem(params.getProperty("name", "VirtualFaderSlider")),
 	objectType(params.getProperty("type", "VirtualFaderSlider").toString()),
 	objectData(params),
-	actionManager("Generic Actions")
+	actionManager("Generic Actions"),
+	filters("Input filters")
 {
 	saveAndLoadRecursiveData = true;
 	nameCanBeChangedByUser = false;
@@ -76,6 +77,8 @@ VirtualFaderSlider::VirtualFaderSlider(var params) :
 	trackerAction->addOption("Size", "size");
 
 	addChildControllableContainer(&actionManager);
+	filters.selectItemWhenCreated = false;
+	addChildControllableContainer(&filters);
 
 	updateDisplay();
 	updateName();
@@ -86,6 +89,7 @@ VirtualFaderSlider::VirtualFaderSlider(var params) :
 
 VirtualFaderSlider::~VirtualFaderSlider()
 {
+	stopTimer();
 	VirtualFaderColGrid::getInstance()->sliderToVFS.removeValue(this);
 	if (!BKEngine::mainEngine->isClearing) {
 		VirtualFaderColManager::getInstance()->reconstructLibraries();
@@ -245,11 +249,85 @@ void VirtualFaderSlider::moved(float value, String origin, int incrementIndex, b
 	String colTargetType = parentColumn->targetType->getValue();
 	int colTargetId = parentColumn->targetId->intValue();
 	String targType = targetType->getValue();
-	if (!isAllowedToMove(origin, incrementIndex, value) && !isRelative) {
+	float gateValue = value;
+	if (filtersActive()) gateValue = value + (getTargetValue() - getDisplayValue());
+	if (!isAllowedToMove(origin, incrementIndex, gateValue) && !isRelative) {
 		return;
 	}
 	validIncrementIndex = incrementIndex+1;
-	
+
+	if (targType == "actions" || !filtersActive()) {
+		if (filtersRunning) { filtersRunning = false; stopTimer(); }
+		filtersPrimed = false;
+		applyValue(value, origin, isRelative);
+		return;
+	}
+
+	// input filter stack: the fader position goes through the rows, the result is written by the timer
+	if (!filtersRunning && (!filtersPrimed || std::abs(getTargetValue() - lastWritten) > 0.001f)) {
+		for (auto* f : filters.items) f->reset();
+		rawInput = getTargetValue();
+		lastWritten = rawInput;
+		filtersPrimed = true;
+		lastOrigin = origin;
+		runFilters(0, false);
+	}
+	rawInput = isRelative ? jlimit(0.0f, 1.0f, rawInput + value) : value;
+	lastOrigin = origin;
+	if (!filtersRunning) { lastTick = Time::getMillisecondCounterHiRes(); }
+	runFilters(0);
+}
+
+bool VirtualFaderSlider::filtersActive()
+{
+	if (targetType->getValue().toString() == "actions") return false;
+	for (auto* f : filters.items) if (f->enabled->boolValue()) return true;
+	return false;
+}
+
+float VirtualFaderSlider::getDisplayValue()
+{
+	float t = getTargetValue();
+	if (filtersPrimed && filtersActive() && std::abs(t - lastWritten) < 0.001f) return rawInput;
+	return t;
+}
+
+void VirtualFaderSlider::timerCallback()
+{
+	double now = Time::getMillisecondCounterHiRes();
+	double dt = jmax(0.0, (now - lastTick) / 1000.0);
+	lastTick = now;
+	runFilters(dt);
+}
+
+void VirtualFaderSlider::runFilters(double dt, bool apply)
+{
+	float x = rawInput;
+	bool settled = true;
+	for (auto* f : filters.items) {
+		if (!f->enabled->boolValue()) continue;
+		x = f->process(x, dt);
+		settled = settled && f->isSettled();
+	}
+	if (!apply) return;
+	lastWritten = x;
+	applyValue(x, lastOrigin, false);
+	if (settled) { filtersRunning = false; stopTimer(); }
+	else if (!filtersRunning) { filtersRunning = true; startTimer(16); }
+}
+
+void VirtualFaderSlider::applyValue(float value, String origin, bool isRelative) {
+	if (!checkParentColumn()) { return; }
+	String colTargetType = parentColumn->targetType->getValue();
+	int colTargetId = parentColumn->targetId->intValue();
+	String targType = targetType->getValue();
+	int targId = targetId->getValue();
+
+	if (targType == "column") {
+		targType = colTargetType;
+		targId = colTargetId;
+	}
+
 	if (targType == "actions") {
 		actionManager.setValueAll(value, "VirtualFaders", 0, isRelative);
 		return;
@@ -353,7 +431,7 @@ void VirtualFaderSlider::moved(float value, String origin, int incrementIndex, b
 			}
 		}
 	}
-	feedback(value, origin);
+	feedback(filtersRunning || (filtersPrimed && filtersActive()) ? rawInput : value, origin);
 
 }
 
