@@ -25,6 +25,7 @@ MIDIInterface::MIDIInterface() :
     infos->multiline = true;
 
     autoAdd = addBoolParameter("Auto add", "Create mappings when receive notes, cc or pitchbends", false);
+    sendAllDump = addBoolParameter("Send-all dump", "Detect a controller dumping its whole state (e.g. MIDImix Send All button) and log it. Values are applied by the mappings as usual.", false);
 
     numBytes = addIntParameter("Start sysex", "Sysex message to send at startup, F0 and F7 are automatically added at the begin and the end, so don't fill them :) .", 0, 0);
 
@@ -146,6 +147,7 @@ void MIDIInterface::controlChangeReceived(const int& channel, const int& number,
     if (logIncomingData->boolValue()) NLOG(niceName, "Control Change received, channel : " << channel << ", number : " << number << ", value : " << value);
     TSLastReceived.set("CC-" + String(channel) + "-" + String(number), Time::getMillisecondCounter());
     bool processed = mappingManager.handleCC(channel, number, value, niceName);
+    if (sendAllDump->boolValue()) trackDump("CC-" + String(channel) + "-" + String(number), processed);
     if (autoAdd->boolValue() && !processed) {
         MessageManagerLock mmlock;
         MIDIMapping* m = mappingManager.addItem();
@@ -163,6 +165,7 @@ void MIDIInterface::pitchWheelReceived(const int& channel, const int& value)
     if (logIncomingData->boolValue()) NLOG(niceName, "Pitch wheel received, channel : " << channel << ", value : " << value);
     TSLastReceived.set("PW-" + String(channel), Time::getMillisecondCounter());
     bool processed = mappingManager.handlePitchWheel(channel, value, niceName);
+    if (sendAllDump->boolValue()) trackDump("PW-" + String(channel), processed);
     if (autoAdd->boolValue() && !processed) {
         MessageManagerLock mmlock;
         MIDIMapping* m = mappingManager.addItem();
@@ -170,6 +173,46 @@ void MIDIInterface::pitchWheelReceived(const int& channel, const int& value)
         m->channel->setValue(channel);
         m->setNiceName("Pitch wheel " + String(channel));
     }
+}
+
+// A dump has no marker: it is a burst of >= 8 distinct controls, each message within 150 ms of the previous one.
+void MIDIInterface::trackDump(const String& key, bool mapped)
+{
+    const juce::uint32 now = Time::getMillisecondCounter();
+    bool justDetected = false;
+    int n = 0;
+    {
+        ScopedLock sl(dumpLock);
+        if (dumpKeys.empty() || now - dumpLastMs > 150) { // new burst
+            dumpKeys.clear(); dumpMapped = dumpUnmapped = 0; dumpDetected = false; dumpStartMs = now;
+        }
+        dumpLastMs = now;
+        if (dumpKeys.insert(key).second) (mapped ? dumpMapped : dumpUnmapped)++;
+        n = (int)dumpKeys.size();
+        if (!dumpDetected && n >= 8) { dumpDetected = justDetected = true; }
+    }
+    if (justDetected)
+    {
+        NLOG(niceName, "Send-all dump detected (" << n << " controls so far)");
+        WeakReference<ControllableContainer> ref(this);
+        Timer::callAfterDelay(300, [ref] { if (auto* i = dynamic_cast<MIDIInterface*>(ref.get())) i->dumpEndCheck(); });
+    }
+}
+
+void MIDIInterface::dumpEndCheck()
+{
+    int controls, mapped, unmapped; juce::uint32 ms;
+    {
+        ScopedLock sl(dumpLock);
+        if (Time::getMillisecondCounter() - dumpLastMs < 300) { // still arriving
+            WeakReference<ControllableContainer> ref(this);
+            Timer::callAfterDelay(300, [ref] { if (auto* i = dynamic_cast<MIDIInterface*>(ref.get())) i->dumpEndCheck(); });
+            return;
+        }
+        controls = (int)dumpKeys.size(); mapped = dumpMapped; unmapped = dumpUnmapped; ms = dumpLastMs - dumpStartMs;
+        dumpKeys.clear(); dumpDetected = false;
+    }
+    NLOG(niceName, "Send-all dump processed: " << controls << " controls, " << mapped << " mapped, " << unmapped << " unmapped, " << (int)ms << " ms");
 }
 
 void MIDIInterface::midiClockReceived()

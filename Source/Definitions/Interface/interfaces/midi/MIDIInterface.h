@@ -26,6 +26,7 @@ public:
     MIDIOutputDevice* outputDevice;
 
     BoolParameter* autoAdd;
+    BoolParameter* sendAllDump;
 
     IntParameter* numBytes;
     ControllableContainer dataContainer;
@@ -45,6 +46,15 @@ public:
     void onContainerParameterChangedInternal(Parameter *) override;
 
     void sendStartupBytes();
+
+    // send-all dump detection (burst of distinct controls), see openspec bk-midi-send-all
+    CriticalSection dumpLock;
+    std::set<juce::String> dumpKeys;
+    juce::uint32 dumpStartMs = 0, dumpLastMs = 0;
+    int dumpMapped = 0, dumpUnmapped = 0;
+    bool dumpDetected = false;
+    void trackDump(const juce::String& key, bool mapped);
+    void dumpEndCheck();
 
     void noteOnReceived(const int &channel, const int &pitch, const int &velocity) override;
     void noteOffReceived(const int &channel, const int &pitch, const int &velocity) override;
