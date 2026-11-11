@@ -26,6 +26,7 @@
 #include "Definitions/Fixture/Fixture.h"
 #include "Definitions/Group/Group.h"
 #include "Definitions/Palette/Palette.h"
+#include "Definitions/Palette/PaletteManager.h"
 
 struct CommandTimingParameters {
 	bool delayThru = false;
@@ -143,6 +144,28 @@ void Command::parameterValueChanged(Parameter* p) {
 
 void Command::computeValues() {
 	computeValues(nullptr, nullptr);
+}
+
+// Palette shift in a cue: declares the channels the named state can set (placeholder -1, resolved per channel in Cuelist::applyToChannel).
+static void declareShiftChannels(CommandValue* cv, SubFixture* sf, HashMap<ChannelType*, float>& out) {
+	String state = cv->stateName->stringValue();
+	if (state.isEmpty()) return;
+	int lo = cv->paletteId->intValue();
+	int hi = jmax(lo, cv->thru->boolValue() ? cv->paletteIdTo->intValue() : lo);
+	Brain* b = Brain::getInstance();
+	for (auto* p : PaletteManager::getInstance()->items) {
+		if (lo > 0 && (p->registeredId < lo || p->registeredId > hi)) continue;
+		int st = p->findStateIndex(state);
+		if (st <= 0) continue;
+		for (int slot = 1; slot <= p->slotCount->intValue(); slot++) {
+			Preset* pr = b->getPresetById(p->getPresetIdForState(st, slot), true);
+			if (pr == nullptr) continue;
+			pr->computeValues();
+			auto vals = pr->getSubFixtureValues(sf);
+			if (vals == nullptr) continue;
+			for (auto it = vals->begin(); it != vals->end(); it.next()) out.set(it.getKey(), -1.f);
+		}
+	}
 }
 
 void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer* callingProgrammer) {
@@ -475,6 +498,8 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 				}
 
 				cv->applyPaletteBlend(sf, *valuesFrom, *valuesTo);
+				bool isShift = cv->presetOrValue->getValueData() == "paletteshift";
+				if (isShift) declareShiftChannels(cv, sf, *valuesFrom);
 				if (cv->presetOrValue->stringValue() == "value") {
 					valuesFrom->set(rawChan, cv->valueFrom->getValue());
 					valuesTo->set(rawChan, cv->valueTo->getValue());
@@ -533,6 +558,13 @@ void Command::computeValues(Cuelist* callingCuelist, Cue* callingCue, Programmer
 						}
 						else {
 							finalValue->values.set(1, val);
+						}
+
+						finalValue->paletteShift = isShift && !pathMode;
+						if (finalValue->paletteShift) {
+							finalValue->shiftState = cv->stateName->stringValue();
+							finalValue->shiftLo = cv->paletteId->intValue();
+							finalValue->shiftHi = jmax(finalValue->shiftLo, cv->thru->boolValue() ? cv->paletteIdTo->intValue() : finalValue->shiftLo);
 						}
 
 						CommandTimingParameters* timingParameters = &defaultTiming;
