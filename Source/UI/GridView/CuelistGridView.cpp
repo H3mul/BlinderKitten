@@ -88,6 +88,8 @@ void CuelistGridView::showContextMenu(int id)
         p.addItem("Go", [target]() {target->userGo(); });
         p.addItem("Load", [target]() {target->showLoad(); });
         p.addItem("Load and go", [target]() {target->showLoadAndGo(); });
+        p.addItem("Cue seek", [target]() {target->showLoadAndGoInstant(); });
+        p.addItem("Go back", [target]() {target->goBack(); });
         if (target->cueA != nullptr) {
             p.addItem("Off", [target]() {target->off(); });
             p.addSeparator();
