@@ -234,6 +234,7 @@ void Carousel::stop(float forcedFade) {
 }
 
 void Carousel::kill() {
+	owners.clearOnStop();
 	isOn = false;
 	userPressedGo = false;
 	isCarouselOn->setValue(false);
@@ -408,6 +409,7 @@ float Carousel::applyToChannel(SubFixtureChannel* fc, float currentVal, double n
 
 	float s = sizeValue->getValue();
 	s *= currentSizeMult;
+	if (!isFlashing) s *= owners.mult;
 	if (isFlashing) { s = flashValue->floatValue(); }
 	if (s>1) {s = 1;}
 

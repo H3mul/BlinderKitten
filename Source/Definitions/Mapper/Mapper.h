@@ -11,6 +11,7 @@
 
 #pragma once
 #include "JuceHeader.h"
+#include "Common/SizeOwners.h"
 #include "../Command/CommandSelectionManager.h"
 #include "MapperRow.h"
 class MapperStep;
@@ -45,6 +46,7 @@ public:
     String currentSizeController = "";
     String nextSizeController = "";
     float lastSize = 0;
+    SizeOwners owners; // cuelists that scale this object by their level (cue pairing), transient
     BaseManager<MapperRow> rows;
 
     HashMap<SubFixtureChannel*, std::shared_ptr<Array<MapperRow*>>> chanToMapperRow;

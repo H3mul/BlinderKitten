@@ -134,6 +134,7 @@ public:
     BoolParameter* autoStop;
     BoolParameter* excludeFromGrandMaster;
     BoolParameter* excludeFromSwop;
+    BoolParameter* scaleEffects; // effects, carousels, mappers, trackers started by this cuelist's cue tasks follow its HTP*LTP level
 
     FloatParameter* nextCueId;
 
@@ -198,6 +199,15 @@ public:
     void go(Cue* c);
     void go(float forcedDelay, float forcedFade);
     void go(Cue* c, float forcedDelay, float forcedFade);
+
+    // cue pairing
+    Array<int> pairedNow;          // ids of the cuelists the current cue paired
+    Cue* pairedCue = nullptr;      // cue last brought up by a pair; re-armed when the cuelist goes off by its own level
+    bool suppressPairs = false;    // set while this cuelist is being driven by a pair: paired cues do not chain
+    void armOrGo(Cue* c, float forcedDelay, float forcedFade); // running: go to c, idle: next cue = c
+    void release();                // off if running, forget the armed cue
+    void applyPairs(Cue* c, float forcedDelay, float forcedFade);
+    void scopedStop(Cue* leaving, Cue* arriving, float forcedFade);
     // Re-resolve and re-apply the running cue instantly (no tasks, no timing, no chaser step); used when a palette changes state.
     void refreshActiveCue();
     // Palette v2 (defined in Palette/PaletteCuelistRefresh.cpp): same, but only the tracked cues that ref one of these palettes.

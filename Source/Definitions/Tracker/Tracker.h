@@ -11,6 +11,7 @@
 
 #pragma once
 #include "JuceHeader.h"
+#include "Common/SizeOwners.h"
 #include "../Command/CommandSelectionManager.h"
           
 class TrackerStep;
@@ -45,6 +46,7 @@ public:
     String currentSizeController = "";
     String nextSizeController = "";
     float lastSize = 0;
+    SizeOwners owners; // cuelists that scale this object by their level (cue pairing), transient
 
     Point3DParameter* targetPosition;
     CommandSelectionManager selection;

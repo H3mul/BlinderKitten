@@ -234,6 +234,7 @@ void Effect::stop(float forcedFade) {
 }
 
 void Effect::kill() {
+	owners.clearOnStop();
 	for (EffectRow* r : values.items) r->clearPaletteLayers();
 	userPressedGo = false;
 	isOn = false;
@@ -294,6 +295,7 @@ void Effect::updatePaletteRows(double now) {
 	if (TSStartFadeOut < now && TSEndFadeOut > now) fadeSize = jmap(now, TSStartFadeOut, TSEndFadeOut, 1.0, 0.0);
 	float size = isFlashing ? flashValue->floatValue() : sizeValue->floatValue() * currentSizeMult;
 	size *= fadeSize * masterMult * Brain::getInstance()->effectMaster;
+	if (!isFlashing) size *= owners.mult;
 
 	for (EffectRow* row : values.items) {
 		String name = row->paletteState->stringValue();
@@ -468,6 +470,7 @@ float Effect::applyToChannel(SubFixtureChannel* fc, float currentVal, double now
 
 		size *= fadeSize;
 		size *= masterMult * Brain::getInstance()->effectMaster;
+		if (!isFlashing) size *= owners.mult;
 
 		if (p->effectMode->getValue() == "relative") {
 			value *= (double)size;

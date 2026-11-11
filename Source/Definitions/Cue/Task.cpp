@@ -42,6 +42,7 @@ Task::Task(var params) :
 	targetId = addIntParameter("Target ID", "", 0, 0);
 	targetThru = addBoolParameter("target Thru", "multiple targets ?", false);
 	targetIdTo = addIntParameter("Target ID To", "", 0, 0);
+	cueId = addIntParameter("Cue ID", "Go only: 0 goes to the next cue, otherwise goes to the cue with this id (an idle cuelist is only armed on it, see Paired cues)", 0, 0);
 
 	cuelistAction = addEnumParameter("Cuelist action", "");
 	cuelistAction->addOption("Go", "go");
@@ -127,6 +128,7 @@ void Task::updateDisplay() {
 	targetIdTo->hideInEditor = targType == "action" || targType == "bundle" || !targetThru->getValue();
 
 	cuelistAction->hideInEditor = targType != "cuelist";
+	cueId->hideInEditor = !(targType == "cuelist" && cuelistAction->getValue() == "go");
 	effectAction->hideInEditor = targType != "effect";
 	carouselAction->hideInEditor = targType != "carousel";
 	mapperAction->hideInEditor = targType != "mapper";
@@ -294,13 +296,19 @@ void Task::autoName()
 	setNiceName(name);
 }
 
-void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, String action, double value, int id)
+void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, String action, double value, int id, int cuelistId)
 {
 	if (targetType == "cuelist") {
 		Cuelist* target = Brain::getInstance()->getCuelistById(targetId);
 		if (target != nullptr) {
 			if (action == "go" && value == 1) {
-				target->userGo();
+				int cueIdToGo = parentTask != nullptr ? parentTask->cueId->intValue() : 0;
+				Cue* cueToGo = nullptr;
+				if (cueIdToGo > 0) {
+					for (Cue* c : target->cues.items) { if ((int)c->id->floatValue() == cueIdToGo) { cueToGo = c; break; } }
+				}
+				if (cueToGo != nullptr) { target->armOrGo(cueToGo, -1, -1); }
+				else { target->userGo(); }
 			}
 			else if (action == "off" && value == 1) {
 				target->off();
@@ -331,6 +339,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 			if (action == "start" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
 				target->userStart(fade);
+				Brain::getInstance()->noteTaskStart("effect", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
@@ -356,6 +365,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 			if (action == "start" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
 				target->userStart(fade);
+				Brain::getInstance()->noteTaskStart("carousel", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
@@ -380,6 +390,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 		if (target != nullptr) {
 			if (action == "start" && value == 1) {
 				target->start();
+				Brain::getInstance()->noteTaskStart("mapper", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				target->stop();
@@ -394,6 +405,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 		if (target != nullptr) {
 			if (action == "start" && value == 1) {
 				target->start();
+				Brain::getInstance()->noteTaskStart("tracker", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				target->stop();

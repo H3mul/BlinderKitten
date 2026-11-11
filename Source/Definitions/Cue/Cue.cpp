@@ -32,7 +32,8 @@ Cue::Cue(var params) :
 	timingContainer("Timing"),
 	timecode("Timecode"),
 	paletteRemap("Palette remap"),
-	moreReuse("Use more cue commands")
+	moreReuse("Use more cue commands"),
+	pairedCues("Paired cues")
 {
 	canBeDisabled = false;
 	saveAndLoadRecursiveData = true;
@@ -80,6 +81,7 @@ Cue::Cue(var params) :
 	timecode.selectItemWhenCreated = false;
 	paletteRemap.selectItemWhenCreated = false;
 	moreReuse.selectItemWhenCreated = false;
+	pairedCues.selectItemWhenCreated = false;
 	commands.selectItemWhenCreated = false;
 	tasks.selectItemWhenCreated = false;
 	tasksOffCue.selectItemWhenCreated = false;
@@ -99,6 +101,7 @@ Cue::Cue(var params) :
 	addChildControllableContainer(&timecode);
 	addChildControllableContainer(&paletteRemap);
 	addChildControllableContainer(&moreReuse);
+	addChildControllableContainer(&pairedCues);
 
 	addChildControllableContainer(&commands);
 	addChildControllableContainer(&tasks);
@@ -633,6 +636,53 @@ CueReuse::CueReuse(var params) :
 void CueReuse::onContainerParameterChangedInternal(Parameter* p)
 {
 	if (p == cue || p == enabled || p == useHostTiming) { Brain::getInstance()->liveEditChanged(); }
+}
+
+CuePair::CuePair(var params) :
+	BaseItem(params.getProperty("name", "Pair"))
+{
+	itemDataType = "CuePair";
+	cue = addTargetParameter("Cue", "This cue is brought up when the cue holding this row becomes current: running cuelist goes to it, an idle one is armed on it", CuelistManager::getInstance());
+	cue->targetType = TargetParameter::CONTAINER;
+	cue->maxDefaultSearchLevel = 2;
+	cue->typesFilter = StringArray("Cue");
+}
+
+void CuePair::onContainerParameterChangedInternal(Parameter* p)
+{
+}
+
+// enabled rows with an existing cue; a missing cue is logged
+Array<Cue*> Cue::getPairs()
+{
+	Array<Cue*> ret;
+	for (auto* r : pairedCues.items) {
+		if (!r->enabled->boolValue()) continue;
+		if (r->cue->getValue() == "") continue;
+		if (Cue* c = dynamic_cast<Cue*>(r->cue->targetContainer.get())) { ret.add(c); }
+		else { LOGWARNING("Cue " + niceName + ": paired cue " + r->cue->stringValue() + " not found"); }
+	}
+	return ret;
+}
+
+StringArray Cue::getStartedObjects()
+{
+	StringArray ret;
+	for (Task* t : getTasks()) {
+		if (!t->enabled->boolValue()) continue;
+		String type = t->targetType->getValue().toString();
+		String action;
+		if (type == "effect") action = t->effectAction->getValue().toString();
+		else if (type == "carousel") action = t->carouselAction->getValue().toString();
+		else if (type == "mapper") action = t->mapperAction->getValue().toString();
+		else if (type == "tracker") action = t->trackerAction->getValue().toString();
+		else continue;
+		if (action != "start") continue;
+		int from = t->targetId->intValue();
+		int to = t->targetThru->boolValue() ? t->targetIdTo->intValue() : from;
+		for (int i = jmin(from, to); i <= jmax(from, to); i++) ret.addIfNotAlreadyThere(type + ":" + String(i));
+	}
+	return ret;
 }
 
 // main source first, then the extra enabled ones in list order; missing or empty targets are skipped

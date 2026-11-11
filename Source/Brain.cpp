@@ -2563,3 +2563,140 @@ void Brain::refreshPaletteUsers(bool onlyLive) {
     Programmer* prog = UserInputManager::getInstance()->getProgrammer(false);
     if (prog != nullptr) pleaseUpdate(prog);
 }
+
+// ---- cue pairing: size owners ----
+
+float Brain::ownerFactor(const SizeOwners& o)
+{
+    if (o.unowned || o.ids.isEmpty()) return 1;
+    bool any = false;
+    float f = 0;
+    for (int id : o.ids) {
+        if (Cuelist* c = getCuelistById(id)) {
+            any = true;
+            f = jmax(f, (float)c->HTPLevel->getValue() * (float)c->LTPLevel->getValue());
+        }
+    }
+    return any ? f : 1;
+}
+
+bool Brain::hasRunningOwner(const SizeOwners& o)
+{
+    for (int id : o.ids) {
+        if (Cuelist* c = getCuelistById(id)) { if (c->cueA != nullptr) return true; }
+    }
+    return false;
+}
+
+static void stopSized(Effect* o, float f) { o->stop(f); }
+static void stopSized(Carousel* o, float f) { o->stop(f); }
+static void stopSized(Mapper* o, float) { o->stop(); }
+static void stopSized(Tracker* o, float) { o->stop(); }
+static void pleaseUpdateSized(Effect* o) { Brain::getInstance()->pleaseUpdate(o); }
+static void pleaseUpdateSized(Carousel* o) { Brain::getInstance()->pleaseUpdate(o); }
+static void pleaseUpdateSized(Mapper* o) { Brain::getInstance()->pleaseUpdate(o); }
+static void pleaseUpdateSized(Tracker* o) { Brain::getInstance()->pleaseUpdate(o); }
+
+// New owner factor: effective size reaching 0 stops the object like an ordinary stop (own fade out); a rise restarts it like an ordinary start
+// (cancels a fade out, no phase reset on a running object), but only objects stopped that way and only while an owner is running.
+template<class T> static void refreshOwned(T* o)
+{
+    Brain* b = Brain::getInstance();
+    float old = o->owners.mult;
+    float m = b->ownerFactor(o->owners);
+    o->owners.mult = m;
+    if (!o->autoStartAndStop->boolValue()) { pleaseUpdateSized(o); return; }
+    bool running = b->hasRunningOwner(o->owners);
+    if (m == 0 && old > 0 && o->isOn && running) {
+        o->owners.ownerStopped = true;
+        stopSized(o, -1);
+    }
+    else if (old == 0 && m > 0 && running && o->owners.ownerStopped) {
+        o->owners.ownerStopped = false;
+        o->start();
+    }
+    pleaseUpdateSized(o);
+}
+
+template<class T> static void noteStarted(T* o, int cuelistId)
+{
+    Brain* b = Brain::getInstance();
+    Cuelist* c = b->getCuelistById(cuelistId);
+    if (c != nullptr && c->scaleEffects->boolValue()) o->owners.ids.addIfNotAlreadyThere(cuelistId);
+    else o->owners.unowned = true;
+    o->owners.ownerStopped = false;
+    refreshOwned(o);
+}
+
+// A cue task of cuelist `cuelistId` started the object.
+void Brain::noteTaskStart(const String& type, int id, int cuelistId)
+{
+    if (type == "effect") { if (Effect* o = getEffectById(id)) noteStarted(o, cuelistId); }
+    else if (type == "carousel") { if (Carousel* o = getCarouselById(id)) noteStarted(o, cuelistId); }
+    else if (type == "mapper") { if (Mapper* o = getMapperById(id)) noteStarted(o, cuelistId); }
+    else if (type == "tracker") { if (Tracker* o = getTrackerById(id)) noteStarted(o, cuelistId); }
+}
+
+template<class T> static void ownedLevelChangedT(HashMap<int, T*>& map, int cuelistId)
+{
+    Array<T*> hit;
+    for (auto it = map.begin(); it != map.end(); it.next()) {
+        if (it.getValue() != nullptr && it.getValue()->owners.ids.contains(cuelistId)) hit.add(it.getValue());
+    }
+    for (T* o : hit) refreshOwned(o);
+}
+
+// HTP or LTP level of a cuelist with "Scale effects with level" changed.
+void Brain::ownedLevelChanged(int cuelistId)
+{
+    if (!MessageManager::getInstance()->isThisTheMessageThread()) {
+        MessageManager::callAsync([this, cuelistId]() { ownedLevelChanged(cuelistId); });
+        return;
+    }
+    ownedLevelChangedT(effects, cuelistId);
+    ownedLevelChangedT(carousels, cuelistId);
+    ownedLevelChangedT(mappers, cuelistId);
+    ownedLevelChangedT(trackers, cuelistId);
+}
+
+template<class T> static void stopOwnedT(T* o, int cuelistId, float forcedFade)
+{
+    if (o == nullptr || !o->owners.ids.contains(cuelistId)) return;
+    if (o->owners.ids.size() > 1 || o->owners.unowned) {
+        // someone else still wants it: only drop this cuelist from its owners
+        o->owners.ids.removeFirstMatchingValue(cuelistId);
+        refreshOwned(o);
+        return;
+    }
+    // sole owner: stop (the link stays until the object is really off so the size does not jump during a fade out)
+    o->owners.ownerStopped = false;
+    stopSized(o, forcedFade);
+}
+
+// The cuelist's cue stopped being current and the next one does not start this object.
+void Brain::stopOwned(const String& type, int id, int cuelistId, float forcedFade)
+{
+    if (type == "effect") stopOwnedT(getEffectById(id), cuelistId, forcedFade);
+    else if (type == "carousel") stopOwnedT(getCarouselById(id), cuelistId, forcedFade);
+    else if (type == "mapper") stopOwnedT(getMapperById(id), cuelistId, forcedFade);
+    else if (type == "tracker") stopOwnedT(getTrackerById(id), cuelistId, forcedFade);
+}
+
+template<class T> static void releaseOwnerT(HashMap<int, T*>& map, int cuelistId)
+{
+    Array<T*> hit;
+    for (auto it = map.begin(); it != map.end(); it.next()) {
+        if (it.getValue() != nullptr && it.getValue()->owners.ids.contains(cuelistId) && !it.getValue()->isOn) hit.add(it.getValue());
+    }
+    // running objects keep the link until they stop (kill clears it)
+    for (T* o : hit) { o->owners.ids.removeFirstMatchingValue(cuelistId); if (o->owners.ids.isEmpty()) o->owners.clear(); o->owners.mult = 1; }
+}
+
+// The cuelist went off: forget it as owner of objects that are already off.
+void Brain::releaseOwner(int cuelistId)
+{
+    releaseOwnerT(effects, cuelistId);
+    releaseOwnerT(carousels, cuelistId);
+    releaseOwnerT(mappers, cuelistId);
+    releaseOwnerT(trackers, cuelistId);
+}

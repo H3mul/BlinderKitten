@@ -124,6 +124,7 @@ void Mapper::start() {
 }
 
 void Mapper::stop() {
+	owners.clearOnStop();
 	isOn = false;
 	isMapperOn->setValue(false);
 	isComputing.enter();
@@ -227,7 +228,7 @@ float Mapper::applyToChannel(SubFixtureChannel* fc, float currentVal, double now
 		}
 	}
 
-	float s = sizeValue->getValue();
+	float s = (float)sizeValue->getValue() * owners.mult;
 	if (fc->isHTP) {
 		calcValue *= s;
 		currentVal = jmax(calcValue, currentVal);

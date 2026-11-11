@@ -11,6 +11,7 @@
 
 #pragma once
 #include "JuceHeader.h"
+#include "Common/SizeOwners.h"
 #include "../Command/CommandSelectionManager.h"
 #include "EffectRow.h"
 #include "Definitions/Multiplicator/MultiplicatorLinkManager.h"
@@ -87,6 +88,7 @@ public:
     MultiplicatorLinkManager sizeMult;
     float currentSizeMult = 1;
     float masterMult = 1; // set by Effect Master action (thru ids), transient
+    SizeOwners owners; // cuelists that scale this object by their level (cue pairing), transient
 
     String getTypeString() const override { return objectType; }
 

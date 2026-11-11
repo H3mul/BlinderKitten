@@ -29,6 +29,7 @@ public:
     IntParameter* targetId;
     BoolParameter* targetThru;
     IntParameter* targetIdTo;
+    IntParameter* cueId; // cuelist Go: 0 = next cue, else go to (or arm) this cue id
 
     EnumParameter* cuelistAction;
     EnumParameter* effectAction;
@@ -60,6 +61,6 @@ public:
 
     void autoName();
 
-    static void triggerGivenTask(Task* parent, String targetType, int targetId, String action, double targetValue, int id);
+    static void triggerGivenTask(Task* parent, String targetType, int targetId, String action, double targetValue, int id, int cuelistId = 0);
 };
 

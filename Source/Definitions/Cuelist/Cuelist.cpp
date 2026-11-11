@@ -147,6 +147,7 @@ Cuelist::Cuelist(var params) :
 	autoStop = addBoolParameter("Auto stop", "Stops the cuelist if HTP level is set to 0", true);
 	excludeFromGrandMaster = addBoolParameter("Exclude from grand master", "If checked, the grand master will not have any effect on channels in this cuelist", false);
 	excludeFromSwop = addBoolParameter("Exclude from swop", "If checked, swop another cuelist will not have any effect on channels in this cuelist", false);
+	scaleEffects = addBoolParameter("Scale effects with level", "If checked, effects, carousels, mappers and trackers started by this cuelist's cue tasks are scaled by its HTP and LTP levels, stop when the level reaches 0 (if they auto start/stop) and stop when their cue is left", false);
 
 	goBtn = addTrigger("GO", "Trigger next cue");
 	goBackBtn = addTrigger("GO back", "Trigger previous cue");
@@ -308,6 +309,7 @@ void Cuelist::onContainerParameterChangedInternal(Parameter* p) {
 		}
 		pleaseUpdateHTPs = true;
 		lastHTPLevel = p->getValue();
+		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(id->intValue());
 		Brain::getInstance()->pleaseUpdate(this);
 	}
 	if (p == flashLevel) {
@@ -327,6 +329,7 @@ void Cuelist::onContainerParameterChangedInternal(Parameter* p) {
 		}
 		pleaseUpdateLTPs = true;
 		lastLTPLevel = p->getValue();
+		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(id->intValue());
 		Brain::getInstance()->pleaseUpdate(this);
 	}
 
@@ -672,6 +675,7 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 		}
 	}
 
+	Cue* leavingCue = cueA;
 	if (cueA != nullptr) {
 		cueA->off(forcedDelay, forcedFade);
 	}
@@ -796,6 +800,7 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 		}
 		c->csComputing.exit();
 		c->go(forcedDelay, forcedFade);
+		scopedStop(leavingCue, c, forcedFade);
 
 		for (int i = 0; i < c->commandHistory.size(); i++) {
 			commandHistory.removeAllInstancesOf(c->commandHistory[i]);
@@ -970,6 +975,15 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 		nextCueId->resetValue();
 		fillTexts();
 	});
+
+	if (c == nullptr) scopedStop(leavingCue, nullptr, forcedFade);
+	if (c == nullptr && pairedCue != nullptr && cues.items.contains(pairedCue)) {
+		// off by its own level (or an operator off): next time it starts, it starts on the paired cue; queued after the reset above
+		Cue* pc = pairedCue;
+		MessageManager::callAsync([this, pc]() { if (pairedCue == pc && cueA == nullptr && cues.items.contains(pc)) nextCue->setValueFromTarget(pc); });
+	}
+	if (!suppressPairs) applyPairs(c, forcedDelay, forcedFade);
+	if (c == nullptr) Brain::getInstance()->releaseOwner(id->intValue());
 	
 	return ;
 }
@@ -1465,6 +1479,8 @@ void Cuelist::updateAllChannels()
 
 void Cuelist::kill(bool forceRefreshChannels) {
 	wannaOff = true;
+	scopedStop(cueA, nullptr, 0);
+	applyPairs(nullptr, 0, 0);
 	for (auto it = activeValues.begin(); it != activeValues.end(); it.next()) {
 		SubFixtureChannel* chan = it.getKey();
 		chan->cuelistOutOfStack(this);
@@ -1484,6 +1500,69 @@ void Cuelist::kill(bool forceRefreshChannels) {
 	userPressedGo = false;
 	isCuelistOn->setValue(false);
 	fillTexts();
+}
+
+// ---- cue pairing ----
+
+// Bring c up: a running cuelist goes to it (its own cue fade), an idle one only gets it as next cue, so raising its fader starts that cue.
+void Cuelist::armOrGo(Cue* c, float forcedDelay, float forcedFade)
+{
+	if (c == nullptr) return;
+	if (!MessageManager::getInstance()->isThisTheMessageThread()) {
+		MessageManager::callAsync([this, c, forcedDelay, forcedFade]() { armOrGo(c, forcedDelay, forcedFade); });
+		return;
+	}
+	pairedCue = c;
+	if (cueA != nullptr) {
+		if (cueA != c) {
+			ScopedValueSetter<bool> noChain(suppressPairs, true);
+			go(c, forcedDelay, forcedFade);
+		}
+	}
+	else {
+		nextCue->setValueFromTarget(c);
+	}
+}
+
+void Cuelist::release()
+{
+	if (!MessageManager::getInstance()->isThisTheMessageThread()) {
+		MessageManager::callAsync([this]() { release(); });
+		return;
+	}
+	pairedCue = nullptr;
+	if (cueA != nullptr) { off(); }
+	nextCue->resetValue();
+}
+
+// c became current (nullptr: cuelist off). Pair its cues, release cuelists the previous cue paired and this one does not.
+void Cuelist::applyPairs(Cue* c, float forcedDelay, float forcedFade)
+{
+	Array<int> newPaired;
+	if (c != nullptr) {
+		for (Cue* p : c->getPairs()) {
+			Cuelist* t = p->parentCuelist;
+			if (t == nullptr || t == this) continue;
+			newPaired.addIfNotAlreadyThere(t->id->intValue());
+			t->armOrGo(p, forcedDelay, forcedFade);
+		}
+	}
+	for (int cid : pairedNow) {
+		if (newPaired.contains(cid)) continue;
+		if (Cuelist* t = Brain::getInstance()->getCuelistById(cid)) { t->release(); }
+	}
+	pairedNow = newPaired;
+}
+
+// Objects the leaving cue starts and the arriving one does not are stopped (fade out as the cue/object says), when this cuelist owns them.
+void Cuelist::scopedStop(Cue* leaving, Cue* arriving, float forcedFade)
+{
+	if (leaving == nullptr || !scaleEffects->boolValue()) return;
+	StringArray keep = arriving != nullptr ? arriving->getStartedObjects() : StringArray();
+	for (const String& key : leaving->getStartedObjects()) {
+		if (keep.contains(key)) continue;
+		Brain::getInstance()->stopOwned(key.upToFirstOccurrenceOf(":", false, false), key.fromFirstOccurrenceOf(":", false, false).getIntValue(), id->intValue(), forcedFade);
+	}
 }
 
 void Cuelist::setHTPLevel(float level) {

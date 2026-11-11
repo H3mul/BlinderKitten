@@ -35,6 +35,21 @@ public:
     static CueReuse* create(var params) { return new CueReuse(params); }
 };
 
+// One paired cue: when the cue holding this row becomes current, `cue` (usually in a slot cuelist) is brought up with it.
+class CuePair :
+    public BaseItem
+{
+public:
+    CuePair(var params = var());
+    ~CuePair() {}
+
+    TargetParameter* cue;
+
+    void onContainerParameterChangedInternal(Parameter* p) override;
+    String getTypeString() const override { return "CuePair"; }
+    static CuePair* create(var params) { return new CuePair(params); }
+};
+
 class Cue:
     public BaseItem,
     public ChangeBroadcaster
@@ -157,6 +172,12 @@ public:
 
     // more source cues after `reuseCue`; later sources win per channel, own commands win over all
     BaseManager<CueReuse> moreReuse;
+
+    // cues (in other cuelists) brought up when this cue becomes current; own rows only, never inherited
+    BaseManager<CuePair> pairedCues;
+    Array<Cue*> getPairs();
+    // "effect:12" style keys of the objects whose Start tasks this cue (with its sources) holds; used for scoped stop
+    StringArray getStartedObjects();
     Array<Cue*> getReuseSources(Array<bool>* hostTiming = nullptr);
     // true if this cue, or a cue it includes, has a palette ref to one of these palette ids
     // this cue, then the cues it includes (depth first, cycle-safe): their palette remaps apply to this cue, first match wins

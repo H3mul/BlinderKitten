@@ -28,5 +28,5 @@ void RunningTask::update(double now) {
 }
 
 void RunningTask::trigger(double val) {
-    Task::triggerGivenTask(parentTask, targetType, targetId, actionType, val, id);
+    Task::triggerGivenTask(parentTask, targetType, targetId, actionType, val, id, cuelistId);
 }

@@ -10,6 +10,7 @@
 #pragma once
 
 #include "JuceHeader.h"
+#include "Common/SizeOwners.h"
 
 class SubFixture;
 class SubFixtureChannel;
@@ -180,6 +181,14 @@ public:
     void unregisterSelectionMaster(SelectionMaster* p);
     void registerBundle(Bundle* p, int id, bool swap = false);
     void unregisterBundle(Bundle* p);
+
+    // cue pairing: effects, carousels, mappers and trackers scaled by the cuelist that started them
+    float ownerFactor(const SizeOwners& o);
+    bool hasRunningOwner(const SizeOwners& o);
+    void noteTaskStart(const String& type, int id, int cuelistId);
+    void ownedLevelChanged(int cuelistId);
+    void stopOwned(const String& type, int id, int cuelistId, float forcedFade);
+    void releaseOwner(int cuelistId);
 
     void pleaseUpdate(Cuelist* c);
     void pleaseUpdate(SubFixtureChannel* f);

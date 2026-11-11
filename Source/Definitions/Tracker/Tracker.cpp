@@ -126,6 +126,7 @@ void Tracker::start() {
 }
 
 void Tracker::stop() {
+	owners.clearOnStop();
 	isOn = false;
 	isTrackerOn->setValue(false);
 	for (auto it = chanToVal.begin(); it != chanToVal.end(); it.next()) {
@@ -287,7 +288,7 @@ float Tracker::applyToChannel(SubFixtureChannel* fc, float currentVal, double no
 	if (computing) { return currentVal; }
 
 	float calcValue = chanToVal.getReference(fc);
-	float s = sizeValue->getValue();
+	float s = (float)sizeValue->getValue() * owners.mult;
 	currentVal = jmap(s, currentVal, calcValue);
 	//LOG(currentVal);
 	return currentVal;
