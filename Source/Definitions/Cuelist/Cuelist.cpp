@@ -1028,6 +1028,7 @@ void Cuelist::flash(bool setOn, bool withTiming, bool swop) {
 			isSwopping = true;
 			Brain::getInstance()->swoppedCuelist(this);
 		}
+		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(id->intValue());
 		if (cueA != nullptr) {
 			cueA->csComputing.enter();
 			for (auto it = cueA->computedValues.begin(); it != cueA->computedValues.end(); it.next()) {
@@ -1040,6 +1041,7 @@ void Cuelist::flash(bool setOn, bool withTiming, bool swop) {
 	else {
 		isFlashing = false;
 		TSOffFlash = Time::getMillisecondCounterHiRes();
+		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(id->intValue());
 		TSOffFlashEnd = TSOffFlash + (offFade->floatValue()*1000.0);
 		if (swop || isSwopping) {
 			isSwopping = false;
