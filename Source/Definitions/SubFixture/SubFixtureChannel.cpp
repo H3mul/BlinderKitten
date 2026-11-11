@@ -250,8 +250,11 @@ void SubFixtureChannel::updateVal(double now) {
 					}
 					std::shared_ptr<ChannelValue> cv = c->activeValues.contains(this) ? c->activeValues.getReference(this) : nullptr;
 					if (cv != nullptr && isApplied) {
-						activeCommand = cv->parentCommand;
-						activeCV = cv;
+						// a palette shift cue value is an overlay: carousels and higher shifts still resolve against the palette command underneath
+						if (!cv->paletteShift) {
+							activeCommand = cv->parentCommand;
+							activeCV = cv;
+						}
 						if (cv->isEnded && !c->isFlashing) {
 							overWritten = i - 1;
 						}
