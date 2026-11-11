@@ -1618,6 +1618,11 @@ void Cuelist::showLoadAndGo()
 }
 
 
+void Cuelist::showLoadAndGoInstant()
+{
+	CuelistLoadWindow::getInstance()->loadCuelist(this, true, true);
+}
+
 void Cuelist::updateName() {
 	String n = userName->getValue();
 	if (parentContainer != nullptr) {

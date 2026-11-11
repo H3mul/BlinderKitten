@@ -42,9 +42,10 @@ public:
     TextButton exitBtn;
     void showWindow();
     void fillButtons(Cuelist * c);
-    void loadCuelist(Cuelist * c, bool triggerGoWhenSelected = false);
+    void loadCuelist(Cuelist * c, bool triggerGoWhenSelected = false, bool instant = false);
     void buttonClicked(Button*);
     bool triggerGo = false;
+    bool instantGo = false;
 
     int posX = 0;
     int posY = 0;

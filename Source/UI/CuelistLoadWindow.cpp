@@ -119,9 +119,10 @@ void CuelistLoadWindow::showWindow()
 }
 
 
-void CuelistLoadWindow::loadCuelist(Cuelist* c, bool triggerGoWhenSelected)
+void CuelistLoadWindow::loadCuelist(Cuelist* c, bool triggerGoWhenSelected, bool instant)
 {
     triggerGo = triggerGoWhenSelected;
+    instantGo = instant;
     currentTarget = c;
     MessageManager::callAsync([this]() {showWindow(); });
 }
@@ -134,7 +135,7 @@ void CuelistLoadWindow::buttonClicked(Button* b)
         currentTarget->nextCueId->setValue(currentTarget->cues.items[index]->id->floatValue());
         currentTarget->fillTexts();
         if (triggerGo) {
-            currentTarget->userGo();
+            if (instantGo) currentTarget->userGo(0, 0); else currentTarget->userGo();
         }
     }
     auto test = findParentComponentOfClass<DialogWindow>()->getBounds();

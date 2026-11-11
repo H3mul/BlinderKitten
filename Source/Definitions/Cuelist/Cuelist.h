@@ -262,6 +262,7 @@ public:
 
     void showLoad();
     void showLoadAndGo();
+    void showLoadAndGoInstant();
     void loadRandom();
 
     void fillTexts();
