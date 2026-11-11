@@ -2574,7 +2574,12 @@ float Brain::ownerFactor(const SizeOwners& o)
     for (int id : o.ids) {
         if (Cuelist* c = getCuelistById(id)) {
             any = true;
-            f = jmax(f, (float)c->HTPLevel->getValue() * (float)c->LTPLevel->getValue());
+            float h = (float)c->HTPLevel->getValue(), l = (float)c->LTPLevel->getValue();
+            if (c->isFlashing) { // flash mirrors channels: HTP bumped to flash level, LTP bypassed unless "Flash with LTP level"
+                h = jmax(h, (float)c->flashLevel->getValue());
+                if (!c->flashWithLtpLevel->boolValue()) l = 1;
+            }
+            f = jmax(f, h * l);
         }
     }
     return any ? f : 1;
