@@ -1546,6 +1546,7 @@ void Cuelist::applyPairs(Cue* c, float forcedDelay, float forcedFade)
 	Array<int> newPaired;
 	if (c != nullptr) {
 		for (Cue* p : c->getPairs()) {
+			p->checkParentCuelist(); // resolved lazily: a pair target that never ran would otherwise be skipped
 			Cuelist* t = p->parentCuelist;
 			if (t == nullptr || t == this) continue;
 			newPaired.addIfNotAlreadyThere(t->id->intValue());
