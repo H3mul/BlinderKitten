@@ -58,13 +58,13 @@ jobs:
 
       - name: Create installer
         id: pkg
-        shell: bash
+        shell: powershell
         run: |
-          SHORT=${GITHUB_SHA::7}
-          NAME=${{ env.ProjectName }}-win-x64-debug-$SHORT
-          sed 's#Binaries/CI/App#Binaries/Debug/App#g' install.iss > install-ci.iss
-          "C:/Program Files (x86)/Inno Setup 6/ISCC.exe" install-ci.iss /O. "/F$NAME"
-          echo "file=$NAME.exe" >> "$GITHUB_OUTPUT"
+          $name = "${{ env.ProjectName }}-win-x64-debug-" + $env:GITHUB_SHA.Substring(0,7)
+          (Get-Content install.iss) -replace 'Binaries/CI/App','Binaries/Debug/App' | Set-Content install-ci.iss
+          & "C:/Program Files (x86)/Inno Setup 6/ISCC.exe" install-ci.iss /O. "/F$name"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "file=$name.exe" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Publish prerelease "CI" (only the latest installer)
         shell: bash
