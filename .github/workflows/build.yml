@@ -1,278 +1,27 @@
-on: [push]
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ci-prerelease
+  cancel-in-progress: true
 
 env:
   ProjectName: BlinderKitten
-  PackagesVersion: 1.2.11
-#
+  DepsUrl: http://benjamin.kuperberg.fr/chataigne/user/data/Chataigne-win-x64-debug-dependencies.zip
+
 jobs:
-  windows:
-    name: Windows
-    # if: false # always skip job
+  windows-debug:
     runs-on: windows-2022
-    strategy:
-      matrix:
-        include:
-        - arch: win-x64
-          buildFolder: "VisualStudio2022_CI"
-          installerName: install
-
-        - arch: win7-x64
-          buildFolder: "VisualStudio2022_Win7CI"
-          installerName: installWin7
-
-      fail-fast: false
-#
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
-#
-      - name: Checkout JUCE
-        uses: actions/checkout@v2
-        with:
-          repository: norbertrostaing/JUCE
-          ref: develop-local
-          path: JUCE
-#
-      - name: Set Variables
-        id: set_variables
-        uses: ./.github/actions/set-suffix
-        with:
-          os: ${{ matrix.arch }}
-
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
-#
-      - name: Force 64-bit Linker
-        shell: powershell
-        run: |
-          cmd.exe /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat`" && set > %temp%\vcvars.txt"
-          Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] }}
-     #
-      - name: Build
-        run:  msbuild "Builds/${{ matrix.buildFolder }}/${{ env.ProjectName }}.sln" /p:PreferredToolArchitecture=x64 /m /verbosity:normal /p:Configuration=${{ steps.set_variables.outputs.config }}
-#
-      - name: Create Package
-        id: create_package
-        shell: powershell
-        run: |
-          Set-Variable -Name "PKGNAME" -Value "${{ env.ProjectName }}-${{ steps.set_variables.outputs.suffix }}"
-          Invoke-WebRequest "${{ secrets.DEPDIRURL }}${{ env.ProjectName }}-win-x64-${{ steps.set_variables.outputs.dep }}-dependencies.zip" -OutFile ./deps.zip
-          7z e deps.zip -aoa
-          &"C:/Program Files (x86)/Inno Setup 6/ISCC.exe" "${{ github.workspace }}/${{ matrix.installerName }}.iss" /O. /F$PKGNAME
-          echo "pkg-name=$PKGNAME.exe" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
-          echo "pdb-name=$PKGNAME.pdb" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
-        working-directory: ./Binaries/CI/App
-#
-      - name: Upload
-        uses: ./.github/actions/upload
-        with:
-          pkg-name: ./Binaries/CI/App/${{ steps.create_package.outputs.pkg-name }}
-          url: ${{ secrets.UPLOADURL }}
-          pass: ${{ secrets.UPLOADPASS }}
-#
-      - name: Rename PDB
-        if: ${{ steps.set_variables.outputs.config == 'Release' && matrix.arch == 'win-x64' }}
-        id: rename_pdb
-        shell: powershell
-        run: |
-          Rename-Item -Path "./${{ env.ProjectName }}.pdb" -NewName "${{ steps.create_package.outputs.pdb-name }}"
-        working-directory: ./Builds/${{ matrix.buildFolder }}/x64/${{ steps.set_variables.outputs.config }}/App
-#
-      - name: Upload PDB
-        if: ${{ steps.set_variables.outputs.config == 'Release' && matrix.arch == 'win-x64' }}
-        uses: ./.github/actions/upload
-        with:
-          pkg-name: ./Builds/${{ matrix.buildFolder }}/x64/${{ steps.set_variables.outputs.config }}/App/${{ steps.create_package.outputs.pdb-name }}
-          url: ${{ secrets.PDBUPLOADURL }}
-          pass: ${{ secrets.UPLOADPASS }}
-#
-
-  osx:
-    # if: false # tmp disable
-    name: OSX
-    runs-on: macos-latest
-    
-    strategy:
-      matrix:
-        include:
-        - arch: x86_64
-          suffix: intel
-          config: Release
-
-        - arch: arm64
-          suffix: silicon
-          config: ReleaseSilicon
-        
-      fail-fast: false
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-        with:
-          submodules: 'recursive'
-
-      - name: Checkout JUCE
-        uses: actions/checkout@v2
-        with:
-          repository: norbertrostaing/JUCE
-          ref: develop-local
-          path: JUCE
-
-      - name: Set Suffix
-        id: set_variables
-        uses: ./.github/actions/set-suffix
-        with:
-          os: 'osx-${{ matrix.suffix }}'
-
-      - name: Download Packages 
-        run: |
-          curl -L -o Packages.dmg 'http://s.sudre.free.fr/Software/files/Packages.dmg'
-          hdiutil mount Packages.dmg
-          sudo installer -pkg "/Volumes/Packages ${{ env.PackagesVersion }}/Install Packages.pkg" -target /
-          hdiutil detach "/Volumes/Packages ${{ env.PackagesVersion }}/"
-
-      - name: Setup XCode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '26.6.0'
-          
-      - name: Build
-        uses: sersoft-gmbh/xcodebuild-action@v2.0.1
-        with:
-          project: Builds/MacOSX_CI/${{ env.ProjectName }}.xcodeproj
-          destination: platform=macOS
-          jobs: 2
-          action: build
-          arch: ${{ matrix.arch }}
-          configuration: ${{ matrix.config }}
-          use-xcpretty: true
-
-      - name: Create Package
-        id: create_package
-        run:  |
-          packagesbuild ${{ env.ProjectName }}.pkgproj
-          PKGNAME=${{ env.ProjectName }}-${{ steps.set_variables.outputs.suffix }}.pkg
-          mv ${{ env.ProjectName }}.pkg $PKGNAME
-          echo "pkg-name=$PKGNAME" >> $GITHUB_OUTPUT
-        working-directory: ./Package
-
-      - name: Upload
-        uses: ./.github/actions/upload
-        with:
-          pkg-name: ./Package/${{ steps.create_package.outputs.pkg-name }}
-          url: ${{ secrets.UPLOADURL }}
-          pass: ${{ secrets.UPLOADPASS }}
-          
-  linux:
-    # if: false # tmp disable
-
-    name: Linux
-    runs-on: ubuntu-22.04
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-        with:
-          submodules: 'recursive'
-
-      - name: Checkout JUCE
-        uses: actions/checkout@v2
-        with:
-          repository: norbertrostaing/JUCE
-          ref: develop-local
-          path: JUCE
-
-      - name: Set Suffix
-        id: set_variables
-        uses: ./.github/actions/set-suffix
-        with:
-          os: 'x64'
-
-      - name: Installing dependencies
-        id: install_deps
-        #shell: bash {0} # Opt out of fail-fast behavior (necessary to ignore fetch errors)
-        run: |
-          sudo apt-get update
-          echo "Installing JUCE lib dependencies and extra tools"
-          sudo apt-get install -qyf libcurl3-gnutls libfreetype6-dev libx11-dev libxinerama-dev libxrandr-dev libxcursor-dev libxcomposite-dev mesa-common-dev libasound2-dev freeglut3-dev libcurl4-gnutls-dev libasound2-dev libjack-dev libbluetooth-dev libgtk-3-dev libwebkit2gtk-4.0-dev libsdl2-dev libfuse2 libfuse2 libusb-1.0-0-dev libhidapi-dev ladspa-sdk libssl-dev
-          sudo apt-get install -qy curl
-
-          cd ${{ github.workspace }}
-          wget "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
-          chmod a+x appimagetool-x86_64.AppImage
-#
-      # - name: Start SSH via ngrok
-      #   uses: P3TERX/ssh2actions@main
-      #   with:
-      #     mode: ngrok
-      #   env:
-      #     # After sign up on the https://ngrok.com
-      #     # You can find this token here: https://dashboard.ngrok.com/auth/your-authtoken
-      #     NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
-         #
-      #     # ngrok server region [us, eu, au, ap, sa, jp, in] (optional, default: us)
-      #     # You can find this server region here: https://ngrok.com/docs#global-locations
-      #     NGROK_REGION: us
-
-      #     # This password you will use when authorizing via SSH
-      #     SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
-
-      - name: Build
-        run: |
-          cd ${{ github.workspace }}/Builds/LinuxMakefile
-          make -j2 CONFIG=Release
-
-      - name: Create AppImage
-        id: create_package
-        run: |
-          mkdir -p ${{ env.ProjectName }}.AppDir/usr/bin/
-          cp build/${{ env.ProjectName }} ${{ env.ProjectName }}.AppDir/usr/bin/
-
-          PKGNAME=${{ env.ProjectName }}-linux-${{ steps.set_variables.outputs.suffix }}.AppImage
-          echo "pkg-name=$PKGNAME" >> $GITHUB_OUTPUT
-          ARCH=x86_64 $GITHUB_WORKSPACE/appimagetool-x86_64.AppImage --appimage-extract-and-run ${{ env.ProjectName }}.AppDir $PKGNAME
-        working-directory: ./Builds/LinuxMakefile
-#
-      - name: Upload
-        uses: ./.github/actions/upload
-        with:
-          pkg-name: ./Builds/LinuxMakefile/${{ steps.create_package.outputs.pkg-name }}
-          url: ${{ secrets.UPLOADURL }}
-          pass: ${{ secrets.UPLOADPASS }}
-
-  raspberrypi:
-    name: Raspberry Pi (Cross-Compile)
-    runs-on: ubuntu-22.04
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-
-          # Raspberry Pi 64 bits
-          - arch: aarch64
-            deb_arch: arm64
-            gnu_type: aarch64-linux-gnu
-            buildFolder: "Raspberry64"
-            buildConfig: "Release"
-            arch_flags: "-march=armv8-a"
-
-          # Raspberry Pi 32 bits
-          - arch: armhf
-            deb_arch: armhf
-            gnu_type: arm-linux-gnueabihf
-            buildFolder: "Raspberry"
-            buildConfig: "Release"
-            arch_flags: "-march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard"
-
-    steps:
-
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
+          submodules: recursive
 
       - name: Checkout JUCE
         uses: actions/checkout@v4
@@ -281,130 +30,47 @@ jobs:
           ref: develop-local
           path: JUCE
 
-      # -------------------------------------------------------
-      # Configure Ubuntu to install ARM libraries
-      # -------------------------------------------------------
-
-      - name: Setup Multi-Arch Apt
+      # Same as the local build: VisualStudio2022 project + in-repo JUCE include path
+      - name: Point build at in-repo JUCE
+        shell: bash
         run: |
-          sudo dpkg --add-architecture ${{ matrix.deb_arch }}
+          cat > Builds/VisualStudio2022/Directory.Build.local.props <<'PROPS'
+          <Project>
+            <ItemDefinitionGroup>
+              <ClCompile>
+                <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)..\..\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+              </ClCompile>
+            </ItemDefinitionGroup>
+          </Project>
+          PROPS
 
-          sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
+      - uses: microsoft/setup-msbuild@v2
 
-          # x86_64 packages used by the GitHub runner
-          echo "deb [arch=amd64] http://archive.ubuntu.com/ubuntu jammy main universe restricted multiverse" | sudo tee /etc/apt/sources.list
-          echo "deb [arch=amd64] http://archive.ubuntu.com/ubuntu jammy-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
-          echo "deb [arch=amd64] http://archive.ubuntu.com/ubuntu jammy-security main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
+      - name: Build (Debug x64)
+        run: msbuild Builds/VisualStudio2022/${{ env.ProjectName }}.sln /p:PreferredToolArchitecture=x64 /m /v:m /p:Configuration=Debug /p:Platform=x64
 
-          # ARM packages used to build BlinderKitten
-          echo "deb [arch=${{ matrix.deb_arch }}] http://ports.ubuntu.com/ubuntu-ports jammy main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
-          echo "deb [arch=${{ matrix.deb_arch }}] http://ports.ubuntu.com/ubuntu-ports jammy-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
-          echo "deb [arch=${{ matrix.deb_arch }}] http://ports.ubuntu.com/ubuntu-ports jammy-security main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list
-
-          sudo apt-get update
-
-      # -------------------------------------------------------
-      # Cross compiler + JUCE dependencies
-      # -------------------------------------------------------
-
-      - name: Install Cross-Compiler and ARM libraries
+      - name: Fetch dependencies
+        shell: powershell
+        working-directory: ./Binaries/Debug/App
         run: |
-          sudo apt-get install -y \
-            crossbuild-essential-${{ matrix.deb_arch }} \
-            pkg-config \
-            libasound2-dev:${{ matrix.deb_arch }} \
-            libjack-jackd2-dev:${{ matrix.deb_arch }} \
-            ladspa-sdk:${{ matrix.deb_arch }} \
-            libfreetype6-dev:${{ matrix.deb_arch }} \
-            libx11-dev:${{ matrix.deb_arch }} \
-            libxcomposite-dev:${{ matrix.deb_arch }} \
-            libxcursor-dev:${{ matrix.deb_arch }} \
-            libxinerama-dev:${{ matrix.deb_arch }} \
-            libxext-dev:${{ matrix.deb_arch }} \
-            libxrandr-dev:${{ matrix.deb_arch }} \
-            libxrender-dev:${{ matrix.deb_arch }} \
-            libgl1-mesa-dev:${{ matrix.deb_arch }} \
-            libglu1-mesa-dev:${{ matrix.deb_arch }} \
-            mesa-common-dev:${{ matrix.deb_arch }} \
-            libgtk-3-dev:${{ matrix.deb_arch }} \
-            libwebkit2gtk-4.0-dev:${{ matrix.deb_arch }} \
-            libcurl4-openssl-dev:${{ matrix.deb_arch }} \
-            libssl-dev:${{ matrix.deb_arch }} \
-            libbluetooth-dev:${{ matrix.deb_arch }} \
-            libusb-1.0-0-dev:${{ matrix.deb_arch }} \
-            libhidapi-dev:${{ matrix.deb_arch }} \
-            libsdl2-dev:${{ matrix.deb_arch }}
+          Invoke-WebRequest "${{ env.DepsUrl }}" -OutFile ../deps.zip
+          7z x ../deps.zip -aos
 
-      # -------------------------------------------------------
-      # Package suffix
-      # -------------------------------------------------------
-
-      - name: Set Suffix
-        id: set_variables
-        uses: ./.github/actions/set-suffix
-        with:
-          os: ${{ matrix.arch }}
-
-      # -------------------------------------------------------
-      # Compile
-      # -------------------------------------------------------
-
-      - name: Build
+      - name: Create installer
+        id: pkg
+        shell: bash
         run: |
-          cd Builds/${{ matrix.buildFolder }}
+          SHORT=${GITHUB_SHA::7}
+          NAME=${{ env.ProjectName }}-win-x64-debug-$SHORT
+          sed 's#Binaries/CI/App#Binaries/Debug/App#g' install.iss > install-ci.iss
+          "C:/Program Files (x86)/Inno Setup 6/ISCC.exe" install-ci.iss /O. "/F$NAME"
+          echo "file=$NAME.exe" >> "$GITHUB_OUTPUT"
 
-          export PKG_CONFIG_PATH=/usr/lib/${{ matrix.gnu_type }}/pkgconfig
-
-          make -j$(nproc) \
-            CONFIG=${{ matrix.buildConfig }} \
-            CC=${{ matrix.gnu_type }}-gcc \
-            CXX=${{ matrix.gnu_type }}-g++ \
-            AR=${{ matrix.gnu_type }}-ar \
-            STRIP=${{ matrix.gnu_type }}-strip \
-            TARGET_ARCH="${{ matrix.arch_flags }}"
-
-      # -------------------------------------------------------
-      # Prepare AppImage
-      # -------------------------------------------------------
-
-      - name: Download and prepare AppImage
+      - name: Publish prerelease "CI" (only the latest installer)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          wget "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
-          chmod a+x appimagetool-x86_64.AppImage
-
-          mkdir -p ./Builds/${{ matrix.buildFolder }}/${{ env.ProjectName }}.AppDir/usr/bin/
-
-          cp \
-            ./Builds/${{ matrix.buildFolder }}/build/${{ env.ProjectName }} \
-            ./Builds/${{ matrix.buildFolder }}/${{ env.ProjectName }}.AppDir/usr/bin/${{ env.ProjectName }}
-
-      # -------------------------------------------------------
-      # Create AppImage
-      # -------------------------------------------------------
-
-      - name: Create AppImage
-        id: create_package
-        run: |
-          PKGNAME=${{ env.ProjectName }}-linux-${{ steps.set_variables.outputs.suffix }}.AppImage
-
-          echo "pkg-name=$PKGNAME" >> $GITHUB_OUTPUT
-
-          ARCH=${{ matrix.arch }} \
-          ${{ github.workspace }}/appimagetool-x86_64.AppImage \
-            --appimage-extract-and-run \
-            --no-appstream \
-            ${{ env.ProjectName }}.AppDir \
-            $PKGNAME
-
-        working-directory: ./Builds/${{ matrix.buildFolder }}
-
-      # -------------------------------------------------------
-      # Upload
-      # -------------------------------------------------------
-
-      - name: Upload
-        uses: ./.github/actions/upload
-        with:
-          pkg-name: ./Builds/${{ matrix.buildFolder }}/${{ steps.create_package.outputs.pkg-name }}
-          url: ${{ secrets.UPLOADURL }}
-          pass: ${{ secrets.UPLOADPASS }}
+          gh release delete CI --cleanup-tag --yes || true
+          gh release create CI "${{ steps.pkg.outputs.file }}" --prerelease --target "$GITHUB_SHA" \
+            --title "CI (${GITHUB_SHA::7})" --notes "Debug build of $GITHUB_SHA"
