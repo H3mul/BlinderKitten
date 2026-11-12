@@ -1506,7 +1506,7 @@ void Cuelist::kill(bool forceRefreshChannels) {
 
 // ---- cue pairing ----
 
-// Bring c up: a running cuelist goes to it (its own cue fade), an idle one only gets it as next cue, so raising its fader starts that cue.
+// Bring c up: a running cuelist goes to it (its own cue fade), an idle one goes on with it if Auto start is set, else only gets it as next cue (raising its fader starts that cue).
 void Cuelist::armOrGo(Cue* c, float forcedDelay, float forcedFade)
 {
 	if (c == nullptr) return;
@@ -1520,6 +1520,11 @@ void Cuelist::armOrGo(Cue* c, float forcedDelay, float forcedFade)
 			ScopedValueSetter<bool> noChain(suppressPairs, true);
 			go(c, forcedDelay, forcedFade);
 		}
+	}
+	else if (autoStart->boolValue()) {
+		// auto start: the pair puts an idle cuelist "on" even with its fader at 0, so raising the fader works without a touch first
+		ScopedValueSetter<bool> noChain(suppressPairs, true);
+		go(c, forcedDelay, forcedFade);
 	}
 	else {
 		nextCue->setValueFromTarget(c);
