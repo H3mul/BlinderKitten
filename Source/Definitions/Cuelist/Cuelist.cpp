@@ -12,6 +12,7 @@
 #include "Cuelist.h"
 #include "Brain.h"
 #include "../ChannelValue.h"
+#include "../Command/Command.h"
 #include "CuelistManager.h"
 #include "UI/CuelistLoadWindow.h"
 #include "UI/GridView/CuelistGridView.h"
@@ -1273,7 +1274,16 @@ float Cuelist::applyToChannel(SubFixtureChannel* fc, float currentVal, double no
 		return currentVal;
 	}
 	
+	// Palette shift value: the end value is what the command underneath (lower in the stack) would give in the named state
+	float shifted = -1;
+	if (cv->paletteShift) {
+		Command* under = fc->activeCommand;
+		ChannelValue* underCV = fc->activeCV.get();
+		if (under != nullptr && underCV != nullptr && underCV != cv.get()) shifted = under->shiftValueFor(underCV, fc, cv->shiftState, cv->shiftLo, cv->shiftHi);
+	}
+
 	ScopedLock lock(cv->cs);
+	if (cv->paletteShift && cv->values.size() == 2) cv->values.set(1, shifted);
 	if (stopTransition) {
 		double ratio = cv->isTransitionOut ? currentManualOutTransition : currentManualInTransition;
 		now = TSTransitionStart + (TSTransitionDuration * ratio);
