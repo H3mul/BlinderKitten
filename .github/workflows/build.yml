@@ -13,11 +13,21 @@ concurrency:
 
 env:
   ProjectName: BlinderKitten
-  DepsUrl: http://benjamin.kuperberg.fr/chataigne/user/data/Chataigne-win-x64-debug-dependencies.zip
+  DepsBase: http://benjamin.kuperberg.fr/chataigne/user/data/Chataigne-win-x64-
 
 jobs:
-  windows-debug:
+  windows:
     runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - config: Debug
+            lower: debug
+            outdir: Binaries/Debug/App
+          - config: Release
+            lower: release
+            outdir: Binaries/App
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,31 +56,45 @@ jobs:
 
       - uses: microsoft/setup-msbuild@v2
 
-      - name: Build (Debug x64)
-        run: msbuild Builds/VisualStudio2022/${{ env.ProjectName }}.sln /p:PreferredToolArchitecture=x64 /m /v:m /p:Configuration=Debug /p:Platform=x64
+      - name: Build (${{ matrix.config }} x64)
+        run: msbuild Builds/VisualStudio2022/${{ env.ProjectName }}.sln /p:PreferredToolArchitecture=x64 /m /v:m /p:Configuration=${{ matrix.config }} /p:Platform=x64
 
       - name: Fetch dependencies
         shell: powershell
-        working-directory: ./Binaries/Debug/App
+        working-directory: ./${{ matrix.outdir }}
         run: |
-          Invoke-WebRequest "${{ env.DepsUrl }}" -OutFile ../deps.zip
+          Invoke-WebRequest "${{ env.DepsBase }}${{ matrix.lower }}-dependencies.zip" -OutFile ../deps.zip
           7z x ../deps.zip -aos
 
       - name: Create installer
         id: pkg
         shell: powershell
         run: |
-          $name = "${{ env.ProjectName }}-win-x64-debug-" + $env:GITHUB_SHA.Substring(0,7)
-          (Get-Content install.iss) -replace 'Binaries/CI/App','Binaries/Debug/App' | Set-Content install-ci.iss
+          $name = "${{ env.ProjectName }}-win-x64-${{ matrix.lower }}-" + $env:GITHUB_SHA.Substring(0,7)
+          (Get-Content install.iss) -replace 'Binaries/CI/App','${{ matrix.outdir }}' | Set-Content install-ci.iss
           & "C:/Program Files (x86)/Inno Setup 6/ISCC.exe" install-ci.iss /O. "/F$name"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "file=$name.exe" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Publish prerelease "CI" (only the latest installer)
-        shell: bash
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.lower }}
+          path: ${{ steps.pkg.outputs.file }}
+
+  publish:
+    needs: windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: installer-*
+          merge-multiple: true
+
+      - name: Publish prerelease "CI" (only the latest installers)
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           gh release delete CI --cleanup-tag --yes || true
-          gh release create CI "${{ steps.pkg.outputs.file }}" --prerelease --target "$GITHUB_SHA" \
-            --title "CI (${GITHUB_SHA::7})" --notes "Debug build of $GITHUB_SHA"
+          gh release create CI *.exe --prerelease --target "$GITHUB_SHA" \
+            --title "CI (${GITHUB_SHA::7})" --notes "Debug and Release builds of $GITHUB_SHA"
