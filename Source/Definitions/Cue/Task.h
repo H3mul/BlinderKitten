@@ -29,6 +29,7 @@ public:
     IntParameter* targetId;
     BoolParameter* targetThru;
     IntParameter* targetIdTo;
+    StringParameter* layers; // cue layers this task plays in (owners of the effects it starts); empty = Base
     IntParameter* cueId; // cuelist Go: 0 = next cue, else go to (or arm) this cue id
 
     EnumParameter* cuelistAction;

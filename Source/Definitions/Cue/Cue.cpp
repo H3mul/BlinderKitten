@@ -232,7 +232,7 @@ void Cue::computeValues() {
 	computeValues(histo, this);
 }
 
-void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOverride) {
+void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOverride, int layerFilter, String forcedLayers) {
 	if (history.contains(this)) return;
 	history.add(this);
 	csComputing.enter();
@@ -244,7 +244,8 @@ void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOv
 	if (callingCue == nullptr) callingCue = this;
 
 	Array<bool> hostTiming;
-	Array<Cue*> sources = getReuseSources(&hostTiming);
+	Array<String> intoSources;
+	Array<Cue*> sources = getReuseSources(&hostTiming, &intoSources);
 	for (int s = 0; s < sources.size(); s++) {
 		Cue* original = sources[s];
 		Cuelist* srcOverride = cuelistOverride;
@@ -258,7 +259,7 @@ void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOv
 		savedValues.swapWith(original->computedValues);
 		savedChannels.swapWith(original->channelToCommand);
 
-		original->computeValues(history, callingCue, srcOverride);
+		original->computeValues(history, callingCue, srcOverride, layerFilter, intoSources[s].isNotEmpty() ? intoSources[s] : forcedLayers);
 		for (auto it = original->computedValues.begin(); it != original->computedValues.end(); it.next()) {
 			computedValues.set(it.getKey(), it.getValue());
 		}
@@ -276,7 +277,12 @@ void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOv
 
 	checkParentCuelist();
 	Array<Command*> cs = commands.getItemsWithType<Command>();
+	callingCue->checkParentCuelist();
+	Cuelist* layerHost = callingCue->parentCuelist; // layer ids resolve in the cuelist that is playing
 	for (int i = 0; i < cs.size(); i++) {
+		Array<int> layerSet;
+		if (layerHost != nullptr) layerSet = layerHost->resolveLayers(forcedLayers.isNotEmpty() ? forcedLayers : cs[i]->layers->stringValue());
+		if (layerFilter >= 0 && (layerSet.isEmpty() || layerSet[0] != layerFilter)) continue;
 		commandHistory.removeAllInstancesOf(cs[i]);
 		commandHistory.add(cs[i]);
 		cs[i]->computeValues(cuelistOverride != nullptr ? cuelistOverride : parentCuelist, callingCue);
@@ -284,6 +290,7 @@ void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOv
 		for (auto it = cs[i]->computedValues.begin(); it != cs[i]->computedValues.end(); it.next()) {
 			SubFixtureChannel* fc = it.getKey();
 			if (fc != nullptr) {
+				if (it.getValue() != nullptr) it.getValue()->layers = layerSet.size() > 1 ? layerSet : Array<int>();
 				computedValues.set(fc, it.getValue());
 				channelToCommand.set(fc, cs[i]);
 			}
@@ -633,6 +640,7 @@ CueReuse::CueReuse(var params) :
 	cue->maxDefaultSearchLevel = 2;
 	cue->typesFilter = StringArray("Cue");
 	useHostTiming = addBoolParameter("Use host timing", "Use the cuelist timing (preset, raw or filtered) of the cue that includes this one, instead of the cuelist this cue belongs to", true);
+	intoLayers = addStringParameter("Into layers", "Layers (ids separated by commas, first = home) all the included commands play in, in the cuelist of the cue that includes this one. Empty keeps the layers set on the commands", "");
 }
 
 void CueReuse::onContainerParameterChangedInternal(Parameter* p)
@@ -688,15 +696,15 @@ StringArray Cue::getStartedObjects()
 }
 
 // main source first, then the extra enabled ones in list order; missing or empty targets are skipped
-Array<Cue*> Cue::getReuseSources(Array<bool>* hostTiming)
+Array<Cue*> Cue::getReuseSources(Array<bool>* hostTiming, Array<String>* into)
 {
 	Array<Cue*> ret;
 	if (reuseCue->getValue() != "") {
-		if (Cue* c = dynamic_cast<Cue*>(reuseCue->targetContainer.get())) { ret.add(c); if (hostTiming) hostTiming->add(false); }
+		if (Cue* c = dynamic_cast<Cue*>(reuseCue->targetContainer.get())) { ret.add(c); if (hostTiming) hostTiming->add(false); if (into) into->add(String()); }
 	}
 	for (auto* r : moreReuse.items) {
 		if (!r->enabled->boolValue()) continue;
-		if (Cue* c = dynamic_cast<Cue*>(r->cue->targetContainer.get())) { ret.add(c); if (hostTiming) hostTiming->add(r->useHostTiming->boolValue()); }
+		if (Cue* c = dynamic_cast<Cue*>(r->cue->targetContainer.get())) { ret.add(c); if (hostTiming) hostTiming->add(r->useHostTiming->boolValue()); if (into) into->add(r->intoLayers->stringValue()); }
 	}
 	return ret;
 }

@@ -31,7 +31,7 @@ void Cuelist::refreshPaletteRefs(const Array<int>& paletteIds)
 	isComputing.enter();
 	for (Cue* c : toApply) {
 		if (!c->refsPalettes(paletteIds)) continue;
-		c->computeValues();
+		computeCue(c);
 		c->csComputing.enter();
 		for (auto it = c->computedValues.begin(); it != c->computedValues.end(); it.next()) {
 			SubFixtureChannel* sfc = it.getKey();

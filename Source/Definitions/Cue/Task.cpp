@@ -42,6 +42,7 @@ Task::Task(var params) :
 	targetId = addIntParameter("Target ID", "", 0, 0);
 	targetThru = addBoolParameter("target Thru", "multiple targets ?", false);
 	targetIdTo = addIntParameter("Target ID To", "", 0, 0);
+	layers = addStringParameter("Layers", "Cue layers this task plays in, ids separated by commas (first = home layer). Effects it starts follow the highest of these layers' levels. Empty = Base", "");
 	cueId = addIntParameter("Cue ID", "Go only: 0 goes to the next cue, otherwise goes to the cue with this id (an idle cuelist is only armed on it, see Paired cues)", 0, 0);
 
 	cuelistAction = addEnumParameter("Cuelist action", "");
@@ -296,6 +297,14 @@ void Task::autoName()
 	setNiceName(name);
 }
 
+// The object is owned by every layer of the task (home layer first), so its size follows the highest of their levels.
+static void noteStartForLayers(Task* t, const char* type, int targetId, int cuelistId)
+{
+	Cuelist* c = Brain::getInstance()->getCuelistById(cuelistId);
+	if (c == nullptr) { Brain::getInstance()->noteTaskStart(type, targetId, cuelistId); return; }
+	for (int l : c->resolveLayers(t->layers->stringValue())) Brain::getInstance()->noteTaskStart(type, targetId, c->ownerIdForLayer(l));
+}
+
 void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, String action, double value, int id, int cuelistId)
 {
 	if (targetType == "cuelist") {
@@ -339,7 +348,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 			if (action == "start" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
 				target->userStart(fade);
-				Brain::getInstance()->noteTaskStart("effect", targetId, cuelistId);
+				noteStartForLayers(parentTask, "effect", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
@@ -365,7 +374,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 			if (action == "start" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
 				target->userStart(fade);
-				Brain::getInstance()->noteTaskStart("carousel", targetId, cuelistId);
+				noteStartForLayers(parentTask, "carousel", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
@@ -390,7 +399,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 		if (target != nullptr) {
 			if (action == "start" && value == 1) {
 				target->start();
-				Brain::getInstance()->noteTaskStart("mapper", targetId, cuelistId);
+				noteStartForLayers(parentTask, "mapper", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				target->stop();
@@ -405,7 +414,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 		if (target != nullptr) {
 			if (action == "start" && value == 1) {
 				target->start();
-				Brain::getInstance()->noteTaskStart("tracker", targetId, cuelistId);
+				noteStartForLayers(parentTask, "tracker", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				target->stop();
