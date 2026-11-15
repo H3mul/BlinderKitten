@@ -184,6 +184,7 @@ public:
 
     // cue pairing: effects, carousels, mappers and trackers scaled by the cuelist that started them
     float ownerFactor(const SizeOwners& o);
+    float ownerSpeedFactor(const SizeOwners& o);
     bool hasRunningOwner(const SizeOwners& o);
     void noteTaskStart(const String& type, int id, int cuelistId);
     void ownedLevelChanged(int cuelistId);

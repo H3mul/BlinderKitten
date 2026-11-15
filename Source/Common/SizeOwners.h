@@ -9,8 +9,9 @@ struct SizeOwners
     bool unowned = false;       // also started by a cuelist without the option
     bool ownerStopped = false;  // last stop came from the owner level reaching 0: keep links so a rise restarts it
     float mult = 1;
+    float speedMult = 1;        // effect speed master of the owners (objects without a tempo)
 
     void clear() { ids.clear(); unowned = false; ownerStopped = false; }
     // object stopped for good: forget the links, unless the owner level is what stopped it
-    void clearOnStop() { if (!ownerStopped) { ids.clear(); unowned = false; mult = 1; } }
+    void clearOnStop() { if (!ownerStopped) { ids.clear(); unowned = false; mult = 1; speedMult = 1; } }
 };
