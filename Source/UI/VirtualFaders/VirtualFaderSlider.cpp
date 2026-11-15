@@ -46,7 +46,7 @@ VirtualFaderSlider::VirtualFaderSlider(var params) :
 	targetType->addOption("Tracker", "tracker");
 	targetType->addOption("Generic Actions", "actions");
 
-	targetId = addIntParameter("Target ID", "", 0, 0);
+	targetId = addFloatParameter("Target ID", "Id of the target. For a cuelist, m.n targets layer n of cuelist m (1.0, or 1, is the cuelist itself)", 0, 0);
 
 	customText = addStringParameter("Custom Text", "Write your own text on your fader", "");
 
@@ -146,9 +146,9 @@ float VirtualFaderSlider::getTargetValue()
 	checkParentColumn();
 	if (parentColumn == nullptr) { LOG("this is strange"); return 0; }
 	String colTargetType = parentColumn->targetType->getValue();
-	int colTargetId = parentColumn->targetId->intValue();
+	double colTargetId = parentColumn->targetId->floatValue();
 	String targType = targetType->getValue();
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 
 	if (targType == "column") {
 		targType = colTargetType;
@@ -162,7 +162,7 @@ float VirtualFaderSlider::getTargetValue()
 	if (targId == 0) { return 0; }
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "htplevel" || action == "htpltplevel") {
@@ -247,7 +247,7 @@ void VirtualFaderSlider::moved(float value, String origin, int incrementIndex, b
 	checkParentColumn();
 	if (parentColumn == nullptr) { LOG("this is strange"); return; }
 	String colTargetType = parentColumn->targetType->getValue();
-	int colTargetId = parentColumn->targetId->intValue();
+	double colTargetId = parentColumn->targetId->floatValue();
 	String targType = targetType->getValue();
 	float gateValue = value;
 	if (filtersActive()) gateValue = value + (getTargetValue() - getDisplayValue());
@@ -319,9 +319,9 @@ void VirtualFaderSlider::runFilters(double dt, bool apply)
 void VirtualFaderSlider::applyValue(float value, String origin, bool isRelative) {
 	if (!checkParentColumn()) { return; }
 	String colTargetType = parentColumn->targetType->getValue();
-	int colTargetId = parentColumn->targetId->intValue();
+	double colTargetId = parentColumn->targetId->floatValue();
 	String targType = targetType->getValue();
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 
 	if (targType == "column") {
 		targType = colTargetType;
@@ -337,7 +337,7 @@ void VirtualFaderSlider::applyValue(float value, String origin, bool isRelative)
 	//const MessageManagerLock mmLock;
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "htplevel" || action == "htpltplevel") {
@@ -460,11 +460,11 @@ void VirtualFaderSlider::feedback(var value, String origin="")
 
 void VirtualFaderSlider::released() { 
 	String targType = targetType->getValue();
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 	if (targId == 0) { return; }
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "flash") { targ->flash(false, false, false); }
@@ -530,11 +530,11 @@ String VirtualFaderSlider::getBtnText(String columnType) {
 		return action;
 	}
 	else {
-		int targId = targetId->getValue();
+		double targId = targetId->floatValue();
 		if (targId == 0) { return ""; }
 
 		if (targType == "cuelist") {
-			Cuelist* targ = Brain::getInstance()->getCuelistById(targId);
+			Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
 			action = cuelistAction->getValue();
 			if (targ != nullptr) {
 				text = targ->userName->getValue();
@@ -607,18 +607,18 @@ bool VirtualFaderSlider::isAllowedToMove(String origin, int incrementIndex, floa
 		return false;
 	}
 
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 
 	if (targType == "column") {
 		targType = parentColumn->targetType->getValue();
-		targId = parentColumn->targetId->intValue();
+		targId = parentColumn->targetId->floatValue();
 	}
 
 	if (targType == "disabled") { return true; }
 	if (targId == 0) { return true; }
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "htplevel") {

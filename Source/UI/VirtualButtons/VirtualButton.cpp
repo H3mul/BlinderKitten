@@ -49,7 +49,7 @@ VirtualButton::VirtualButton(var params) :
 	targetType->addOption("Tracker", "tracker");
 	targetType->addOption("Generic Actions", "actions");
 
-	targetId = addIntParameter("Target ID", "", 0, 0);
+	targetId = addFloatParameter("Target ID", "Id of the target. For a cuelist, m.n targets layer n of cuelist m (1.0, or 1, is the cuelist itself)", 0, 0);
 	cuelistAction = addEnumParameter("Cuelist action", "");
 	cuelistAction->addOption("Go", "go");
 	cuelistAction->addOption("Go back", "goback");
@@ -165,11 +165,11 @@ void VirtualButton::pressed() {
 		return;
 	}
 
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 	if (targId == 0) {return;}
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "go") { targ->userGo(); }
@@ -287,11 +287,11 @@ void VirtualButton::released() {
 		actionManager.setValueAll(0);
 		return;
 	}
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 	if (targId == 0) { return; }
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "flash") { targ->flash(false, false, false); }
@@ -350,11 +350,11 @@ String VirtualButton::getBtnText() {
 	String text = "";
 	String targType = targetType->getValue();
 	String action = "";
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 	if (targId == 0) { return ""; }
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
 		action = cuelistAction->getValue();
 		if (targ != nullptr) {
 			text = targ->userName->getValue();
@@ -411,13 +411,13 @@ void VirtualButton::updateStatus(bool forceRefresh)
 {
 	ButtonStatus newStatus = BTN_UNASSIGNED;
 	String targType = targetType->getValue();
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 
 	if (targType == "actions") {
 		newStatus = BTN_GENERIC;
 	}
 	else if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
 		if (targ != nullptr) {
 			bool isLoad = targType == "cuelist";
 			isLoad = isLoad && (cuelistAction->getValue() == "load" || cuelistAction->getValue() == "loadandgo");

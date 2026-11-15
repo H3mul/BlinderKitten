@@ -26,7 +26,7 @@ public:
     IntParameter* originId;
 
     EnumParameter* targetType;
-    IntParameter* targetId;
+    FloatParameter* targetId;
     BoolParameter* targetThru;
     IntParameter* targetIdTo;
     StringParameter* layers; // cue layers this task plays in (owners of the effects it starts); empty = Base

@@ -2335,9 +2335,9 @@ CueLayer::CueLayer(var params) :
 	BaseItem(params.getProperty("name", "Layer"))
 {
 	itemDataType = "CueLayer";
-	layerId = addIntParameter("ID", "Id of this layer, used in the Layers field of commands and tasks. 0 is Base and always exists", 1, 1);
+	layerId = addIntParameter("ID", "Id of this layer (1 to 9), used in the Layers field of commands and tasks and as the n of the m.n fader target. 0 is Base (the cuelist itself) and always exists", 1, 1, 9);
 	releaseWhenAbsent = addBoolParameter("Release when absent", "A cue with no content for this layer fades the layer out. Off: the layer keeps its values (tracking)", true);
-	faderTargetId = addIntParameter("Fader target ID", "Read only. Bind a virtual fader to this cuelist id (action HTP level, LTP level or HTP+LTP level) to use it as this layer's master; the master multiplies the cuelist's own levels. Shown once the layer has played", 0, 0);
+	faderTargetId = addStringParameter("Fader target", "Read only. Use this as the Target ID (type Cuelist) of a virtual fader, button or task to drive this layer: m.n is layer n of cuelist m. The layer's HTP/LTP master multiplies the cuelist's own levels", "");
 	faderTargetId->isControllableFeedbackOnly = true;
 	faderTargetId->isSavable = false;
 	sizeMaster = addFloatParameter("Size master", "Scales the effects, carousels, mappers and trackers started by this layer's tasks. Not saved", 1, 0, 1);
@@ -2437,7 +2437,7 @@ void Cuelist::syncLayerLevels()
 		float size = d->sizeMaster->floatValue();
 		bool sizeChanged = s->layerSizeMaster != size;
 		s->layerSizeMaster = size;
-		d->faderTargetId->setValue(s->id->intValue());
+		d->faderTargetId->setValue(String(id->intValue()) + "." + String(d->layerId->intValue()));
 		s->pleaseUpdateHTPs = true;
 		s->pleaseUpdateLTPs = true;
 		Brain::getInstance()->pleaseUpdate(s);

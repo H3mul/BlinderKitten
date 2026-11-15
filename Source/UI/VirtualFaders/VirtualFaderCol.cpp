@@ -54,7 +54,7 @@ VirtualFaderCol::VirtualFaderCol(var params) :
 	targetType->addOption("Effect", "effect");
 	targetType->addOption("Carousel", "carousel");
 
-	targetId = addIntParameter("Target ID", "", 0, 0);
+	targetId = addFloatParameter("Target ID", "Id of the target. For a cuelist, m.n targets layer n of cuelist m (1.0, or 1, is the cuelist itself)", 0, 0);
 
 	addChildControllableContainer(&rotaries);
 	rotaries.selectItemWhenCreated = false;
@@ -115,14 +115,14 @@ void VirtualFaderCol::updateDisplay() {
 
 void VirtualFaderCol::pressed() { 
 	String targType = targetType->getValue();
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 	if (targId == 0) {return;}
 
 }
 
 void VirtualFaderCol::released() { 
 	String targType = targetType->getValue();
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 	if (targId == 0) { return; }
 
 }
@@ -130,10 +130,10 @@ void VirtualFaderCol::released() {
 String VirtualFaderCol::getTargetName() {
 	String text = "";
 	String targType = targetType->getValue();
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 	if (targId == 0) { return ""; }
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
 		if (targ != nullptr) { text = targ->userName->getValue(); }
 	}
 	else if (targType == "effect") {
@@ -150,10 +150,10 @@ String VirtualFaderCol::getTargetName() {
 
 String VirtualFaderCol::getTargetType() {
 	String targType = targetType->getValue();
-	int targId = targetId->getValue();
+	double targId = targetId->floatValue();
 	if (targId == 0) { return ""; }
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
 		if (targ != nullptr) { return "cuelist"; }
 	}
 	else if (targType == "effect") {

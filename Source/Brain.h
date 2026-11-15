@@ -219,6 +219,9 @@ public:
     Group* getGroupById(int id, bool followIfAnother = false);
     Preset* getPresetById(int id, bool followIfAnother = false);
     Cuelist* getCuelistById(int id);
+    // A cuelist reference: m is cuelist m, m.n is layer n of cuelist m (1 to 9). The layer stacks are hidden cuelists with internal ids.
+    static int cuelistRefToId(double ref);
+    Cuelist* getCuelistByRef(double ref);
     Programmer* getProgrammerById(int id);
     CurvePreset* getCurvePresetById(int id);
     TimingPreset* getTimingPresetById(int id, bool followIfAnother = false);

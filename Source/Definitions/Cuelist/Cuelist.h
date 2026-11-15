@@ -26,7 +26,7 @@ public:
 
     IntParameter* layerId;
     BoolParameter* releaseWhenAbsent; // a cue with no content for this layer fades it out (off: it tracks)
-    IntParameter* faderTargetId;      // read only: bind a virtual fader (cuelist target, HTP / LTP / HTP+LTP level) to this id to drive the layer's HTP/LTP master
+    StringParameter* faderTargetId;   // read only: "m.n", the Target ID of a virtual fader/button or task that drives this layer's HTP/LTP master
     FloatParameter* sizeMaster;       // effects, carousels, mappers and trackers started by this layer's tasks (not saved)
 
     void onContainerParameterChangedInternal(Parameter* p) override;
