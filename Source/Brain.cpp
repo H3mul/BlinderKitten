@@ -1474,7 +1474,7 @@ void Brain::startTask(Task* t, double startTime, int cuelistId, float forcedDela
         }
     }
     else {
-        targetIds.add(targetType == "cuelist" ? cuelistRefToId(t->targetId->floatValue()) : t->targetId->intValue()); // cuelist: m.n is layer n of cuelist m
+        targetIds.add(targetType == "cuelist" ? layerCuelistId(t->targetId->intValue(), t->targetLayer->intValue()) : t->targetId->intValue()); // a layer of a cuelist runs in its own hidden cuelist
         targetTypes.add(targetType);
         actionsTypes.add(actionTypeDef);
     }
@@ -1648,16 +1648,13 @@ Preset* Brain::getPresetById(int id, bool followIfAnother) {
     }
 }
 
-int Brain::cuelistRefToId(double ref) {
-    int m = (int)std::floor(ref + 1e-6);
-    int n = (int)std::lround((ref - m) * 10.0);
-    if (n <= 0 || n > 9) return m;
-    return 1000000 + m * 100 + n; // see Cuelist::getLayerStack
+int Brain::layerCuelistId(int cuelistId, int layer) {
+    if (layer <= 0) return cuelistId;
+    return 1000000 + cuelistId * 100 + layer; // hidden: far from the ids a show uses
 }
-Cuelist* Brain::getCuelistByRef(double ref) {
-    return getCuelistById(cuelistRefToId(ref));
-}
-Cuelist* Brain::getCuelistById(int id) {
+
+Cuelist* Brain::getCuelistById(int id, int layer) {
+    id = layerCuelistId(id, layer);
     if (cuelists.contains(id)) {
         return cuelists.getReference(id);
     }

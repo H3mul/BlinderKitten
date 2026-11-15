@@ -219,10 +219,10 @@ public:
     Fixture* getFixtureById(int id, bool followIfAnother = false);
     Group* getGroupById(int id, bool followIfAnother = false);
     Preset* getPresetById(int id, bool followIfAnother = false);
-    Cuelist* getCuelistById(int id);
-    // A cuelist reference: m is cuelist m, m.n is layer n of cuelist m (1 to 9). The layer stacks are hidden cuelists with internal ids.
-    static int cuelistRefToId(double ref);
-    Cuelist* getCuelistByRef(double ref);
+    // Cuelist m is getCuelistById(m). Layer n (1 to 9) of cuelist m is getCuelistById(m, n): the hidden cuelist that plays the layer.
+    // Layer 0 (the default) is the cuelist itself.
+    Cuelist* getCuelistById(int id, int layer = 0);
+    static int layerCuelistId(int cuelistId, int layer); // registry id of a layer's cuelist (layer 0: the cuelist's own id)
     Programmer* getProgrammerById(int id);
     CurvePreset* getCurvePresetById(int id);
     TimingPreset* getTimingPresetById(int id, bool followIfAnother = false);

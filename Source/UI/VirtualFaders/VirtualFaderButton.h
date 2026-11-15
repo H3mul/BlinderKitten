@@ -28,7 +28,8 @@ public:
     ButtonStatus currentStatus;
 
     EnumParameter * targetType;
-    FloatParameter * targetId;
+    IntParameter * targetId;
+    IntParameter * targetLayer;
     StringParameter* customText;
 
     EnumParameter * cuelistAction;

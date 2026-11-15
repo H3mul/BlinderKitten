@@ -46,7 +46,8 @@ VirtualFaderSlider::VirtualFaderSlider(var params) :
 	targetType->addOption("Tracker", "tracker");
 	targetType->addOption("Generic Actions", "actions");
 
-	targetId = addFloatParameter("Target ID", "Id of the target. For a cuelist, m.n targets layer n of cuelist m (1.0, or 1, is the cuelist itself)", 0, 0);
+	targetId = addIntParameter("Target ID", "", 0, 0);
+	targetLayer = addIntParameter("Layer", "Layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its layer n", 0, 0, 9);
 
 	customText = addStringParameter("Custom Text", "Write your own text on your fader", "");
 
@@ -130,6 +131,7 @@ void VirtualFaderSlider::updateDisplay() {
 
 	actionManager.hideInEditor = targType != "actions";
 	targetId->hideInEditor = isColumn || targType == "disabled" || targType == "actions";
+	targetLayer->hideInEditor = targetId->hideInEditor || targType != "cuelist";
 
 	bool needSpeed = false;
 	needSpeed = needSpeed || (targType == "cuelist" && cuelistAction->getValue() == "speed");
@@ -146,13 +148,16 @@ float VirtualFaderSlider::getTargetValue()
 	checkParentColumn();
 	if (parentColumn == nullptr) { LOG("this is strange"); return 0; }
 	String colTargetType = parentColumn->targetType->getValue();
-	double colTargetId = parentColumn->targetId->floatValue();
+	int colTargetId = parentColumn->targetId->intValue();
+	int colTargetLayer = parentColumn->targetLayer->intValue();
 	String targType = targetType->getValue();
-	double targId = targetId->floatValue();
+	int targId = targetId->intValue();
+	int targLayer = targetLayer->intValue();
 
 	if (targType == "column") {
 		targType = colTargetType;
 		targId = colTargetId;
+		targLayer = colTargetLayer;
 	}
 
 	if (targType == "actions") {
@@ -162,7 +167,7 @@ float VirtualFaderSlider::getTargetValue()
 	if (targId == 0) { return 0; }
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "htplevel" || action == "htpltplevel") {
@@ -247,7 +252,8 @@ void VirtualFaderSlider::moved(float value, String origin, int incrementIndex, b
 	checkParentColumn();
 	if (parentColumn == nullptr) { LOG("this is strange"); return; }
 	String colTargetType = parentColumn->targetType->getValue();
-	double colTargetId = parentColumn->targetId->floatValue();
+	int colTargetId = parentColumn->targetId->intValue();
+	int colTargetLayer = parentColumn->targetLayer->intValue();
 	String targType = targetType->getValue();
 	float gateValue = value;
 	if (filtersActive()) gateValue = value + (getTargetValue() - getDisplayValue());
@@ -319,13 +325,16 @@ void VirtualFaderSlider::runFilters(double dt, bool apply)
 void VirtualFaderSlider::applyValue(float value, String origin, bool isRelative) {
 	if (!checkParentColumn()) { return; }
 	String colTargetType = parentColumn->targetType->getValue();
-	double colTargetId = parentColumn->targetId->floatValue();
+	int colTargetId = parentColumn->targetId->intValue();
+	int colTargetLayer = parentColumn->targetLayer->intValue();
 	String targType = targetType->getValue();
-	double targId = targetId->floatValue();
+	int targId = targetId->intValue();
+	int targLayer = targetLayer->intValue();
 
 	if (targType == "column") {
 		targType = colTargetType;
 		targId = colTargetId;
+		targLayer = colTargetLayer;
 	}
 
 	if (targType == "actions") {
@@ -337,7 +346,7 @@ void VirtualFaderSlider::applyValue(float value, String origin, bool isRelative)
 	//const MessageManagerLock mmLock;
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "htplevel" || action == "htpltplevel") {
@@ -460,11 +469,12 @@ void VirtualFaderSlider::feedback(var value, String origin="")
 
 void VirtualFaderSlider::released() { 
 	String targType = targetType->getValue();
-	double targId = targetId->floatValue();
+	int targId = targetId->intValue();
+	int targLayer = targetLayer->intValue();
 	if (targId == 0) { return; }
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "flash") { targ->flash(false, false, false); }
@@ -530,11 +540,12 @@ String VirtualFaderSlider::getBtnText(String columnType) {
 		return action;
 	}
 	else {
-		double targId = targetId->floatValue();
+		int targId = targetId->intValue();
+		int targLayer = targetLayer->intValue();
 		if (targId == 0) { return ""; }
 
 		if (targType == "cuelist") {
-			Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
+			Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
 			action = cuelistAction->getValue();
 			if (targ != nullptr) {
 				text = targ->userName->getValue();
@@ -607,18 +618,20 @@ bool VirtualFaderSlider::isAllowedToMove(String origin, int incrementIndex, floa
 		return false;
 	}
 
-	double targId = targetId->floatValue();
+	int targId = targetId->intValue();
+	int targLayer = targetLayer->intValue();
 
 	if (targType == "column") {
 		targType = parentColumn->targetType->getValue();
-		targId = parentColumn->targetId->floatValue();
+		targId = parentColumn->targetId->intValue();
+		targLayer = parentColumn->targetLayer->intValue();
 	}
 
 	if (targType == "disabled") { return true; }
 	if (targId == 0) { return true; }
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistByRef(targId);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "htplevel") {

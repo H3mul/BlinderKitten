@@ -2342,7 +2342,7 @@ CueLayer::CueLayer(var params) :
 	itemDataType = "CueLayer";
 	layerId = addIntParameter("ID", "Id of this layer (1 to 9), used in the Layers field of commands and tasks and as the n of the m.n fader target. 0 is Base (the cuelist itself) and always exists", 1, 1, 9);
 	releaseWhenAbsent = addBoolParameter("Release when absent", "A cue with no content for this layer fades the layer out. Off: the layer keeps its values (tracking)", true);
-	faderTargetId = addStringParameter("Fader target", "Read only. Use this as the Target ID (type Cuelist) of a virtual fader, button or task to drive this layer: m.n is layer n of cuelist m. The layer's HTP/LTP master multiplies the cuelist's own levels", "");
+	faderTargetId = addStringParameter("Fader target", "Read only. To drive this layer from a virtual fader, button, task or cuelist action, pick this cuelist as the target and set Layer to this layer's ID. The layer's HTP/LTP master multiplies the cuelist's own levels", "");
 	faderTargetId->isControllableFeedbackOnly = true;
 	faderTargetId->isSavable = false;
 }
@@ -2398,7 +2398,7 @@ Cuelist* Cuelist::getLayerStack(int l, bool create)
 	if (layerStacks.contains(l)) return layerStacks[l];
 	if (!create) return nullptr;
 	var p(new DynamicObject());
-	p.getDynamicObject()->setProperty("ID", 1000000 + id->intValue() * 100 + l); // hidden: far from the ids a show uses
+	p.getDynamicObject()->setProperty("ID", Brain::layerCuelistId(id->intValue(), l));
 	Cuelist* s = new Cuelist(p);
 	s->isLayerStack = true;
 	s->layerParent = this;
@@ -2437,7 +2437,7 @@ void Cuelist::syncLayerLevels()
 		s->layerOn = d->enabled->boolValue();
 		s->layerRelease = d->releaseWhenAbsent->boolValue();
 		s->scaleEffects->setValue(scaleEffects->boolValue());
-		d->faderTargetId->setValue(String(id->intValue()) + "." + String(d->layerId->intValue()));
+		d->faderTargetId->setValue("Cuelist " + String(id->intValue()) + ", layer " + String(d->layerId->intValue()));
 		s->pleaseUpdateHTPs = true;
 		s->pleaseUpdateLTPs = true;
 		Brain::getInstance()->pleaseUpdate(s);

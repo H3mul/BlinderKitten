@@ -33,7 +33,8 @@ public:
     ColorParameter * customColor;
 
     EnumParameter * targetType;
-    FloatParameter * targetId;
+    IntParameter * targetId;
+    IntParameter * targetLayer;
     EnumParameter * cuelistAction;
     EnumParameter * effectAction;
     EnumParameter* carouselAction;

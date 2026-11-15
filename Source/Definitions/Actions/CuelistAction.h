@@ -36,7 +36,8 @@ public:
     };
     ActionType actionType;
     BoolParameter* useMainConductor;
-    FloatParameter* cuelistId; // m.n targets layer n of cuelist m (m or m.0 is the cuelist itself)
+    IntParameter* cuelistId;
+    IntParameter* cuelistLayer; // 0: the cuelist itself, n: its layer n
     FloatParameter* maxValue;
     FloatParameter* cueId;
     FloatParameter* maxSpeed;

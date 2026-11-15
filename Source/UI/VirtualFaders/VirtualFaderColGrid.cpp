@@ -794,11 +794,11 @@ void VirtualFaderColGrid::updateSlidersValues(bool forceAll)
     for (int i = 0; i < cols; i++) {
         VirtualFaderCol* vfc = columnToVFC.getReference(i+1);
         String colTargetType = "";
-        double colTargetId = 0;
+        int colTargetId = 0;
 
         if (vfc != nullptr) {
             colTargetType = vfc->getTargetType();
-            colTargetId = vfc->targetId->floatValue();
+            colTargetId = vfc->targetId->getValue();
         }
 
         VirtualFaderSlider* s = sliderToVFS.getReference(faders[i]);
