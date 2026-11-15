@@ -254,7 +254,7 @@ Cuelist::Cuelist(var params) :
 		cues.addItem();
 	}
 
-	Brain::getInstance()->registerCuelist(this, id->getValue());
+	if (!(bool)params.getProperty("hidden", false)) Brain::getInstance()->registerCuelist(this, id->getValue());
 }
 
 Cuelist::~Cuelist()
@@ -319,7 +319,7 @@ void Cuelist::onContainerParameterChangedInternal(Parameter* p) {
 		pleaseUpdateHTPs = true;
 		lastHTPLevel = p->getValue();
 		if (isLayerStack || !cueLayers.items.isEmpty()) syncLayerLevels();
-		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(id->intValue());
+		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(ref());
 		Brain::getInstance()->pleaseUpdate(this);
 	}
 	if (p == effectSize || p == effectSpeed) mastersChanged();
@@ -341,7 +341,7 @@ void Cuelist::onContainerParameterChangedInternal(Parameter* p) {
 		pleaseUpdateLTPs = true;
 		lastLTPLevel = p->getValue();
 		if (isLayerStack || !cueLayers.items.isEmpty()) syncLayerLevels();
-		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(id->intValue());
+		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(ref());
 		Brain::getInstance()->pleaseUpdate(this);
 	}
 
@@ -358,7 +358,7 @@ void Cuelist::onContainerParameterChangedInternal(Parameter* p) {
 		nextFlashLevelController = "";
 	}
 
-	if (p == id) {
+	if (p == id && !isLayerStack) {
 		Brain::getInstance()->registerCuelist(this, id->getValue(), true);
 	}
 	if (p == userName || p == id) {
@@ -1071,7 +1071,7 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 	}
 	if (!suppressPairs) applyPairs(c, forcedDelay, forcedFade);
 	if (!isLayerStack) driveLayerStacks(c, forcedDelay, forcedFade, retarget);
-	if (c == nullptr) Brain::getInstance()->releaseOwner(id->intValue());
+	if (c == nullptr) Brain::getInstance()->releaseOwner(ref());
 	
 	return ;
 }
@@ -1116,7 +1116,7 @@ void Cuelist::flash(bool setOn, bool withTiming, bool swop) {
 			isSwopping = true;
 			Brain::getInstance()->swoppedCuelist(this);
 		}
-		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(id->intValue());
+		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(ref());
 		if (cueA != nullptr) {
 			cueA->csComputing.enter();
 			for (auto it = cueA->computedValues.begin(); it != cueA->computedValues.end(); it.next()) {
@@ -1129,7 +1129,7 @@ void Cuelist::flash(bool setOn, bool withTiming, bool swop) {
 	else {
 		isFlashing = false;
 		TSOffFlash = Time::getMillisecondCounterHiRes();
-		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(id->intValue());
+		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(ref());
 		TSOffFlashEnd = TSOffFlash + (offFade->floatValue()*1000.0);
 		if (swop || isSwopping) {
 			isSwopping = false;
@@ -1672,7 +1672,7 @@ void Cuelist::scopedStop(Cue* leaving, Cue* arriving, float forcedFade)
 	StringArray keep = arriving != nullptr ? arriving->getStartedObjects() : StringArray();
 	for (const String& key : leaving->getStartedObjects()) {
 		if (keep.contains(key)) continue;
-		Brain::getInstance()->stopOwned(key.upToFirstOccurrenceOf(":", false, false), key.fromFirstOccurrenceOf(":", false, false).getIntValue(), id->intValue(), forcedFade);
+		Brain::getInstance()->stopOwned(key.upToFirstOccurrenceOf(":", false, false), key.fromFirstOccurrenceOf(":", false, false).getIntValue(), ref(), forcedFade);
 	}
 }
 
@@ -2378,27 +2378,39 @@ Array<int> Cuelist::resolveLayers(const String& str)
 		for (const String& t : tokens) {
 			if (t.isEmpty()) continue;
 			int l = t.getIntValue();
-			if (hasLayer(l) && !out.contains(l)) out.add(l);
+			if (hasLayer(l)) { if (!out.contains(l)) out.add(l); }
+			else if (!warnedLayers.contains(l)) { // not declared: plays in the base layer, say so once
+				warnedLayers.add(l);
+				LOGWARNING("Cuelist " << (layerParent != nullptr ? layerParent : this)->id->intValue() << ": layer " << l << " is not in its Layers list, its commands and tasks play in the base layer");
+			}
 		}
 	}
 	if (out.isEmpty()) out.add(0);
 	return out;
 }
 
-int Cuelist::ownerIdForLayer(int l)
+LayerRef Cuelist::ownerRefForLayer(int l)
 {
 	Cuelist* o = layerParent != nullptr ? layerParent : this;
-	if (l == 0) return o->id->intValue();
-	Cuelist* s = o->getLayerStack(l, false);
-	return s != nullptr ? s->id->intValue() : o->id->intValue();
+	if (l == 0 || o->getLayerStack(l, false) == nullptr) return LayerRef{ o->id->intValue(), 0 };
+	return LayerRef{ o->id->intValue(), l };
+}
+
+LayerRef Cuelist::ref()
+{
+	if (layerParent != nullptr) return LayerRef{ layerParent->id->intValue(), layerIdx };
+	return LayerRef{ id->intValue(), 0 };
 }
 
 Cuelist* Cuelist::getLayerStack(int l, bool create)
 {
 	if (layerStacks.contains(l)) return layerStacks[l];
 	if (!create) return nullptr;
+	ScopedLock lock(Brain::getInstance()->usingLibraries); // allCuelists walks layerStacks under this lock
+	if (layerStacks.contains(l)) return layerStacks[l];
 	var p(new DynamicObject());
-	p.getDynamicObject()->setProperty("ID", Brain::layerCuelistId(id->intValue(), l));
+	p.getDynamicObject()->setProperty("ID", Brain::getInstance()->nextHiddenCuelistId()); // a stack is not in the registry; its cuelist finds it
+	p.getDynamicObject()->setProperty("hidden", true);
 	Cuelist* s = new Cuelist(p);
 	s->isLayerStack = true;
 	s->layerParent = this;
@@ -2441,7 +2453,7 @@ void Cuelist::syncLayerLevels()
 		s->pleaseUpdateHTPs = true;
 		s->pleaseUpdateLTPs = true;
 		Brain::getInstance()->pleaseUpdate(s);
-		if (s->scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(s->id->intValue());
+		if (s->scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(s->ref());
 	}
 	pleaseUpdateHTPs = true;
 	pleaseUpdateLTPs = true;
@@ -2511,8 +2523,8 @@ float Cuelist::speedFactor()
 void Cuelist::mastersChanged()
 {
 	Brain* b = Brain::getInstance();
-	b->ownedLevelChanged(id->intValue());
+	b->ownedLevelChanged(ref());
 	if (layerParent == nullptr) {
-		for (auto it = layerStacks.begin(); it != layerStacks.end(); it.next()) b->ownedLevelChanged(it.getValue()->id->intValue());
+		for (auto it = layerStacks.begin(); it != layerStacks.end(); it.next()) b->ownedLevelChanged(it.getValue()->ref());
 	}
 }

@@ -63,6 +63,6 @@ public:
 
     void autoName();
 
-    static void triggerGivenTask(Task* parent, String targetType, int targetId, String action, double targetValue, int id, int cuelistId = 0);
+    static void triggerGivenTask(Task* parent, String targetType, int targetId, String action, double targetValue, int id, int cuelistId = 0, int targetLayer = 0);
 };
 

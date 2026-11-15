@@ -11,6 +11,7 @@
 
 #include "JuceHeader.h"
 #include "Common/SizeOwners.h"
+#include "Common/LayerRef.h"
 
 class SubFixture;
 class SubFixtureChannel;
@@ -186,10 +187,16 @@ public:
     float ownerFactor(const SizeOwners& o);
     float ownerSpeedFactor(const SizeOwners& o);
     bool hasRunningOwner(const SizeOwners& o);
-    void noteTaskStart(const String& type, int id, int cuelistId);
-    void ownedLevelChanged(int cuelistId);
-    void stopOwned(const String& type, int id, int cuelistId, float forcedFade);
-    void releaseOwner(int cuelistId);
+    void noteTaskStart(const String& type, int id, LayerRef owner);
+    void ownedLevelChanged(LayerRef owner);
+    void stopOwned(const String& type, int id, LayerRef owner, float forcedFade);
+    void releaseOwner(LayerRef owner);
+    // a cuelist that changes id keeps the objects it owns (renames are applied together, so two cuelists can swap ids)
+    HashMap<int, int> pendingOwnerRename;
+    int registerDepth = 0;
+    void applyOwnerRenames();
+    int nextHiddenCuelistId(); // layer stacks are not in the registry; they only need an id of their own (palette holds are keyed by it)
+    int hiddenCuelistCounter = 0;
 
     void pleaseUpdate(Cuelist* c);
     void pleaseUpdate(SubFixtureChannel* f);
@@ -220,9 +227,10 @@ public:
     Group* getGroupById(int id, bool followIfAnother = false);
     Preset* getPresetById(int id, bool followIfAnother = false);
     // Cuelist m is getCuelistById(m). Layer n (1 to 9) of cuelist m is getCuelistById(m, n): the hidden cuelist that plays the layer.
-    // Layer 0 (the default) is the cuelist itself.
+    // Layer 0 (the default) is the cuelist itself. Layers are reached through their cuelist; they are not in the registry.
+    Cuelist* getCuelist(LayerRef r);
+    void allCuelists(Array<Cuelist*>& out); // the registry plus every layer stack: for the work that has to reach what plays (locks, clean-up, palette refresh). Go/Off/Kill all use the registry only
     Cuelist* getCuelistById(int id, int layer = 0);
-    static int layerCuelistId(int cuelistId, int layer); // registry id of a layer's cuelist (layer 0: the cuelist's own id)
     Programmer* getProgrammerById(int id);
     CurvePreset* getCurvePresetById(int id);
     TimingPreset* getTimingPresetById(int id, bool followIfAnother = false);

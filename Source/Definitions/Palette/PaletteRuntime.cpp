@@ -303,8 +303,9 @@ void PaletteRuntime::refreshAll()
 	Brain* b = Brain::getInstance();
 	Array<int> ids;
 	for (auto* p : PaletteManager::getInstance()->items) ids.add(p->registeredId);
-	for (auto it = b->cuelists.begin(); it != b->cuelists.end(); it.next()) {
-		Cuelist* cl = it.getValue();
+	Array<Cuelist*> allCl;
+	b->allCuelists(allCl);
+	for (Cuelist* cl : allCl) {
 		if (cl != nullptr && cl->isCuelistOn->boolValue()) cl->refreshPaletteRefs(ids); // filters per cue by refsPalettes
 	}
 	for (auto it = b->carousels.begin(); it != b->carousels.end(); it.next()) {
