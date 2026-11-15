@@ -260,9 +260,10 @@ void Carousel::update(double now) {
 			double deltaTime = now - TSLastUpdate;
 			TSLastUpdate = now;
 			Tempo* tempo = Brain::getInstance()->getTempoById(tempoId->intValue());
-			double currentSpeed = tempo != nullptr ? tempo->effectiveBpm->floatValue() / beatPerCycle->floatValue() : speed->getValue();
+			double currentSpeed = tempo != nullptr ? tempo->effectiveBpm->floatValue() / beatPerCycle->floatValue() : (double)speed->getValue();
 			float speedMultVal = speedMult.getValue();
 			currentSpeed *= speedMultVal;
+			if (tempo == nullptr) currentSpeed *= owners.speedMult; // speed masters and tempo are exclusive
 			if (tempo != nullptr || speed->floatValue() != 0) {
 				double duration = 60000. / currentSpeed;
 				double delta = deltaTime / duration;

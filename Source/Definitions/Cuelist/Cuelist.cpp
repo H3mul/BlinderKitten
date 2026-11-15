@@ -200,6 +200,10 @@ Cuelist::Cuelist(var params) :
 	crossFadeController->hideInEditor = true;
 
 	offFade = addFloatParameter("Off time", "Default fade time used to off the cuelist", 0, 0);
+	effectSize = addFloatParameter("Effect size master", "Scales the size of the effects, carousels, mappers and trackers started by this cuelist's cue tasks (on a cuelist with layers: all its layers). Not saved", 1, 0, 2);
+	effectSpeed = addFloatParameter("Effect speed master", "Scales the speed of the effects and carousels started by this cuelist's cue tasks that are not on a tempo. Not saved", 1, 0, 2);
+	effectSize->isSavable = false;
+	effectSpeed->isSavable = false;
 	cueLayers.selectItemWhenCreated = false;
 	addChildControllableContainer(&cueLayers);
 
@@ -318,6 +322,7 @@ void Cuelist::onContainerParameterChangedInternal(Parameter* p) {
 		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(id->intValue());
 		Brain::getInstance()->pleaseUpdate(this);
 	}
+	if (p == effectSize || p == effectSpeed) mastersChanged();
 	if (p == flashLevel) {
 		Brain::getInstance()->virtualFadersNeedUpdate = true;
 		pleaseUpdateHTPs = true;
@@ -2340,13 +2345,11 @@ CueLayer::CueLayer(var params) :
 	faderTargetId = addStringParameter("Fader target", "Read only. Use this as the Target ID (type Cuelist) of a virtual fader, button or task to drive this layer: m.n is layer n of cuelist m. The layer's HTP/LTP master multiplies the cuelist's own levels", "");
 	faderTargetId->isControllableFeedbackOnly = true;
 	faderTargetId->isSavable = false;
-	sizeMaster = addFloatParameter("Size master", "Scales the effects, carousels, mappers and trackers started by this layer's tasks. Not saved", 1, 0, 1);
-	sizeMaster->isSavable = false;
 }
 
 void CueLayer::onContainerParameterChangedInternal(Parameter* p)
 {
-	if (p == layerId || p == enabled || p == releaseWhenAbsent || p == sizeMaster) {
+	if (p == layerId || p == enabled || p == releaseWhenAbsent) {
 		if (parentContainer != nullptr) {
 			if (Cuelist* c = dynamic_cast<Cuelist*>(parentContainer->parentContainer.get())) {
 				// a new or renamed layer gets its stack now (not while a show loads: ids are still being read, afterLoad does it)
@@ -2434,14 +2437,11 @@ void Cuelist::syncLayerLevels()
 		s->layerOn = d->enabled->boolValue();
 		s->layerRelease = d->releaseWhenAbsent->boolValue();
 		s->scaleEffects->setValue(scaleEffects->boolValue());
-		float size = d->sizeMaster->floatValue();
-		bool sizeChanged = s->layerSizeMaster != size;
-		s->layerSizeMaster = size;
 		d->faderTargetId->setValue(String(id->intValue()) + "." + String(d->layerId->intValue()));
 		s->pleaseUpdateHTPs = true;
 		s->pleaseUpdateLTPs = true;
 		Brain::getInstance()->pleaseUpdate(s);
-		if (sizeChanged || s->scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(s->id->intValue());
+		if (s->scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(s->id->intValue());
 	}
 	pleaseUpdateHTPs = true;
 	pleaseUpdateLTPs = true;
@@ -2490,5 +2490,29 @@ void Cuelist::driveLayerStacks(Cue* c, float forcedDelay, float forcedFade, bool
 	}
 	for (auto it = layerStacks.begin(); it != layerStacks.end(); it.next()) { // a layer removed from the list: off
 		if (!declared.contains(it.getKey()) && it.getValue()->cueA != nullptr) it.getValue()->off(forcedDelay, forcedFade);
+	}
+}
+
+float Cuelist::sizeFactor()
+{
+	float f = effectSize->floatValue();
+	if (layerParent != nullptr) f *= layerParent->effectSize->floatValue();
+	return f;
+}
+
+float Cuelist::speedFactor()
+{
+	float f = effectSpeed->floatValue();
+	if (layerParent != nullptr) f *= layerParent->effectSpeed->floatValue();
+	return f;
+}
+
+// a master moved: the objects this cuelist (and, for the cuelist master, its layers) owns follow
+void Cuelist::mastersChanged()
+{
+	Brain* b = Brain::getInstance();
+	b->ownedLevelChanged(id->intValue());
+	if (layerParent == nullptr) {
+		for (auto it = layerStacks.begin(); it != layerStacks.end(); it.next()) b->ownedLevelChanged(it.getValue()->id->intValue());
 	}
 }

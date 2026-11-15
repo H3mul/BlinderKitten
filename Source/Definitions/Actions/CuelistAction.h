@@ -31,11 +31,13 @@ public:
                         CL_GO_ADD_TIMECODE, CL_GO_REPLACE_TIMECODE,
                         CL_OFFTIME, CL_OFFTIME_FIXED,
                         CL_LOADCONTENTWITHTRACKING,
-                        CL_FLASH_PRESS, CL_FLASH_RELEASE, CL_SWOP_PRESS, CL_SWOP_RELEASE
+                        CL_FLASH_PRESS, CL_FLASH_RELEASE, CL_SWOP_PRESS, CL_SWOP_RELEASE,
+                        CL_SIZEMASTER, CL_SPEEDMASTER
     };
     ActionType actionType;
     BoolParameter* useMainConductor;
-    IntParameter* cuelistId;
+    FloatParameter* cuelistId; // m.n targets layer n of cuelist m (m or m.0 is the cuelist itself)
+    FloatParameter* maxValue;
     FloatParameter* cueId;
     FloatParameter* maxSpeed;
 

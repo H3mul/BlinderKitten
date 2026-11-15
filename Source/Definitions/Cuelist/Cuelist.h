@@ -27,7 +27,6 @@ public:
     IntParameter* layerId;
     BoolParameter* releaseWhenAbsent; // a cue with no content for this layer fades it out (off: it tracks)
     StringParameter* faderTargetId;   // read only: "m.n", the Target ID of a virtual fader/button or task that drives this layer's HTP/LTP master
-    FloatParameter* sizeMaster;       // effects, carousels, mappers and trackers started by this layer's tasks (not saved)
 
     void onContainerParameterChangedInternal(Parameter* p) override;
     String getTypeString() const override { return "CueLayer"; }
@@ -159,6 +158,13 @@ public:
     Automation offFadeCurve;
     FloatParameter* offFade;
     BaseManager<CueLayer> cueLayers{ String("Layers") }; // extra layers (Base is implicit)
+    // Effect masters (bk-layer-effect-masters): scale the objects this cuelist's cue tasks start. On a layer stack they are the layer's submasters.
+    FloatParameter* effectSize;   // size of effects, carousels, mappers, trackers; not saved
+    FloatParameter* effectSpeed;  // speed of effects and carousels that are not on a tempo; not saved
+    String effectSizeController, effectSpeedController; // last controller of each (fader pickup)
+    float sizeFactor();           // cuelist master x layer submaster
+    float speedFactor();
+    void mastersChanged();
     HashMap<SubFixtureChannel*, std::shared_ptr<ChannelValue>> activeValues;
     HashMap<SubFixtureChannel*, std::shared_ptr<ChannelValue>> flashingValues;
     Array<Command*> commandHistory;
@@ -228,7 +234,6 @@ public:
     bool isLayerStack = false;
     Cuelist* layerParent = nullptr;
     int layerIdx = 0;
-    float layerSizeMaster = 1;     // stack only: size master of its layer, read by Brain::ownerFactor
     bool layerRelease = true;      // stack only: release when the arriving cue has nothing for this layer
     bool layerOn = true;           // stack only: the layer item is enabled
     float effectiveLevel(bool htp); // own level x the cuelist's level for a stack, own level otherwise

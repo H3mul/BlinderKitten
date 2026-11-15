@@ -2583,17 +2583,31 @@ float Brain::ownerFactor(const SizeOwners& o)
     for (int id : o.ids) {
         if (Cuelist* c = getCuelistById(id)) {
             any = true;
-            float h = c->effectiveLevel(true), l = c->effectiveLevel(false);
-            if (c->isFlashing) { // flash mirrors channels: HTP bumped to flash level, LTP bypassed unless "Flash with LTP level"
-                h = jmax(h, (float)c->flashLevel->getValue());
-                if (!c->flashWithLtpLevel->boolValue()) l = 1;
+            // the owner's level scales its objects only with "Scale effects with level"; the size masters always do
+            float h = 1, l = 1;
+            if (c->scaleEffects->boolValue()) {
+                h = c->effectiveLevel(true); l = c->effectiveLevel(false);
+                if (c->isFlashing) { // flash mirrors channels: HTP bumped to flash level, LTP bypassed unless "Flash with LTP level"
+                    h = jmax(h, (float)c->flashLevel->getValue());
+                    if (!c->flashWithLtpLevel->boolValue()) l = 1;
+                }
             }
-            f = jmax(f, h * l * c->layerSizeMaster);
+            f = jmax(f, h * l * c->sizeFactor());
         }
     }
     return any ? f : 1;
 }
 
+float Brain::ownerSpeedFactor(const SizeOwners& o)
+{
+    if (o.unowned || o.ids.isEmpty()) return 1;
+    bool any = false;
+    float f = 0;
+    for (int id : o.ids) {
+        if (Cuelist* c = getCuelistById(id)) { any = true; f = jmax(f, c->speedFactor()); }
+    }
+    return any ? f : 1;
+}
 bool Brain::hasRunningOwner(const SizeOwners& o)
 {
     for (int id : o.ids) {
@@ -2619,6 +2633,7 @@ template<class T> static void refreshOwned(T* o)
     float old = o->owners.mult;
     float m = b->ownerFactor(o->owners);
     o->owners.mult = m;
+    o->owners.speedMult = b->ownerSpeedFactor(o->owners);
     if (!o->autoStartAndStop->boolValue()) { pleaseUpdateSized(o); return; }
     bool running = b->hasRunningOwner(o->owners);
     if (m == 0 && old > 0 && o->isOn && running) {
@@ -2636,7 +2651,7 @@ template<class T> static void noteStarted(T* o, int cuelistId)
 {
     Brain* b = Brain::getInstance();
     Cuelist* c = b->getCuelistById(cuelistId);
-    if (c != nullptr && c->scaleEffects->boolValue()) o->owners.ids.addIfNotAlreadyThere(cuelistId);
+    if (c != nullptr) o->owners.ids.addIfNotAlreadyThere(cuelistId); // owned by the cuelist (or layer) whose cue task started it
     else o->owners.unowned = true;
     o->owners.ownerStopped = false;
     refreshOwned(o);

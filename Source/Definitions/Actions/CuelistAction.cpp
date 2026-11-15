@@ -20,10 +20,13 @@ CuelistAction::CuelistAction(var params) :
     cuelistId = nullptr;
     if (actionType != CL_GOALLLOADED) {
         useMainConductor = addBoolParameter("Use main conductor", "", false);
-        cuelistId = addIntParameter("Cuelist ID", "Id oth the target cuelist", 0, 0);
+        cuelistId = addFloatParameter("Cuelist ID", "Id of the target cuelist. m.n targets layer n of cuelist m (m or m.0 is the cuelist itself)", 0, 0);
     }
     if (actionType == CL_LOAD || actionType == CL_LOADANDGO) {
         cueId = addFloatParameter("Cue ID", "Insert here the id of the cue you want to load, -1 will prompt the cue choose window", -1, -1);
+    }
+    if (actionType == CL_SIZEMASTER || actionType == CL_SPEEDMASTER) {
+        maxValue = addFloatParameter("Max value", "Master value when the knob or fader is full (up to 2)", actionType == CL_SIZEMASTER ? 1.25 : 2, 0, 2);
     }
     if (actionType == CL_CHASERSPEED) {
         maxSpeed = addFloatParameter("Max Speed", "Speed when your fader is up high", 600, 0);
@@ -43,13 +46,21 @@ CuelistAction::~CuelistAction()
 
 void CuelistAction::triggerInternal()
 {
-    int id = cuelistId->intValue();
+    double id = cuelistId->floatValue();
     if (useMainConductor->boolValue()) {
         BKEngine* engine = (BKEngine*)Engine::mainEngine;
         id = engine->conductorCuelistId->intValue();
     }
-    Cuelist * target = Brain::getInstance()->getCuelistById(id);
+    Cuelist * target = Brain::getInstance()->getCuelistByRef(id);
     if (target == nullptr) return;
+}
+
+// Effect size / speed master: absolute 0-1 maps to 0..max; a controller takes over only when it was the last one or is within 0.05 of the current value
+static void applyMaster(FloatParameter* p, String& controller, float val, float maxVal, bool isRelative, const String& origin)
+{
+    if (isRelative) { controller = origin; p->setValue(p->floatValue() + val); return; }
+    if (maxVal <= 0) return;
+    if (controller.isEmpty() || controller == origin || std::abs(p->floatValue() / maxVal - val) < 0.05f) { controller = origin; p->setValue(val * maxVal); }
 }
 
 void CuelistAction::setValueInternal(var value, String origin, int incrementIndex, bool isRelative) {
@@ -57,12 +68,12 @@ void CuelistAction::setValueInternal(var value, String origin, int incrementInde
         Brain::getInstance()->goAllLoadedCuelists();
         return;
     }
-    int id = cuelistId->intValue();
+    double id = cuelistId->floatValue();
     if (useMainConductor->boolValue()) {
         BKEngine* engine = (BKEngine*)Engine::mainEngine;
         id = engine->conductorCuelistId->intValue();
     }
-    Cuelist* target = Brain::getInstance()->getCuelistById(id);
+    Cuelist* target = Brain::getInstance()->getCuelistByRef(id);
     if (target == nullptr) return;
 
     float val = value;
@@ -160,6 +171,14 @@ void CuelistAction::setValueInternal(var value, String origin, int incrementInde
                 validIncrementIndex = incrementIndex + 1;
             }
         }
+        break;
+
+    case CL_SIZEMASTER:
+        applyMaster(target->effectSize, target->effectSizeController, val, maxValue->floatValue(), isRelative, origin);
+        break;
+
+    case CL_SPEEDMASTER:
+        applyMaster(target->effectSpeed, target->effectSpeedController, val, maxValue->floatValue(), isRelative, origin);
         break;
 
     case CL_LTPLEVEL:
@@ -399,7 +418,7 @@ var CuelistAction::getValue()
 {
     float val = var();
 
-    Cuelist* target = Brain::getInstance()->getCuelistById(cuelistId->getValue());
+    Cuelist* target = Brain::getInstance()->getCuelistByRef(cuelistId->floatValue());
     if (target == nullptr) return val;
 
     switch (actionType)
@@ -434,6 +453,11 @@ var CuelistAction::getValue()
     case CL_HTPLEVEL:
         val = target->HTPLevel->floatValue();
         break;
+
+    case CL_SIZEMASTER:
+        return maxValue->floatValue() > 0 ? target->effectSize->floatValue() / maxValue->floatValue() : 0;
+    case CL_SPEEDMASTER:
+        return maxValue->floatValue() > 0 ? target->effectSpeed->floatValue() / maxValue->floatValue() : 0;
 
     case CL_LTPLEVEL:
         val = target->LTPLevel->floatValue();
