@@ -617,7 +617,9 @@ void Cue::mergeContent(Programmer* p)
 
 void Cue::writeTimeStamp()
 {
-	MessageManager::callAsync([this](){
+	juce::WeakReference<Inspectable> self(this); // runs once per go: the cue may be gone by the time it fires
+	MessageManager::callAsync([this, self](){
+		if (self.wasObjectDeleted()) return;
 		lastTriggeredTS->setValue(Time::getCurrentTime().formatted("%Y-%m-%d %H:%M:%S"));
 	});
 }

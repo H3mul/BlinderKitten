@@ -499,10 +499,63 @@ void Cuelist::afterLoadJSONDataInternal()
 }
 
 
+// A press from any thread: counted, not queued one by one. N presses that pile up behind a busy message thread run as one go of N steps.
+void Cuelist::requestGo()
+{
+	if (MessageManager::getInstance()->isThisTheMessageThread()) { userGo(); return; }
+	juce::WeakReference<Inspectable> self(this);
+	BKEngine* engine = dynamic_cast<BKEngine*>(BKEngine::mainEngine);
+	if (engine != nullptr && !engine->goSkipEnabled->boolValue()) { // skip off in project settings: one queued go per press, as before
+		MessageManager::callAsync([this, self]() { if (!self.wasObjectDeleted()) userGo(); });
+		return;
+	}
+	pendingSteps++;
+	if (drainPosted.exchange(true)) return; // a drain is already queued, it will take this press too
+	MessageManager::callAsync([this, self]() {
+		if (self.wasObjectDeleted()) return;
+		drainPosted = false; // before reading the counter: a press landing now queues its own drain
+		int n = pendingSteps.exchange(0);
+		if (n > 0) drainGoSteps(n);
+	});
+}
+
+// True when this press lands inside the skip window of the previous one. Every press restarts the window.
+bool Cuelist::notePress()
+{
+	double now = Time::getMillisecondCounterHiRes();
+	BKEngine* engine = dynamic_cast<BKEngine*>(BKEngine::mainEngine);
+	bool enabled = engine == nullptr || engine->goSkipEnabled->boolValue();
+	float window = engine != nullptr ? engine->goSkipWindow->floatValue() : 500.f;
+	bool inWindow = enabled && !isChaser->boolValue() && cueA != nullptr && lastPressTS > 0 && (now - lastPressTS) < window;
+	lastPressTS = now;
+	DBG("[go-skip] cuelist " << id->intValue() << " press " << (inWindow ? "retarget" : "normal"));
+	return inWindow;
+}
+
+void Cuelist::drainGoSteps(int steps)
+{
+	if (steps <= 1 || isChaser->boolValue()) { for (int i = 0; i < steps; i++) userGo(); return; }
+	// the first step goes where a normal Go would; the rest walk the cue order (loop wraps, otherwise clamp to the last cue)
+	Cue* target = dynamic_cast<Cue*>(nextCue->targetContainer.get());
+	Array<Cue*> order = cues.getItemsWithType<Cue>();
+	if (order.isEmpty()) return;
+	int idx;
+	if (target != nullptr) idx = order.indexOf(target);
+	else if (cueA == nullptr) idx = 0;
+	else idx = order.indexOf(cueA) + 1;
+	idx += steps - 1;
+	if (String(endAction->getValue()) == "loop") idx %= order.size();
+	else idx = jmin(idx, order.size() - 1);
+	if (idx < 0) return;
+	DBG("[go-skip] cuelist " << id->intValue() << " folded " << steps << " presses");
+	ScopedValueSetter<bool> folded(foldedSteps, true);
+	userGo(order[idx]);
+}
+
 void Cuelist::userGo()
 {
 	if (!MessageManager::getInstance()->isThisTheMessageThread()) {
-		MessageManager::callAsync([this](){userGo();});
+		requestGo();
 		return;
 	}
 	userPressedGo = true;
@@ -512,6 +565,7 @@ void Cuelist::userGo()
 	}
 	CScuesAB.exit();
 	if (soloPool->intValue() > 0) Brain::getInstance()->soloPoolCuelistStarted(soloPool->intValue(), this);
+	retargetNext = notePress();
 	go(-1, -1);
 }
 
@@ -528,6 +582,7 @@ void Cuelist::userGo(Cue* c)
 	}
 	CScuesAB.exit();
 	if (soloPool->intValue() > 0) Brain::getInstance()->soloPoolCuelistStarted(soloPool->intValue(), this);
+	retargetNext = notePress();
 	go(c, -1, -1);
 }
 
@@ -544,6 +599,7 @@ void Cuelist::userGo(float delay, float fade)
 	}
 	CScuesAB.exit();
 	if (soloPool->intValue() > 0) Brain::getInstance()->soloPoolCuelistStarted(soloPool->intValue(), this);
+	retargetNext = notePress();
 	go(delay, fade);
 }
 
@@ -561,6 +617,7 @@ void Cuelist::userGo(Cue* c, float delay, float fade)
 	}
 	CScuesAB.exit();
 	if (soloPool->intValue() > 0) Brain::getInstance()->soloPoolCuelistStarted(soloPool->intValue(), this);
+	retargetNext = notePress();
 	go(c, delay, fade);
 }
 
@@ -599,6 +656,8 @@ void Cuelist::go(float forcedDelay, float forcedFade) {
 void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 	//const MessageManagerLock mmLock;
 
+	bool retarget = retargetNext; // a press inside the skip window: the cue in flight is abandoned, not finished
+	retargetNext = false;
 	double now = Time::getMillisecondCounterHiRes();
 	lastGoTS = now;
 	if (TSLateCompensation > 0) {
@@ -677,7 +736,9 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 	}
 
 	Cue* leavingCue = cueA;
-	if (cueA != nullptr) {
+	// Retarget: the abandoned cue's off tasks are skipped when scoped stop (below) cleans up what it started.
+	// Without scoped stop its off tasks are the only thing that stops its effects, so they still run.
+	if (cueA != nullptr && !(retarget && scaleEffects->boolValue())) {
 		cueA->off(forcedDelay, forcedFade);
 	}
 
@@ -737,8 +798,10 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 				it.getKey()->cuelistOnTopOfStack(this);
 			}
 			tempCue->csComputing.exit();
-			tempCue->runTasks(0,0);
-			tempCue->runOffTasks(0,0);
+			if (!foldedSteps) { // cues a burst of presses stepped over never became current: no tasks
+				tempCue->runTasks(0,0);
+				tempCue->runOffTasks(0,0);
+			}
 			//tempCue->go();
 			//tempCue->off();
 		}
@@ -801,7 +864,8 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 		}
 		c->csComputing.exit();
 		c->go(forcedDelay, forcedFade);
-		scopedStop(leavingCue, c, forcedFade);
+		// retarget: effects the abandoned cue started and this one does not stop fast (200 ms)
+		scopedStop(leavingCue, c, (retarget && forcedFade < 0) ? 200.f : forcedFade);
 
 		for (int i = 0; i < c->commandHistory.size(); i++) {
 			commandHistory.removeAllInstancesOf(c->commandHistory[i]);
@@ -964,14 +1028,18 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 		c->writeTimeStamp();
 	}
 
-	if (CuelistSheet::getInstance()->targetCuelist == this) {
-		MessageManager::callAsync([this](){
-			CuelistSheet::getInstance()->updateRunningCue();
+	// queued lambdas can outlive the cuelist (show closed, cuelist deleted) or the panel: check both
+	juce::WeakReference<Inspectable> self(this);
+	if (auto* sheet = CuelistSheet::getInstanceWithoutCreating(); sheet != nullptr && sheet->targetCuelist == this) {
+		MessageManager::callAsync([self](){
+			if (self.wasObjectDeleted()) return;
+			if (auto* s = CuelistSheet::getInstanceWithoutCreating()) s->updateRunningCue();
 		});
 	}
 
 	//const MessageManagerLock mmLock;
-	MessageManager::callAsync([this](){
+	MessageManager::callAsync([this, self](){
+		if (self.wasObjectDeleted()) return;
 		nextCue->resetValue();
 		nextCueId->resetValue();
 		fillTexts();
@@ -981,7 +1049,7 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 	if (c == nullptr && pairedCue != nullptr && cues.items.contains(pairedCue)) {
 		// off by its own level (or an operator off): next time it starts, it starts on the paired cue; queued after the reset above
 		Cue* pc = pairedCue;
-		MessageManager::callAsync([this, pc]() { if (pairedCue == pc && cueA == nullptr && cues.items.contains(pc)) nextCue->setValueFromTarget(pc); });
+		MessageManager::callAsync([this, self, pc]() { if (self.wasObjectDeleted()) return; if (pairedCue == pc && cueA == nullptr && cues.items.contains(pc)) nextCue->setValueFromTarget(pc); });
 	}
 	if (!suppressPairs) applyPairs(c, forcedDelay, forcedFade);
 	if (c == nullptr) Brain::getInstance()->releaseOwner(id->intValue());
@@ -1705,11 +1773,14 @@ void Cuelist::fillTexts() {
 		conductorNextCueGo->setValue("");
 		conductorNextCueName->setValue("");
 	}
-	if (id->intValue() == ConductorInfos::getInstance()->engine->conductorCuelistId->intValue()) {
+	auto* ci = ConductorInfos::getInstanceWithoutCreating(); // null when the panel is closed
+	if (ci != nullptr && id->intValue() == ci->engine->conductorCuelistId->intValue()) {
 		MessageManager::callAsync([](){
-			ConductorInfos::getInstance()->updateContent();
-			ConductorInfos::getInstance()->repaint();
-			});
+			if (auto* c = ConductorInfos::getInstanceWithoutCreating()) {
+				c->updateContent();
+				c->repaint();
+			}
+		});
 	}
 }
 

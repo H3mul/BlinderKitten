@@ -144,6 +144,8 @@ BKEngine::BKEngine() :
 	defaultPaletteId->addParameterListener(this);
 	defaultPaletteSlot = genericSettingsContainer.addIntParameter("Default palette slot", "Slot of the default palette used as default values", 1, 1, 8);
 	defaultPaletteSlot->addParameterListener(this);
+	goSkipEnabled = genericSettingsContainer.addBoolParameter("Go skip", "Rapid Go presses redirect the transition in progress instead of finishing each one, and presses that pile up behind a busy system run as one jump", true);
+	goSkipWindow = genericSettingsContainer.addFloatParameter("Go skip window", "ms. A Go pressed this soon after the previous one skips (the first press is always immediate)", 500, 50, 5000);
 
 	faderSelectionMode = virtualParamsContainer.addEnumParameter("Faders selection mode", "Single copies elements on only one element, column assign target to all elements in selected column");
 	faderSelectionMode->addOption("Single", "single")->addOption("Column", "column");
@@ -533,6 +535,8 @@ void BKEngine::clearInternal()
 	defaultPresetId->resetValue();
 	defaultPaletteId->resetValue();
 	defaultPaletteSlot->resetValue();
+	goSkipEnabled->resetValue();
+	goSkipWindow->resetValue();
 	encodersNumber->resetValue();
 	gridCols->resetValue();
 	gridRows->resetValue();
