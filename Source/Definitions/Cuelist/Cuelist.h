@@ -10,6 +10,7 @@
 
 #pragma once
 #include "JuceHeader.h"
+#include "Common/LayerRef.h"
 #include "../Cue/Cue.h"
 #include "../Cue/CueManager.h"
 #include "Definitions/Command/CommandValueManager.h"
@@ -240,7 +241,9 @@ public:
     HashMap<int, Cuelist*> layerStacks;
     bool hasLayer(int l);
     Array<int> resolveLayers(const String& s);   // declared ids from "1,2", empty or none valid -> {0}
-    int ownerIdForLayer(int l);
+    LayerRef ownerRefForLayer(int l);  // the owner entry for objects a task of layer l starts
+    LayerRef ref();                    // this cuelist, or this layer of its cuelist
+    Array<int> warnedLayers;           // undeclared layer ids already reported
     Cuelist* getLayerStack(int l, bool create);
     void ensureLayerStacks();
     void syncLayerLevels();

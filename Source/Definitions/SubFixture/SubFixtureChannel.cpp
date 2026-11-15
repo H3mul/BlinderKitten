@@ -54,8 +54,9 @@ SubFixtureChannel::~SubFixtureChannel()
 	Brain::getInstance()->subFixtureChannelPoolUpdating.removeAllInstancesOf(this);
 	Brain::getInstance()->usingPools.exit();
 
-	for (auto it = Brain::getInstance()->cuelists.begin(); it != Brain::getInstance()->cuelists.end(); it.next()) {
-		Cuelist* c = it.getValue();
+	Array<Cuelist*> allCl;
+	Brain::getInstance()->allCuelists(allCl);
+	for (Cuelist* c : allCl) {
 		c->isComputing.enter();
 		if (c->activeValues.contains(this)) c->activeValues.remove(this);
 		c->isComputing.exit();

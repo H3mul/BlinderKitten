@@ -116,8 +116,9 @@ Command::~Command()
 
 	if (b != nullptr && !b->isClearing) {
 		b->usingLibraries.enter();
-		for (auto it = b->cuelists.begin(); it != b->cuelists.end(); it.next()) {
-			Cuelist* c = it.getValue();
+		Array<Cuelist*> allCl;
+		b->allCuelists(allCl);
+		for (Cuelist* c : allCl) {
 			c->commandHistory.removeAllInstancesOf(this);
 			for (auto cue : c->cues.items) {
 				cue->commandHistory.removeAllInstancesOf(this);

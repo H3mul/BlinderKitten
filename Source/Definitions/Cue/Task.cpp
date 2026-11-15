@@ -303,14 +303,14 @@ void Task::autoName()
 static void noteStartForLayers(Task* t, const char* type, int targetId, int cuelistId)
 {
 	Cuelist* c = Brain::getInstance()->getCuelistById(cuelistId);
-	if (c == nullptr) { Brain::getInstance()->noteTaskStart(type, targetId, cuelistId); return; }
-	for (int l : c->resolveLayers(t->layers->stringValue())) Brain::getInstance()->noteTaskStart(type, targetId, c->ownerIdForLayer(l));
+	if (c == nullptr) { Brain::getInstance()->noteTaskStart(type, targetId, LayerRef{ cuelistId, 0 }); return; }
+	for (int l : c->resolveLayers(t->layers->stringValue())) Brain::getInstance()->noteTaskStart(type, targetId, c->ownerRefForLayer(l));
 }
 
-void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, String action, double value, int id, int cuelistId)
+void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, String action, double value, int id, int cuelistId, int targetLayer)
 {
 	if (targetType == "cuelist") {
-		Cuelist* target = Brain::getInstance()->getCuelistById(targetId);
+		Cuelist* target = Brain::getInstance()->getCuelistById(targetId, targetLayer);
 		if (target != nullptr) {
 			if (action == "go" && value == 1) {
 				int cueIdToGo = parentTask != nullptr ? parentTask->cueId->intValue() : 0;
