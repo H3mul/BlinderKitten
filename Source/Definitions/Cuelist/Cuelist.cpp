@@ -1282,9 +1282,8 @@ void Cuelist::update() {
 	if (!isUseFul && offIfOverwritten->getValue()) {
 		kill(true);
 	} 
-	// a cuelist with layers plays nothing itself: it finishes turning off when its layer stacks have
-	if (isEnded && wannaOff && layerStacksIdle()) {
-		if (layerStacks.size() == 0 || cueA != nullptr) kill(true);
+	if (isEnded && wannaOff) {
+		kill(true);
 	}
 	if (isEnded) {
 		upFadeCanMove = false;
@@ -1601,7 +1600,6 @@ void Cuelist::kill(bool forceRefreshChannels) {
 	userPressedGo = false;
 	isCuelistOn->setValue(false);
 	fillTexts();
-	if (layerParent != nullptr) Brain::getInstance()->pleaseUpdate(layerParent); // a stack that finished lets its cuelist finish too
 }
 
 // ---- cue pairing ----
@@ -2387,6 +2385,7 @@ Array<int> Cuelist::resolveLayers(const String& str)
 int Cuelist::ownerIdForLayer(int l)
 {
 	Cuelist* o = layerParent != nullptr ? layerParent : this;
+	if (l == 0) return o->id->intValue();
 	Cuelist* s = o->getLayerStack(l, false);
 	return s != nullptr ? s->id->intValue() : o->id->intValue();
 }
@@ -2396,7 +2395,7 @@ Cuelist* Cuelist::getLayerStack(int l, bool create)
 	if (layerStacks.contains(l)) return layerStacks[l];
 	if (!create) return nullptr;
 	var p(new DynamicObject());
-	p.getDynamicObject()->setProperty("ID", 1000000 + id->intValue() * 100 + l + 1); // hidden, far from the ids a show uses: Base = ...01, layer 1 = ...02
+	p.getDynamicObject()->setProperty("ID", 1000000 + id->intValue() * 100 + l); // hidden: far from the ids a show uses
 	Cuelist* s = new Cuelist(p);
 	s->isLayerStack = true;
 	s->layerParent = this;
@@ -2404,7 +2403,6 @@ Cuelist* Cuelist::getLayerStack(int l, bool create)
 	s->suppressPairs = true;
 	s->autoStart->setValue(false);
 	s->autoStop->setValue(false);
-	s->layerRelease = l != 0; // Base follows the cuelist's tracking, the others release when a cue has nothing for them
 	s->HTPLevel->setValue(1);
 	s->LTPLevel->setValue(1);
 	layerStacks.set(l, s);
@@ -2413,23 +2411,16 @@ Cuelist* Cuelist::getLayerStack(int l, bool create)
 
 void Cuelist::ensureLayerStacks()
 {
-	getLayerStack(0, true); // Base is a layer like the others once any layer is declared
 	for (auto* d : cueLayers.items) getLayerStack(d->layerId->intValue(), true);
 	syncLayerLevels();
-}
-
-bool Cuelist::layerStacksIdle()
-{
-	for (auto it = layerStacks.begin(); it != layerStacks.end(); it.next()) if (it.getValue()->cueA != nullptr) return false;
-	return true;
 }
 
 float Cuelist::effectiveLevel(bool htp)
 {
 	float own = htp ? HTPLevel->floatValue() : LTPLevel->floatValue();
 	if (layerParent == nullptr) return own;
-	// a layer's level is its own: the cuelist's level does not scale layers (Base is a layer, not a master)
-	return layerOn ? own : 0;
+	if (!layerOn) return 0;
+	return own * (htp ? layerParent->HTPLevel->floatValue() : layerParent->LTPLevel->floatValue());
 }
 
 // Pushes the layer items' settings to their stacks and refreshes everything: a level of the cuelist or of any layer moves the values
@@ -2437,13 +2428,6 @@ float Cuelist::effectiveLevel(bool htp)
 void Cuelist::syncLayerLevels()
 {
 	if (layerParent != nullptr) { layerParent->syncLayerLevels(); return; }
-	if (Cuelist* base = getLayerStack(0, false)) {
-		base->scaleEffects->setValue(scaleEffects->boolValue());
-		base->pleaseUpdateHTPs = true;
-		base->pleaseUpdateLTPs = true;
-		Brain::getInstance()->pleaseUpdate(base);
-		if (base->scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(base->id->intValue());
-	}
 	for (auto* d : cueLayers.items) {
 		Cuelist* s = getLayerStack(d->layerId->intValue(), false);
 		if (s == nullptr) continue;
@@ -2467,7 +2451,7 @@ void Cuelist::syncLayerLevels()
 float Cuelist::levelOfLayer(int l, bool htp)
 {
 	Cuelist* o = layerParent != nullptr ? layerParent : this;
-	Cuelist* s = o->getLayerStack(l, false);
+	Cuelist* s = l == 0 ? o : o->getLayerStack(l, false);
 	if (s == nullptr) s = o;
 	return s->effectiveLevel(htp);
 }
@@ -2482,7 +2466,7 @@ float Cuelist::resolvedLayerLevel(const Array<int>& set, bool htp)
 int Cuelist::layerFilter() const
 {
 	if (isLayerStack) return layerIdx;
-	return cueLayers.items.isEmpty() ? -1 : 1000000; // with layers the cuelist itself plays nothing: every layer, Base included, plays in its stack
+	return cueLayers.items.isEmpty() ? -1 : 0;
 }
 
 void Cuelist::computeCue(Cue* c)
@@ -2496,7 +2480,6 @@ void Cuelist::driveLayerStacks(Cue* c, float forcedDelay, float forcedFade, bool
 {
 	if (layerStacks.size() == 0) return;
 	Array<int> declared;
-	declared.add(0);
 	for (auto* d : cueLayers.items) declared.addIfNotAlreadyThere(d->layerId->intValue());
 	declared.sort();
 	syncLayerLevels();

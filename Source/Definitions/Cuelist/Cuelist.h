@@ -231,8 +231,7 @@ public:
     float layerSizeMaster = 1;     // stack only: size master of its layer, read by Brain::ownerFactor
     bool layerRelease = true;      // stack only: release when the arriving cue has nothing for this layer
     bool layerOn = true;           // stack only: the layer item is enabled
-    float effectiveLevel(bool htp); // a stack's own level (0 when its layer is disabled), a cuelist's own level otherwise
-    bool layerStacksIdle();         // every layer stack has finished (fade out done)
+    float effectiveLevel(bool htp); // own level x the cuelist's level for a stack, own level otherwise
     HashMap<int, Cuelist*> layerStacks;
     bool hasLayer(int l);
     Array<int> resolveLayers(const String& s);   // declared ids from "1,2", empty or none valid -> {0}
