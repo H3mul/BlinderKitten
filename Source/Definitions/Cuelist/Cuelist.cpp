@@ -544,7 +544,8 @@ void Cuelist::drainGoSteps(int steps)
 	else if (cueA == nullptr) idx = 0;
 	else idx = order.indexOf(cueA) + 1;
 	idx += steps - 1;
-	if (String(endAction->getValue()) == "loop") idx %= order.size();
+	String end = endAction->getValue();
+	if (end == "loop") idx %= order.size();
 	else idx = jmin(idx, order.size() - 1);
 	if (idx < 0) return;
 	DBG("[go-skip] cuelist " << id->intValue() << " folded " << steps << " presses");
