@@ -679,7 +679,7 @@ void UserInputManager::commandValueChanged(Command* c) {
 		Encoders::getInstance()->updateEncodersValues();
 		Encoders::getInstance()->updateCommandLine();
 		MessageManager::callAsync([this]() {
-			BKColorPicker::getInstance()->repaint(); 
+			if (auto* cp = BKColorPicker::getInstanceWithoutCreating()) cp->repaint(); // panel closed: singleton is null
 		});
 	}
 }

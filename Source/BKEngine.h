@@ -62,6 +62,8 @@ public:
 	IntParameter* defaultPresetId;
 	IntParameter* defaultPaletteId;   // palette whose slot replaces the default preset (0 = off)
 	IntParameter* defaultPaletteSlot;
+	BoolParameter* goSkipEnabled;    // a Go pressed soon after the previous one redirects the transition in progress
+	FloatParameter* goSkipWindow;    // ms: how soon
 
 
 	ControllableContainer conductorInfosContainer;

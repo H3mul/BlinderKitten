@@ -513,7 +513,7 @@ void Encoders::updateChannels()
     updateHLButton();
     Brain::getInstance()->virtualFadersNeedUpdate = true;
     MessageManager::callAsync([this]() {
-        BKColorPicker::getInstance()->repaint();
+        if (auto* cp = BKColorPicker::getInstanceWithoutCreating()) cp->repaint(); // panel closed: singleton is null
     });
 }
 

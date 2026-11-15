@@ -195,6 +195,16 @@ public:
     void userGo(float forcedDelay, float forcedFade);
     void userGo(Cue* c, float forcedDelay, float forcedFade);
 
+    // Go storm handling (bk-go-skip). Presses from other threads are counted, not queued one by one.
+    std::atomic<int> pendingSteps{ 0 };
+    std::atomic<bool> drainPosted{ false };
+    double lastPressTS = 0;        // ms of the previous user press (skip window)
+    bool retargetNext = false;     // set by a press inside the skip window, consumed by go()
+    bool foldedSteps = false;      // set while a folded multi-step go runs: cues stepped over run no tasks
+    void requestGo();              // thread-safe press
+    void drainGoSteps(int steps);  // message thread: one go for `steps` presses
+    bool notePress();              // message thread: true when this press falls inside the skip window
+
     void go();
     void go(Cue* c);
     void go(float forcedDelay, float forcedFade);
