@@ -2351,7 +2351,7 @@ CommandLayer::CommandLayer(var params) :
 void CommandLayer::onContainerNiceNameChanged()
 {
 	if (parentContainer != nullptr && !Brain::getInstance()->loadingIsRunning)
-		if (Cuelist* c = dynamic_cast<Cuelist*>(parentContainer->parentContainer.get())) c->refreshCommandLayerRefs();
+		if (Cuelist* c = dynamic_cast<Cuelist*>(parentContainer->parentContainer.get())) { c->syncCommandLayerLevels(); c->refreshCommandLayerRefs(); }
 }
 
 void CommandLayer::onContainerParameterChangedInternal(Parameter* p)
@@ -2456,6 +2456,7 @@ void Cuelist::syncCommandLayerLevels()
 		if (s == nullptr) continue;
 		s->commandLayerOn = d->enabled->boolValue();
 		s->commandLayerRelease = d->releaseWhenAbsent->boolValue();
+		if (s->userName->stringValue() != d->niceName) s->userName->setValue(d->niceName); // a fader or button on the layer shows the layer name
 		s->scaleEffects->setValue(scaleEffects->boolValue());
 		d->faderTargetId->setValue("Cuelist " + String(id->intValue()) + ", command layer " + String(d->commandLayerId->intValue()));
 		s->pleaseUpdateHTPs = true;
@@ -2553,7 +2554,7 @@ CommandLayerRefItem::CommandLayerRefItem(var params) :
 	BaseItem(params.getProperty("name", "Command layer"))
 {
 	itemDataType = "CommandLayerRef";
-	refId = addIntParameter("id", "Id of the command layer. This is what is saved, so renaming a layer keeps the attribution", 1, 0, 9);
+	refId = addIntParameter("id", "Id of the command layer. This is what is saved, so renaming a layer keeps the attribution", 1, 1, 9);
 	refId->hideInEditor = true;
 	pick = addEnumParameter("Command layer", "The command layer, by name");
 	pick->isSavable = false;
@@ -2565,8 +2566,7 @@ void CommandLayerRefItem::refreshOptions(Cuelist* host)
 	int cur = refId->intValue();
 	pick->clearOptions();
 	String shown;
-	bool found = cur == 0;
-	pick->addOption("Base", 0, false);
+	bool found = false; // Base is not a choice: every command is in it anyway, a row with no reference is just that
 	if (host != nullptr) {
 		Cuelist* o = host->commandLayerParent != nullptr ? host->commandLayerParent : host;
 		for (auto* d : o->commandLayers.items) {
