@@ -73,6 +73,7 @@ Command::Command(var params) :
 
 	moveInBlackDelay = addFloatParameter("MIB Delay", "Delay to wait after light goes off to trigger move in black", -1, -1);
 	useValuesAsPath = addBoolParameter("Use values as path", "If checked, values will not be applied all at once, but one after the other to create a path", false);
+	layers = addStringParameter("Layers", "Cue layers this command plays in, ids separated by commas, e.g. 1,2. The first is its home layer; a value in several layers follows the highest of their levels. Empty = Base. Only meaningful in a cuelist that declares layers", "");
 
 	// to add a manager with defined data
 	//selection = new CommandSelectionManager();

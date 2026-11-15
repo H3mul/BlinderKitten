@@ -16,6 +16,24 @@
 #include "Command/MoveInBlackManager.h"
 #include "Definitions/Interface/InterfaceIncludes.h"
 
+// A layer of a cuelist (bk-cue-layers). Base (id 0) always exists and is the cuelist itself; these are the extra ones.
+class CueLayer :
+    public BaseItem
+{
+public:
+    CueLayer(var params = var());
+    ~CueLayer() {}
+
+    IntParameter* layerId;
+    BoolParameter* releaseWhenAbsent; // a cue with no content for this layer fades it out (off: it tracks)
+    IntParameter* faderTargetId;      // read only: bind a virtual fader (cuelist target, HTP / LTP / HTP+LTP level) to this id to drive the layer's HTP/LTP master
+    FloatParameter* sizeMaster;       // effects, carousels, mappers and trackers started by this layer's tasks (not saved)
+
+    void onContainerParameterChangedInternal(Parameter* p) override;
+    String getTypeString() const override { return "CueLayer"; }
+    static CueLayer* create(var params) { return new CueLayer(params); }
+};
+
 class Cuelist:
     public BaseItem,
     public ChangeBroadcaster,
@@ -140,6 +158,7 @@ public:
 
     Automation offFadeCurve;
     FloatParameter* offFade;
+    BaseManager<CueLayer> cueLayers{ String("Layers") }; // extra layers (Base is implicit)
     HashMap<SubFixtureChannel*, std::shared_ptr<ChannelValue>> activeValues;
     HashMap<SubFixtureChannel*, std::shared_ptr<ChannelValue>> flashingValues;
     Array<Command*> commandHistory;
@@ -204,6 +223,27 @@ public:
     void requestGo();              // thread-safe press
     void drainGoSteps(int steps);  // message thread: one go for `steps` presses
     bool notePress();              // message thread: true when this press falls inside the skip window
+
+    // Cue layers. A layer other than Base runs in a hidden stack cuelist that goes the same cue with a layer filter.
+    bool isLayerStack = false;
+    Cuelist* layerParent = nullptr;
+    int layerIdx = 0;
+    float layerSizeMaster = 1;     // stack only: size master of its layer, read by Brain::ownerFactor
+    bool layerRelease = true;      // stack only: release when the arriving cue has nothing for this layer
+    bool layerOn = true;           // stack only: the layer item is enabled
+    float effectiveLevel(bool htp); // own level x the cuelist's level for a stack, own level otherwise
+    HashMap<int, Cuelist*> layerStacks;
+    bool hasLayer(int l);
+    Array<int> resolveLayers(const String& s);   // declared ids from "1,2", empty or none valid -> {0}
+    int ownerIdForLayer(int l);
+    Cuelist* getLayerStack(int l, bool create);
+    void ensureLayerStacks();
+    void syncLayerLevels();
+    float levelOfLayer(int l, bool htp);
+    float resolvedLayerLevel(const Array<int>& set, bool htp);
+    int layerFilter() const;
+    void computeCue(Cue* c);
+    void driveLayerStacks(Cue* c, float forcedDelay, float forcedFade, bool retarget);
 
     void go();
     void go(Cue* c);

@@ -43,6 +43,7 @@ public:
     MoveInBlackManager moveInBlack;
     FloatParameter* moveInBlackDelay;
     BoolParameter* useValuesAsPath;
+    StringParameter* layers; // cue layers this command plays in, e.g. "1,2" (first = home layer). Empty = Base
 
     CommandSelectionManager selection;
     CommandValueManager values;
