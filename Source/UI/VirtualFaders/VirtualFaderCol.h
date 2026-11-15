@@ -51,7 +51,8 @@ public:
     IntParameter * colNumber;
 
     EnumParameter * targetType;
-    FloatParameter * targetId;
+    IntParameter * targetId;
+    IntParameter * targetLayer;
 
     BaseManagerSlider rotaries;
     BaseManagerButton aboveButtons;

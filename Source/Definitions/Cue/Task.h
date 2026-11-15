@@ -26,7 +26,8 @@ public:
     IntParameter* originId;
 
     EnumParameter* targetType;
-    FloatParameter* targetId;
+    IntParameter* targetId;
+    IntParameter* targetLayer; // Cuelist target: 0 the cuelist itself, n its layer n
     BoolParameter* targetThru;
     IntParameter* targetIdTo;
     StringParameter* layers; // cue layers this task plays in (owners of the effects it starts); empty = Base

@@ -30,7 +30,8 @@ public:
     int validIncrementIndex = 0;
 
     EnumParameter * targetType;
-    FloatParameter * targetId;
+    IntParameter * targetId;
+    IntParameter * targetLayer;
     StringParameter* customText;
     EnumParameter * cuelistAction;
     EnumParameter * effectAction;

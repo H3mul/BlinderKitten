@@ -39,7 +39,8 @@ Task::Task(var params) :
 	targetType->addOption("Bundle", "bundle");
 	targetType->addOption("Generic actions", "action");
 
-	targetId = addFloatParameter("Target ID", "Id of the target. For a cuelist, m.n targets layer n of cuelist m (1.0, or 1, is the cuelist itself)", 0, 0);
+	targetId = addIntParameter("Target ID", "", 0, 0);
+	targetLayer = addIntParameter("Target layer", "Layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its layer n", 0, 0, 9);
 	targetThru = addBoolParameter("target Thru", "multiple targets ?", false);
 	targetIdTo = addIntParameter("Target ID To", "", 0, 0);
 	layers = addStringParameter("Layers", "Cue layers this task plays in, ids separated by commas (first = home layer). Effects it starts follow the highest of these layers' levels. Empty = Base", "");
@@ -125,6 +126,7 @@ void Task::updateDisplay() {
 
 
 	targetId->hideInEditor = targType == "action";
+	targetLayer->hideInEditor = targType != "cuelist";
 	targetThru->hideInEditor = targType == "action" || targType == "bundle";
 	targetIdTo->hideInEditor = targType == "action" || targType == "bundle" || !targetThru->getValue();
 
