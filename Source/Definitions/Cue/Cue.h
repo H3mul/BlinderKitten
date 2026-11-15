@@ -30,6 +30,7 @@ public:
     TargetParameter* cue;
     BoolParameter* useHostTiming;
     StringParameter* intoLayers; // layers the included commands play in, in the including cue's cuelist (empty = keep their own)
+    StringParameter* onlyLayers; // only the included commands whose own layer is one of these are taken (empty = all)
 
     void onContainerParameterChangedInternal(Parameter* p) override;
     String getTypeString() const override { return "CueReuse"; }
@@ -114,7 +115,7 @@ public:
     void computeValues();
     // cuelistOverride: cuelist whose timing the commands use instead of this cue's own cuelist (host timing)
     // layerFilter >= 0: only the commands whose home layer is this one (bk-cue-layers); forcedLayers: layer set imposed by an include row
-    void computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOverride = nullptr, int layerFilter = -1, String forcedLayers = String());
+    void computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOverride = nullptr, int layerFilter = -1, String forcedLayers = String(), String onlyLayers = String());
     void update(double now);
     void go();
     void go(float forcedDelay, float forcedFade);
@@ -180,7 +181,7 @@ public:
     Array<Cue*> getPairs();
     // "effect:12" style keys of the objects whose Start tasks this cue (with its sources) holds; used for scoped stop
     StringArray getStartedObjects();
-    Array<Cue*> getReuseSources(Array<bool>* hostTiming = nullptr, Array<String>* into = nullptr);
+    Array<Cue*> getReuseSources(Array<bool>* hostTiming = nullptr, Array<String>* into = nullptr, Array<String>* only = nullptr);
     // true if this cue, or a cue it includes, has a palette ref to one of these palette ids
     // this cue, then the cues it includes (depth first, cycle-safe): their palette remaps apply to this cue, first match wins
     Array<Cue*> getRemapCues(Array<Cue*> history = Array<Cue*>());
