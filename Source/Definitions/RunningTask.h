@@ -37,7 +37,7 @@ public:
 
     String targetType = "";
     int targetId = 0;
-    int targetLayer = 0; // cuelist targets: 0 the cuelist, n its layer n
+    int targetCommandLayer = 0; // cuelist targets: 0 the cuelist, n its layer n
     String actionType = "";
 
     int cuelistId;

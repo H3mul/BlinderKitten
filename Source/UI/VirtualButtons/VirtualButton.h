@@ -34,7 +34,7 @@ public:
 
     EnumParameter * targetType;
     IntParameter * targetId;
-    IntParameter * targetLayer;
+    IntParameter * targetCommandLayer;
     EnumParameter * cuelistAction;
     EnumParameter * effectAction;
     EnumParameter* carouselAction;

@@ -12,6 +12,8 @@
 
 #include "JuceHeader.h"
 #include "CommandValue.h"
+#include "Definitions/Cuelist/CommandLayerRefs.h"
+#include "Definitions/Cuelist/CommandLayerRefs.h"
 #include "CommandTiming.h"
 #include "CommandValueManager.h"
 #include "CommandSelectionManager.h"
@@ -43,7 +45,8 @@ public:
     MoveInBlackManager moveInBlack;
     FloatParameter* moveInBlackDelay;
     BoolParameter* useValuesAsPath;
-    StringParameter* layers; // cue layers this command plays in, e.g. "1,2" (first = home layer). Empty = Base
+    CommandLayerRefs commandLayers{ String("Command layers") }; // the command layers this command plays in (first = home layer). Empty = Base
+    void updateTitle();
 
     CommandSelectionManager selection;
     CommandValueManager values;

@@ -11,7 +11,7 @@
 
 #include "JuceHeader.h"
 #include "Common/SizeOwners.h"
-#include "Common/LayerRef.h"
+#include "Common/CommandLayerRef.h"
 
 class SubFixture;
 class SubFixtureChannel;
@@ -187,10 +187,10 @@ public:
     float ownerFactor(const SizeOwners& o);
     float ownerSpeedFactor(const SizeOwners& o);
     bool hasRunningOwner(const SizeOwners& o);
-    void noteTaskStart(const String& type, int id, LayerRef owner);
-    void ownedLevelChanged(LayerRef owner);
-    void stopOwned(const String& type, int id, LayerRef owner, float forcedFade);
-    void releaseOwner(LayerRef owner);
+    void noteTaskStart(const String& type, int id, CommandLayerRef owner);
+    void ownedLevelChanged(CommandLayerRef owner);
+    void stopOwned(const String& type, int id, CommandLayerRef owner, float forcedFade);
+    void releaseOwner(CommandLayerRef owner);
     // a cuelist that changes id keeps the objects it owns (renames are applied together, so two cuelists can swap ids)
     HashMap<int, int> pendingOwnerRename;
     int registerDepth = 0;
@@ -226,11 +226,11 @@ public:
     Fixture* getFixtureById(int id, bool followIfAnother = false);
     Group* getGroupById(int id, bool followIfAnother = false);
     Preset* getPresetById(int id, bool followIfAnother = false);
-    // Cuelist m is getCuelistById(m). Layer n (1 to 9) of cuelist m is getCuelistById(m, n): the hidden cuelist that plays the layer.
-    // Layer 0 (the default) is the cuelist itself. Layers are reached through their cuelist; they are not in the registry.
-    Cuelist* getCuelist(LayerRef r);
+    // Cuelist m is getCuelistById(m). Command layer n (1 to 9) of cuelist m is getCuelistById(m, n): the hidden cuelist that plays the command layer.
+    // Command layer 0 (the default) is the cuelist itself. Command layers are reached through their cuelist; they are not in the registry.
+    Cuelist* getCuelist(CommandLayerRef r);
     void allCuelists(Array<Cuelist*>& out); // the registry plus every layer stack: for the work that has to reach what plays (locks, clean-up, palette refresh). Go/Off/Kill all use the registry only
-    Cuelist* getCuelistById(int id, int layer = 0);
+    Cuelist* getCuelistById(int id, int commandLayer = 0);
     Programmer* getProgrammerById(int id);
     CurvePreset* getCurvePresetById(int id);
     TimingPreset* getTimingPresetById(int id, bool followIfAnother = false);

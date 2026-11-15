@@ -1490,10 +1490,10 @@ void Brain::startTask(Task* t, double startTime, int cuelistId, float forcedDela
         int targetId = targetIds[i];
         String localTargetType = targetTypes[i];
         String actionType = actionsTypes[i];
-        int targetLayer = (targetType != "bundle" && localTargetType == "cuelist") ? t->targetLayer->intValue() : 0; // the Target layer row
+        int targetCommandLayer = (targetType != "bundle" && localTargetType == "cuelist") ? t->targetCommandLayer->intValue() : 0; // the Target layer row
 
         if (localTargetType == "cuelist") {
-            Cuelist* target = getCuelist(LayerRef{ targetId, targetLayer });
+            Cuelist* target = getCuelist(CommandLayerRef{ targetId, targetCommandLayer });
             if (target != nullptr) {
                 valid = true;
                 if (actionType == "htplevel") {
@@ -1560,7 +1560,7 @@ void Brain::startTask(Task* t, double startTime, int cuelistId, float forcedDela
             ScopedLock lock(usingTasksCollection);
             Array<RunningTask*> toRemove;
             for (RunningTask* t : runningTasks) {
-                if (targetType != "action" && actionType == t->actionType && targetType == t->targetType && targetId == t->targetId && targetLayer == t->targetLayer) {
+                if (targetType != "action" && actionType == t->actionType && targetType == t->targetType && targetId == t->targetId && targetCommandLayer == t->targetCommandLayer) {
                     toRemove.add (t);
                 }
             }
@@ -1575,7 +1575,7 @@ void Brain::startTask(Task* t, double startTime, int cuelistId, float forcedDela
             rt->actionType = actionType;
             rt->targetType = localTargetType;
             rt->targetId = targetId;
-            rt->targetLayer = targetLayer;
+            rt->targetCommandLayer = targetCommandLayer;
 
             rt->delay = forcedDelay < 0 ? (double)t->delay->getValue() * 1000 : forcedDelay;
             rt->fade = forcedFade < 0 ? (double)t->fade->getValue() * 1000 : forcedFade;
@@ -1655,14 +1655,14 @@ Preset* Brain::getPresetById(int id, bool followIfAnother) {
     }
 }
 
-Cuelist* Brain::getCuelist(LayerRef r) {
+Cuelist* Brain::getCuelist(CommandLayerRef r) {
     Cuelist* c = cuelists.contains(r.cuelist) ? cuelists.getReference(r.cuelist) : nullptr;
-    if (c == nullptr || r.layer <= 0) return c;
-    return c->getLayerStack(r.layer, false);
+    if (c == nullptr || r.commandLayer <= 0) return c;
+    return c->getCommandLayerStack(r.commandLayer, false);
 }
 
-Cuelist* Brain::getCuelistById(int id, int layer) {
-    return getCuelist(LayerRef{ id, layer });
+Cuelist* Brain::getCuelistById(int id, int commandLayer) {
+    return getCuelist(CommandLayerRef{ id, commandLayer });
 }
 
 void Brain::allCuelists(Array<Cuelist*>& out) {
@@ -1671,7 +1671,7 @@ void Brain::allCuelists(Array<Cuelist*>& out) {
         Cuelist* c = it.getValue();
         if (c == nullptr) continue;
         out.add(c);
-        for (auto s = c->layerStacks.begin(); s != c->layerStacks.end(); s.next()) if (s.getValue() != nullptr) out.add(s.getValue());
+        for (auto s = c->commandLayerStacks.begin(); s != c->commandLayerStacks.end(); s.next()) if (s.getValue() != nullptr) out.add(s.getValue());
     }
 }
 
@@ -1683,7 +1683,7 @@ template<class T> static void renameOwnersT(HashMap<int, T*>& map, HashMap<int, 
 {
     for (auto it = map.begin(); it != map.end(); it.next()) {
         if (it.getValue() == nullptr) continue;
-        for (LayerRef& r : it.getValue()->owners.ids) if (ren.contains(r.cuelist)) r.cuelist = ren[r.cuelist];
+        for (CommandLayerRef& r : it.getValue()->owners.ids) if (ren.contains(r.cuelist)) r.cuelist = ren[r.cuelist];
     }
 }
 
@@ -2610,7 +2610,7 @@ float Brain::ownerFactor(const SizeOwners& o)
     if (o.unowned || o.ids.isEmpty()) return 1;
     bool any = false;
     float f = 0;
-    for (LayerRef id : o.ids) {
+    for (CommandLayerRef id : o.ids) {
         if (Cuelist* c = getCuelist(id)) {
             any = true;
             // the owner's level scales its objects only with "Scale effects with level"; the size masters always do
@@ -2633,14 +2633,14 @@ float Brain::ownerSpeedFactor(const SizeOwners& o)
     if (o.unowned || o.ids.isEmpty()) return 1;
     bool any = false;
     float f = 0;
-    for (LayerRef id : o.ids) {
+    for (CommandLayerRef id : o.ids) {
         if (Cuelist* c = getCuelist(id)) { any = true; f = jmax(f, c->speedFactor()); }
     }
     return any ? f : 1;
 }
 bool Brain::hasRunningOwner(const SizeOwners& o)
 {
-    for (LayerRef id : o.ids) {
+    for (CommandLayerRef id : o.ids) {
         if (Cuelist* c = getCuelist(id)) { if (c->cueA != nullptr) return true; }
     }
     return false;
@@ -2664,7 +2664,7 @@ template<class T> static void refreshOwned(T* o)
     float m = b->ownerFactor(o->owners);
     o->owners.mult = m;
     o->owners.speedMult = b->ownerSpeedFactor(o->owners);
-    if (old != m) LOG("owner: refresh " << (o->owners.ids.isEmpty() ? 0 : o->owners.ids[0].cuelist) << "." << (o->owners.ids.isEmpty() ? 0 : o->owners.ids[0].layer) << " mult " << old << " -> " << m);
+    if (old != m) LOG("owner: refresh " << (o->owners.ids.isEmpty() ? 0 : o->owners.ids[0].cuelist) << "." << (o->owners.ids.isEmpty() ? 0 : o->owners.ids[0].commandLayer) << " mult " << old << " -> " << m);
     if (!o->autoStartAndStop->boolValue()) { pleaseUpdateSized(o); return; }
     bool running = b->hasRunningOwner(o->owners);
     if (m == 0 && old > 0 && o->isOn && running) {
@@ -2678,7 +2678,7 @@ template<class T> static void refreshOwned(T* o)
     pleaseUpdateSized(o);
 }
 
-template<class T> static void noteStarted(T* o, LayerRef cuelistId)
+template<class T> static void noteStarted(T* o, CommandLayerRef cuelistId)
 {
     Brain* b = Brain::getInstance();
     Cuelist* c = b->getCuelist(cuelistId);
@@ -2686,11 +2686,11 @@ template<class T> static void noteStarted(T* o, LayerRef cuelistId)
     else o->owners.unowned = true;
     o->owners.ownerStopped = false;
     refreshOwned(o);
-    LOG("owner: started by cuelist " << cuelistId.cuelist << " layer " << cuelistId.layer << (c != nullptr ? " (known)" : " (UNKNOWN -> unowned)") << ", owners " << o->owners.ids.size() << ", mult " << o->owners.mult);
+    LOG("owner: started by cuelist " << cuelistId.cuelist << " layer " << cuelistId.commandLayer << (c != nullptr ? " (known)" : " (UNKNOWN -> unowned)") << ", owners " << o->owners.ids.size() << ", mult " << o->owners.mult);
 }
 
 // A cue task of cuelist `cuelistId` started the object.
-void Brain::noteTaskStart(const String& type, int id, LayerRef cuelistId)
+void Brain::noteTaskStart(const String& type, int id, CommandLayerRef cuelistId)
 {
     if (type == "effect") { if (Effect* o = getEffectById(id)) noteStarted(o, cuelistId); }
     else if (type == "carousel") { if (Carousel* o = getCarouselById(id)) noteStarted(o, cuelistId); }
@@ -2698,7 +2698,7 @@ void Brain::noteTaskStart(const String& type, int id, LayerRef cuelistId)
     else if (type == "tracker") { if (Tracker* o = getTrackerById(id)) noteStarted(o, cuelistId); }
 }
 
-template<class T> static void ownedLevelChangedT(HashMap<int, T*>& map, LayerRef cuelistId)
+template<class T> static void ownedLevelChangedT(HashMap<int, T*>& map, CommandLayerRef cuelistId)
 {
     Array<T*> hit;
     for (auto it = map.begin(); it != map.end(); it.next()) {
@@ -2708,7 +2708,7 @@ template<class T> static void ownedLevelChangedT(HashMap<int, T*>& map, LayerRef
 }
 
 // HTP or LTP level of a cuelist with "Scale effects with level" changed.
-void Brain::ownedLevelChanged(LayerRef cuelistId)
+void Brain::ownedLevelChanged(CommandLayerRef cuelistId)
 {
     if (!MessageManager::getInstance()->isThisTheMessageThread()) {
         MessageManager::callAsync([this, cuelistId]() { ownedLevelChanged(cuelistId); });
@@ -2720,7 +2720,7 @@ void Brain::ownedLevelChanged(LayerRef cuelistId)
     ownedLevelChangedT(trackers, cuelistId);
 }
 
-template<class T> static void stopOwnedT(T* o, LayerRef cuelistId, float forcedFade)
+template<class T> static void stopOwnedT(T* o, CommandLayerRef cuelistId, float forcedFade)
 {
     if (o == nullptr || !o->owners.ids.contains(cuelistId)) return;
     if (o->owners.ids.size() > 1 || o->owners.unowned) {
@@ -2735,7 +2735,7 @@ template<class T> static void stopOwnedT(T* o, LayerRef cuelistId, float forcedF
 }
 
 // The cuelist's cue stopped being current and the next one does not start this object.
-void Brain::stopOwned(const String& type, int id, LayerRef cuelistId, float forcedFade)
+void Brain::stopOwned(const String& type, int id, CommandLayerRef cuelistId, float forcedFade)
 {
     if (type == "effect") stopOwnedT(getEffectById(id), cuelistId, forcedFade);
     else if (type == "carousel") stopOwnedT(getCarouselById(id), cuelistId, forcedFade);
@@ -2743,7 +2743,7 @@ void Brain::stopOwned(const String& type, int id, LayerRef cuelistId, float forc
     else if (type == "tracker") stopOwnedT(getTrackerById(id), cuelistId, forcedFade);
 }
 
-template<class T> static void releaseOwnerT(HashMap<int, T*>& map, LayerRef cuelistId)
+template<class T> static void releaseOwnerT(HashMap<int, T*>& map, CommandLayerRef cuelistId)
 {
     Array<T*> hit;
     for (auto it = map.begin(); it != map.end(); it.next()) {
@@ -2754,7 +2754,7 @@ template<class T> static void releaseOwnerT(HashMap<int, T*>& map, LayerRef cuel
 }
 
 // The cuelist went off: forget it as owner of objects that are already off.
-void Brain::releaseOwner(LayerRef cuelistId)
+void Brain::releaseOwner(CommandLayerRef cuelistId)
 {
     releaseOwnerT(effects, cuelistId);
     releaseOwnerT(carousels, cuelistId);

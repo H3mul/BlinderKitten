@@ -18,11 +18,11 @@ CuelistAction::CuelistAction(var params) :
 {
     actionType = (ActionType)(int)params.getProperty("actionType", CL_GO);
     cuelistId = nullptr;
-    cuelistLayer = nullptr;
+    cuelistCommandLayer = nullptr;
     if (actionType != CL_GOALLLOADED) {
         useMainConductor = addBoolParameter("Use main conductor", "", false);
         cuelistId = addIntParameter("Cuelist ID", "Id of the target cuelist", 0, 0);
-        cuelistLayer = addIntParameter("Layer", "Layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its layer n", 0, 0, 9);
+        cuelistCommandLayer = addIntParameter("Command layer", "Command layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its command layer n", 0, 0, 9);
     }
     if (actionType == CL_LOAD || actionType == CL_LOADANDGO) {
         cueId = addFloatParameter("Cue ID", "Insert here the id of the cue you want to load, -1 will prompt the cue choose window", -1, -1);
@@ -49,7 +49,7 @@ CuelistAction::~CuelistAction()
 void CuelistAction::triggerInternal()
 {
     int id = cuelistId->intValue();
-    int layer = cuelistLayer->intValue();
+    int layer = cuelistCommandLayer->intValue();
     if (useMainConductor->boolValue()) {
         BKEngine* engine = (BKEngine*)Engine::mainEngine;
         id = engine->conductorCuelistId->intValue();
@@ -73,7 +73,7 @@ void CuelistAction::setValueInternal(var value, String origin, int incrementInde
         return;
     }
     int id = cuelistId->intValue();
-    int layer = cuelistLayer->intValue();
+    int layer = cuelistCommandLayer->intValue();
     if (useMainConductor->boolValue()) {
         BKEngine* engine = (BKEngine*)Engine::mainEngine;
         id = engine->conductorCuelistId->intValue();
@@ -416,7 +416,7 @@ void CuelistAction::onContainerParameterChangedInternal(Parameter* p)
 void CuelistAction::updateDisplay()
 {
     if (cuelistId != nullptr) cuelistId->hideInEditor = useMainConductor->boolValue();
-    if (cuelistLayer != nullptr) cuelistLayer->hideInEditor = useMainConductor->boolValue();
+    if (cuelistCommandLayer != nullptr) cuelistCommandLayer->hideInEditor = useMainConductor->boolValue();
     
     queuedNotifier.addMessage(new ContainerAsyncEvent(ContainerAsyncEvent::ControllableContainerNeedsRebuild, this));
 }
@@ -425,7 +425,7 @@ var CuelistAction::getValue()
 {
     float val = var();
 
-    Cuelist* target = Brain::getInstance()->getCuelistById(cuelistId->intValue(), cuelistLayer->intValue());
+    Cuelist* target = Brain::getInstance()->getCuelistById(cuelistId->intValue(), cuelistCommandLayer->intValue());
     if (target == nullptr) return val;
 
     switch (actionType)

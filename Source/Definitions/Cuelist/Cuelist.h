@@ -10,7 +10,7 @@
 
 #pragma once
 #include "JuceHeader.h"
-#include "Common/LayerRef.h"
+#include "Common/CommandLayerRef.h"
 #include "../Cue/Cue.h"
 #include "../Cue/CueManager.h"
 #include "Definitions/Command/CommandValueManager.h"
@@ -18,20 +18,21 @@
 #include "Definitions/Interface/InterfaceIncludes.h"
 
 // A layer of a cuelist (bk-cue-layers). Base (id 0) always exists and is the cuelist itself; these are the extra ones.
-class CueLayer :
+class CommandLayer :
     public BaseItem
 {
 public:
-    CueLayer(var params = var());
-    ~CueLayer() {}
+    CommandLayer(var params = var());
+    ~CommandLayer() {}
 
-    IntParameter* layerId;
+    IntParameter* commandLayerId;
     BoolParameter* releaseWhenAbsent; // a cue with no content for this layer fades it out (off: it tracks)
     StringParameter* faderTargetId;   // read only: "m.n", the Target ID of a virtual fader/button or task that drives this layer's HTP/LTP master
 
     void onContainerParameterChangedInternal(Parameter* p) override;
-    String getTypeString() const override { return "CueLayer"; }
-    static CueLayer* create(var params) { return new CueLayer(params); }
+    void onContainerNiceNameChanged() override;
+    String getTypeString() const override { return "CommandLayer"; }
+    static CommandLayer* create(var params) { return new CommandLayer(params); }
 };
 
 class Cuelist:
@@ -158,7 +159,7 @@ public:
 
     Automation offFadeCurve;
     FloatParameter* offFade;
-    BaseManager<CueLayer> cueLayers{ String("Layers") }; // extra layers (Base is implicit)
+    BaseManager<CommandLayer> commandLayers{ String("Command layers") }; // extra command layers (Base is implicit)
     // Effect masters (bk-layer-effect-masters): scale the objects this cuelist's cue tasks start. On a layer stack they are the layer's submasters.
     FloatParameter* effectSize;   // size of effects, carousels, mappers, trackers; not saved
     FloatParameter* effectSpeed;  // speed of effects and carousels that are not on a tempo; not saved
@@ -232,26 +233,27 @@ public:
     bool notePress();              // message thread: true when this press falls inside the skip window
 
     // Cue layers. A layer other than Base runs in a hidden stack cuelist that goes the same cue with a layer filter.
-    bool isLayerStack = false;
-    Cuelist* layerParent = nullptr;
-    int layerIdx = 0;
-    bool layerRelease = true;      // stack only: release when the arriving cue has nothing for this layer
-    bool layerOn = true;           // stack only: the layer item is enabled
+    bool isCommandLayerStack = false;
+    Cuelist* commandLayerParent = nullptr;
+    int commandLayerIdx = 0;
+    bool commandLayerRelease = true;      // stack only: release when the arriving cue has nothing for this layer
+    bool commandLayerOn = true;           // stack only: the layer item is enabled
     float effectiveLevel(bool htp); // own level x the cuelist's level for a stack, own level otherwise
-    HashMap<int, Cuelist*> layerStacks;
-    bool hasLayer(int l);
-    Array<int> resolveLayers(const String& s);   // declared ids from "1,2", empty or none valid -> {0}
-    LayerRef ownerRefForLayer(int l);  // the owner entry for objects a task of layer l starts
-    LayerRef ref();                    // this cuelist, or this layer of its cuelist
-    Array<int> warnedLayers;           // undeclared layer ids already reported
-    Cuelist* getLayerStack(int l, bool create);
-    void ensureLayerStacks();
-    void syncLayerLevels();
-    float levelOfLayer(int l, bool htp);
-    float resolvedLayerLevel(const Array<int>& set, bool htp);
-    int layerFilter() const;
+    HashMap<int, Cuelist*> commandLayerStacks;
+    bool hasCommandLayer(int l);
+    Array<int> resolveCommandLayers(const String& s);   // declared ids from "1,2", empty or none valid -> {0}
+    CommandLayerRef ownerRefForCommandLayer(int l);  // the owner entry for objects a task of layer l starts
+    CommandLayerRef ref();                    // this cuelist, or this layer of its cuelist
+    Array<int> warnedCommandLayers;           // undeclared layer ids already reported
+    Cuelist* getCommandLayerStack(int l, bool create);
+    void ensureCommandLayerStacks();
+    void refreshCommandLayerRefs(); // the name lists of every command, task and include row of the cuelist
+    void syncCommandLayerLevels();
+    float levelOfCommandLayer(int l, bool htp);
+    float resolvedCommandLayerLevel(const Array<int>& set, bool htp);
+    int commandLayerFilter() const;
     void computeCue(Cue* c);
-    void driveLayerStacks(Cue* c, float forcedDelay, float forcedFade, bool retarget);
+    void driveCommandLayerStacks(Cue* c, float forcedDelay, float forcedFade, bool retarget);
 
     void go();
     void go(Cue* c);

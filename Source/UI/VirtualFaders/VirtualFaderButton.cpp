@@ -45,7 +45,7 @@ VirtualFaderButton::VirtualFaderButton(var params) :
 	targetType->addOption("Generic Actions", "actions");
 
 	targetId = addIntParameter("Target ID", "", 0, 0);
-	targetLayer = addIntParameter("Layer", "Layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its layer n", 0, 0, 9);
+	targetCommandLayer = addIntParameter("Command layer", "Command layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its command layer n", 0, 0, 9);
 
 	customText = addStringParameter("Custom Text", "Write your own text on your button", "");
 
@@ -141,7 +141,7 @@ void VirtualFaderButton::updateDisplay() {
 
 	actionManager.hideInEditor = targType != "actions";
 	targetId->hideInEditor = isColumn || targType == "disabled" || targType == "actions";
-	targetLayer->hideInEditor = targetId->hideInEditor || targType != "cuelist";
+	targetCommandLayer->hideInEditor = targetId->hideInEditor || targType != "cuelist";
 
 	bool isLoad = targType == "cuelist";
 	isLoad = isLoad && (cuelistAction->getValue() == "load" || cuelistAction->getValue() == "loadandgo");
@@ -156,25 +156,25 @@ void VirtualFaderButton::pressed() {
 	if (parentColumn == nullptr) {LOG("this is strange"); return; }
 	String colTargetType = parentColumn->targetType->getValue();
 	int colTargetId = parentColumn->targetId->intValue();
-	int colTargetLayer = parentColumn->targetLayer->intValue();
+	int colTargetCommandLayer = parentColumn->targetCommandLayer->intValue();
 	String targType = targetType->getValue();
 	if (targType == "actions") {
 		actionManager.setValueAll(1);
 		return;
 	}
 	int targId = targetId->intValue();
-	int targLayer = targetLayer->intValue();
+	int targCommandLayer = targetCommandLayer->intValue();
 	
 	if (targType == "column") {
 		targType = colTargetType;
 		targId = colTargetId;
-		targLayer = colTargetLayer;
+		targCommandLayer = colTargetCommandLayer;
 	}
 
 	if (targId == 0) {return;}
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targCommandLayer);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "go") { targ->userGo(); }
@@ -290,25 +290,25 @@ void VirtualFaderButton::released() {
 	if (parentColumn == nullptr) { LOG("this is strange"); return; }
 	String colTargetType = parentColumn->targetType->getValue();
 	int colTargetId = parentColumn->targetId->intValue();
-	int colTargetLayer = parentColumn->targetLayer->intValue();
+	int colTargetCommandLayer = parentColumn->targetCommandLayer->intValue();
 	String targType = targetType->getValue();
 	if (targType == "actions") {
 		actionManager.setValueAll(0);
 		return;
 	}
 	int targId = targetId->intValue();
-	int targLayer = targetLayer->intValue();
+	int targCommandLayer = targetCommandLayer->intValue();
 
 	if (targType == "column") {
 		targType = colTargetType;
 		targId = colTargetId;
-		targLayer = colTargetLayer;
+		targCommandLayer = colTargetCommandLayer;
 	}
 
 	if (targId == 0) { return; }
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targCommandLayer);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "flash") { targ->flash(false, false, false); }
@@ -381,11 +381,11 @@ String VirtualFaderButton::getBtnText(String columnType) {
 	}
 	else {
 		int targId = targetId->intValue();
-		int targLayer = targetLayer->intValue();
+		int targCommandLayer = targetCommandLayer->intValue();
 		if (targId == 0) { return ""; }
 
 		if (targType == "cuelist") {
-			Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
+			Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targCommandLayer);
 			action = cuelistAction->getValue();
 			if (targ != nullptr) {
 				text = targ->userName->getValue();
@@ -453,20 +453,20 @@ void VirtualFaderButton::updateStatus(bool forceRefresh)
 	ButtonStatus newStatus = BTN_UNASSIGNED;
 	String targType = targetType->getValue();
 	int targId = targetId->intValue();
-	int targLayer = targetLayer->intValue();
+	int targCommandLayer = targetCommandLayer->intValue();
 
 	if (targType == "column") {
 		if (!checkParentColumn()) {return;}
 		targType = parentColumn->targetType->stringValue();
 		targId = parentColumn->targetId->getValue();
-		targLayer = parentColumn->targetLayer->intValue();
+		targCommandLayer = parentColumn->targetCommandLayer->intValue();
 	}
 
 	if (targType == "actions") {
 		newStatus = BTN_GENERIC;
 	}
 	else if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targCommandLayer);
 		if (targ != nullptr) {
 			bool isLoad = targType == "cuelist";
 			isLoad = isLoad && (cuelistAction->getValue() == "load" || cuelistAction->getValue() == "loadandgo");

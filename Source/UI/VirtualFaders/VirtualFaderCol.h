@@ -52,7 +52,7 @@ public:
 
     EnumParameter * targetType;
     IntParameter * targetId;
-    IntParameter * targetLayer;
+    IntParameter * targetCommandLayer;
 
     BaseManagerSlider rotaries;
     BaseManagerButton aboveButtons;

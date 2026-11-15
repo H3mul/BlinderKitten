@@ -40,10 +40,10 @@ Task::Task(var params) :
 	targetType->addOption("Generic actions", "action");
 
 	targetId = addIntParameter("Target ID", "", 0, 0);
-	targetLayer = addIntParameter("Target layer", "Layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its layer n", 0, 0, 9);
+	targetCommandLayer = addIntParameter("Target command layer", "Command layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its command layer n", 0, 0, 9);
 	targetThru = addBoolParameter("target Thru", "multiple targets ?", false);
 	targetIdTo = addIntParameter("Target ID To", "", 0, 0);
-	layers = addStringParameter("Layers", "Cue layers this task plays in, ids separated by commas (first = home layer). Effects it starts follow the highest of these layers' levels. Empty = Base", "");
+	addChildControllableContainer(&commandLayers);
 	cueId = addIntParameter("Cue ID", "Go only: 0 goes to the next cue, otherwise goes to the cue with this id (an idle cuelist is only armed on it, see Paired cues)", 0, 0);
 
 	cuelistAction = addEnumParameter("Cuelist action", "");
@@ -126,7 +126,7 @@ void Task::updateDisplay() {
 
 
 	targetId->hideInEditor = targType == "action";
-	targetLayer->hideInEditor = targType != "cuelist";
+	targetCommandLayer->hideInEditor = targType != "cuelist";
 	targetThru->hideInEditor = targType == "action" || targType == "bundle";
 	targetIdTo->hideInEditor = targType == "action" || targType == "bundle" || !targetThru->getValue();
 
@@ -296,21 +296,21 @@ void Task::autoName()
 	if (type == "carousel") { name = carouselAction->getValueKey() + " carousel " + name; }
 	if (type == "mapper") { name = mapperAction->getValueKey() + " mapper " + name; }
 	if (type == "tracker") { name = trackerAction->getValueKey() + " tracker " + name; }
-	setNiceName(name);
+	setNiceName(commandLayers.titlePrefix() + name);
 }
 
 // The object is owned by every layer of the task (home layer first), so its size follows the highest of their levels.
-static void noteStartForLayers(Task* t, const char* type, int targetId, int cuelistId)
+static void noteStartForCommandLayers(Task* t, const char* type, int targetId, int cuelistId)
 {
 	Cuelist* c = Brain::getInstance()->getCuelistById(cuelistId);
-	if (c == nullptr) { Brain::getInstance()->noteTaskStart(type, targetId, LayerRef{ cuelistId, 0 }); return; }
-	for (int l : c->resolveLayers(t->layers->stringValue())) Brain::getInstance()->noteTaskStart(type, targetId, c->ownerRefForLayer(l));
+	if (c == nullptr) { Brain::getInstance()->noteTaskStart(type, targetId, CommandLayerRef{ cuelistId, 0 }); return; }
+	for (int l : c->resolveCommandLayers(t->commandLayers.ids())) Brain::getInstance()->noteTaskStart(type, targetId, c->ownerRefForCommandLayer(l));
 }
 
-void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, String action, double value, int id, int cuelistId, int targetLayer)
+void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, String action, double value, int id, int cuelistId, int targetCommandLayer)
 {
 	if (targetType == "cuelist") {
-		Cuelist* target = Brain::getInstance()->getCuelistById(targetId, targetLayer);
+		Cuelist* target = Brain::getInstance()->getCuelistById(targetId, targetCommandLayer);
 		if (target != nullptr) {
 			if (action == "go" && value == 1) {
 				int cueIdToGo = parentTask != nullptr ? parentTask->cueId->intValue() : 0;
@@ -350,7 +350,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 			if (action == "start" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
 				target->userStart(fade);
-				noteStartForLayers(parentTask, "effect", targetId, cuelistId);
+				noteStartForCommandLayers(parentTask, "effect", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
@@ -376,7 +376,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 			if (action == "start" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
 				target->userStart(fade);
-				noteStartForLayers(parentTask, "carousel", targetId, cuelistId);
+				noteStartForCommandLayers(parentTask, "carousel", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				float fade = parentTask->forcedFade->enabled ? parentTask->forcedFade->floatValue() : -1;
@@ -401,7 +401,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 		if (target != nullptr) {
 			if (action == "start" && value == 1) {
 				target->start();
-				noteStartForLayers(parentTask, "mapper", targetId, cuelistId);
+				noteStartForCommandLayers(parentTask, "mapper", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				target->stop();
@@ -416,7 +416,7 @@ void Task::triggerGivenTask(Task* parentTask, String targetType, int targetId, S
 		if (target != nullptr) {
 			if (action == "start" && value == 1) {
 				target->start();
-				noteStartForLayers(parentTask, "tracker", targetId, cuelistId);
+				noteStartForCommandLayers(parentTask, "tracker", targetId, cuelistId);
 			}
 			else if (action == "stop" && value == 1) {
 				target->stop();

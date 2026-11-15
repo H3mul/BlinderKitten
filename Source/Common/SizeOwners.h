@@ -1,12 +1,12 @@
 #pragma once
 #include "JuceHeader.h"
-#include "LayerRef.h"
+#include "CommandLayerRef.h"
 
 // Which cuelists started a size-driven object (effect, carousel, mapper, tracker) from a cue task, with "Scale effects with level" on.
 // mult = largest HTP*LTP level of those cuelists, 1 when none or when something else also started it. Runtime only, never saved.
 struct SizeOwners
 {
-    Array<LayerRef> ids;
+    Array<CommandLayerRef> ids;
     bool unowned = false;       // also started by a cuelist without the option
     bool ownerStopped = false;  // last stop came from the owner level reaching 0: keep links so a rise restarts it
     float mult = 1;

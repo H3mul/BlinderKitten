@@ -11,6 +11,8 @@
 #pragma once
 #include "JuceHeader.h"
 #include "Common/CommonIncludes.h"
+#include "Definitions/Cuelist/CommandLayerRefs.h"
+#include "Definitions/Cuelist/CommandLayerRefs.h"
 
 class Task :
     public BaseItem
@@ -27,10 +29,10 @@ public:
 
     EnumParameter* targetType;
     IntParameter* targetId;
-    IntParameter* targetLayer; // Cuelist target: 0 the cuelist itself, n its layer n
+    IntParameter* targetCommandLayer; // Cuelist target: 0 the cuelist itself, n its layer n
     BoolParameter* targetThru;
     IntParameter* targetIdTo;
-    StringParameter* layers; // cue layers this task plays in (owners of the effects it starts); empty = Base
+    CommandLayerRefs commandLayers{ String("Command layers") }; // the command layers this task plays in (owners of the effects it starts); empty = Base
     IntParameter* cueId; // cuelist Go: 0 = next cue, else go to (or arm) this cue id
 
     EnumParameter* cuelistAction;
@@ -63,6 +65,6 @@ public:
 
     void autoName();
 
-    static void triggerGivenTask(Task* parent, String targetType, int targetId, String action, double targetValue, int id, int cuelistId = 0, int targetLayer = 0);
+    static void triggerGivenTask(Task* parent, String targetType, int targetId, String action, double targetValue, int id, int cuelistId = 0, int targetCommandLayer = 0);
 };
 

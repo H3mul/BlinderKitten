@@ -55,7 +55,7 @@ VirtualFaderCol::VirtualFaderCol(var params) :
 	targetType->addOption("Carousel", "carousel");
 
 	targetId = addIntParameter("Target ID", "", 0, 0);
-	targetLayer = addIntParameter("Layer", "Layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its layer n", 0, 0, 9);
+	targetCommandLayer = addIntParameter("Command layer", "Command layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its command layer n", 0, 0, 9);
 
 	addChildControllableContainer(&rotaries);
 	rotaries.selectItemWhenCreated = false;
@@ -117,7 +117,7 @@ void VirtualFaderCol::updateDisplay() {
 void VirtualFaderCol::pressed() { 
 	String targType = targetType->getValue();
 	int targId = targetId->intValue();
-	int targLayer = targetLayer->intValue();
+	int targCommandLayer = targetCommandLayer->intValue();
 	if (targId == 0) {return;}
 
 }
@@ -125,7 +125,7 @@ void VirtualFaderCol::pressed() {
 void VirtualFaderCol::released() { 
 	String targType = targetType->getValue();
 	int targId = targetId->intValue();
-	int targLayer = targetLayer->intValue();
+	int targCommandLayer = targetCommandLayer->intValue();
 	if (targId == 0) { return; }
 
 }
@@ -134,10 +134,10 @@ String VirtualFaderCol::getTargetName() {
 	String text = "";
 	String targType = targetType->getValue();
 	int targId = targetId->intValue();
-	int targLayer = targetLayer->intValue();
+	int targCommandLayer = targetCommandLayer->intValue();
 	if (targId == 0) { return ""; }
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targCommandLayer);
 		if (targ != nullptr) { text = targ->userName->getValue(); }
 	}
 	else if (targType == "effect") {
@@ -155,10 +155,10 @@ String VirtualFaderCol::getTargetName() {
 String VirtualFaderCol::getTargetType() {
 	String targType = targetType->getValue();
 	int targId = targetId->intValue();
-	int targLayer = targetLayer->intValue();
+	int targCommandLayer = targetCommandLayer->intValue();
 	if (targId == 0) { return ""; }
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targCommandLayer);
 		if (targ != nullptr) { return "cuelist"; }
 	}
 	else if (targType == "effect") {

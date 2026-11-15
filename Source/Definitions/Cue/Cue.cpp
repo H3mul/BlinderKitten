@@ -232,7 +232,7 @@ void Cue::computeValues() {
 	computeValues(histo, this);
 }
 
-void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOverride, int layerFilter, String forcedLayers, String onlyLayers) {
+void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOverride, int commandLayerFilter, String forcedCommandLayers, String onlyCommandLayers) {
 	if (history.contains(this)) return;
 	history.add(this);
 	csComputing.enter();
@@ -259,7 +259,7 @@ void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOv
 		savedValues.swapWith(original->computedValues);
 		savedChannels.swapWith(original->channelToCommand);
 
-		original->computeValues(history, callingCue, srcOverride, layerFilter, intoSources[s].isNotEmpty() ? intoSources[s] : forcedLayers, onlySources[s].isNotEmpty() ? onlySources[s] : onlyLayers);
+		original->computeValues(history, callingCue, srcOverride, commandLayerFilter, intoSources[s].isNotEmpty() ? intoSources[s] : forcedCommandLayers, onlySources[s].isNotEmpty() ? onlySources[s] : onlyCommandLayers);
 		for (auto it = original->computedValues.begin(); it != original->computedValues.end(); it.next()) {
 			computedValues.set(it.getKey(), it.getValue());
 		}
@@ -278,14 +278,14 @@ void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOv
 	checkParentCuelist();
 	Array<Command*> cs = commands.getItemsWithType<Command>();
 	callingCue->checkParentCuelist();
-	Cuelist* layerHost = callingCue->parentCuelist; // layer ids resolve in the cuelist that is playing
+	Cuelist* commandLayerHost = callingCue->parentCuelist; // layer ids resolve in the cuelist that is playing
 	for (int i = 0; i < cs.size(); i++) {
-		Array<int> layerSet;
-		if (layerHost != nullptr) layerSet = layerHost->resolveLayers(forcedLayers.isNotEmpty() ? forcedLayers : cs[i]->layers->stringValue());
-		if (layerFilter >= 0 && (layerSet.isEmpty() || layerSet[0] != layerFilter)) continue;
-		if (onlyLayers.isNotEmpty() && layerHost != nullptr) { // an include row takes only some of the included cue's layers
-			Array<int> own = layerHost->resolveLayers(cs[i]->layers->stringValue());
-			if (!layerHost->resolveLayers(onlyLayers).contains(own[0])) continue;
+		Array<int> commandLayerSet;
+		if (commandLayerHost != nullptr) commandLayerSet = commandLayerHost->resolveCommandLayers(forcedCommandLayers.isNotEmpty() ? forcedCommandLayers : cs[i]->commandLayers.ids());
+		if (commandLayerFilter >= 0 && (commandLayerSet.isEmpty() || commandLayerSet[0] != commandLayerFilter)) continue;
+		if (onlyCommandLayers.isNotEmpty() && commandLayerHost != nullptr) { // an include row takes only some of the included cue's layers
+			Array<int> own = commandLayerHost->resolveCommandLayers(cs[i]->commandLayers.ids());
+			if (!commandLayerHost->resolveCommandLayers(onlyCommandLayers).contains(own[0])) continue;
 		}
 		commandHistory.removeAllInstancesOf(cs[i]);
 		commandHistory.add(cs[i]);
@@ -294,7 +294,7 @@ void Cue::computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOv
 		for (auto it = cs[i]->computedValues.begin(); it != cs[i]->computedValues.end(); it.next()) {
 			SubFixtureChannel* fc = it.getKey();
 			if (fc != nullptr) {
-				if (it.getValue() != nullptr) it.getValue()->layers = layerSet.size() > 1 ? layerSet : Array<int>();
+				if (it.getValue() != nullptr) it.getValue()->commandLayers = commandLayerSet.size() > 1 ? commandLayerSet : Array<int>();
 				computedValues.set(fc, it.getValue());
 				channelToCommand.set(fc, cs[i]);
 			}
@@ -644,8 +644,8 @@ CueReuse::CueReuse(var params) :
 	cue->maxDefaultSearchLevel = 2;
 	cue->typesFilter = StringArray("Cue");
 	useHostTiming = addBoolParameter("Use host timing", "Use the cuelist timing (preset, raw or filtered) of the cue that includes this one, instead of the cuelist this cue belongs to", true);
-	onlyLayers = addStringParameter("Only layers", "Take only the included commands that are in one of these layers (ids separated by commas, layers as set on the included cue's commands). Empty takes all of them", "");
-	intoLayers = addStringParameter("Into layers", "Layers (ids separated by commas, first = home) all the included commands play in, in the cuelist of the cue that includes this one. Empty keeps the layers set on the commands", "");
+	addChildControllableContainer(&onlyCommandLayers);
+	addChildControllableContainer(&intoCommandLayers);
 }
 
 void CueReuse::onContainerParameterChangedInternal(Parameter* p)
@@ -709,7 +709,7 @@ Array<Cue*> Cue::getReuseSources(Array<bool>* hostTiming, Array<String>* into, A
 	}
 	for (auto* r : moreReuse.items) {
 		if (!r->enabled->boolValue()) continue;
-		if (Cue* c = dynamic_cast<Cue*>(r->cue->targetContainer.get())) { ret.add(c); if (hostTiming) hostTiming->add(r->useHostTiming->boolValue()); if (into) into->add(r->intoLayers->stringValue()); if (only) only->add(r->onlyLayers->stringValue()); }
+		if (Cue* c = dynamic_cast<Cue*>(r->cue->targetContainer.get())) { ret.add(c); if (hostTiming) hostTiming->add(r->useHostTiming->boolValue()); if (into) into->add(r->intoCommandLayers.ids()); if (only) only->add(r->onlyCommandLayers.ids()); }
 	}
 	return ret;
 }
