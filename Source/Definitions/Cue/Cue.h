@@ -29,8 +29,8 @@ public:
 
     TargetParameter* cue;
     BoolParameter* useHostTiming;
-    StringParameter* intoLayers; // layers the included commands play in, in the including cue's cuelist (empty = keep their own)
-    StringParameter* onlyLayers; // only the included commands whose own layer is one of these are taken (empty = all)
+    CommandLayerRefs intoCommandLayers{ String("Into command layers") }; // command layers the included commands play in, in the including cue's cuelist (empty = keep their own)
+    CommandLayerRefs onlyCommandLayers{ String("Only command layers") };   // only the included commands whose own command layer is one of these are taken (empty = all)
 
     void onContainerParameterChangedInternal(Parameter* p) override;
     String getTypeString() const override { return "CueReuse"; }
@@ -114,8 +114,8 @@ public:
 
     void computeValues();
     // cuelistOverride: cuelist whose timing the commands use instead of this cue's own cuelist (host timing)
-    // layerFilter >= 0: only the commands whose home layer is this one (bk-cue-layers); forcedLayers: layer set imposed by an include row
-    void computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOverride = nullptr, int layerFilter = -1, String forcedLayers = String(), String onlyLayers = String());
+    // commandLayerFilter >= 0: only the commands whose home layer is this one (bk-cue-layers); forcedCommandLayers: layer set imposed by an include row
+    void computeValues(Array<Cue*> history, Cue* callingCue, Cuelist* cuelistOverride = nullptr, int commandLayerFilter = -1, String forcedCommandLayers = String(), String onlyCommandLayers = String());
     void update(double now);
     void go();
     void go(float forcedDelay, float forcedFade);

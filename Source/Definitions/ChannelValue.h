@@ -67,5 +67,5 @@ public:
     float pathLength = 0;
 
     // Cue layers (bk-cue-layers): all layers this value plays in when it is in more than one (home layer first); empty = only its stack's layer
-    Array<int> layers;
+    Array<int> commandLayers;
 };

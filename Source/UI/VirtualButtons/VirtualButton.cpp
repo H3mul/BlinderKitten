@@ -50,7 +50,7 @@ VirtualButton::VirtualButton(var params) :
 	targetType->addOption("Generic Actions", "actions");
 
 	targetId = addIntParameter("Target ID", "", 0, 0);
-	targetLayer = addIntParameter("Layer", "Layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its layer n", 0, 0, 9);
+	targetCommandLayer = addIntParameter("Command layer", "Command layer of the target cuelist: 0 is the cuelist itself, n (1 to 9) is its command layer n", 0, 0, 9);
 	cuelistAction = addEnumParameter("Cuelist action", "");
 	cuelistAction->addOption("Go", "go");
 	cuelistAction->addOption("Go back", "goback");
@@ -149,7 +149,7 @@ void VirtualButton::updateDisplay() {
 	trackerAction->hideInEditor = targType != "tracker";
 	actionManager.hideInEditor = targType != "actions";
 	targetId->hideInEditor = targType == "disabled" || targType == "actions";
-	targetLayer->hideInEditor = targetId->hideInEditor || targType != "cuelist";
+	targetCommandLayer->hideInEditor = targetId->hideInEditor || targType != "cuelist";
 
 	bool isLoad = targType == "cuelist";
 	isLoad = isLoad && (cuelistAction->getValue() == "load" || cuelistAction->getValue() == "loadandgo");
@@ -168,11 +168,11 @@ void VirtualButton::pressed() {
 	}
 
 	int targId = targetId->intValue();
-	int targLayer = targetLayer->intValue();
+	int targCommandLayer = targetCommandLayer->intValue();
 	if (targId == 0) {return;}
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targCommandLayer);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "go") { targ->userGo(); }
@@ -291,11 +291,11 @@ void VirtualButton::released() {
 		return;
 	}
 	int targId = targetId->intValue();
-	int targLayer = targetLayer->intValue();
+	int targCommandLayer = targetCommandLayer->intValue();
 	if (targId == 0) { return; }
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targCommandLayer);
 		if (targ != nullptr) {
 			String action = cuelistAction->getValue();
 			if (action == "flash") { targ->flash(false, false, false); }
@@ -355,11 +355,11 @@ String VirtualButton::getBtnText() {
 	String targType = targetType->getValue();
 	String action = "";
 	int targId = targetId->intValue();
-	int targLayer = targetLayer->intValue();
+	int targCommandLayer = targetCommandLayer->intValue();
 	if (targId == 0) { return ""; }
 
 	if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targCommandLayer);
 		action = cuelistAction->getValue();
 		if (targ != nullptr) {
 			text = targ->userName->getValue();
@@ -417,13 +417,13 @@ void VirtualButton::updateStatus(bool forceRefresh)
 	ButtonStatus newStatus = BTN_UNASSIGNED;
 	String targType = targetType->getValue();
 	int targId = targetId->intValue();
-	int targLayer = targetLayer->intValue();
+	int targCommandLayer = targetCommandLayer->intValue();
 
 	if (targType == "actions") {
 		newStatus = BTN_GENERIC;
 	}
 	else if (targType == "cuelist") {
-		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targLayer);
+		Cuelist* targ = Brain::getInstance()->getCuelistById(targId, targCommandLayer);
 		if (targ != nullptr) {
 			bool isLoad = targType == "cuelist";
 			isLoad = isLoad && (cuelistAction->getValue() == "load" || cuelistAction->getValue() == "loadandgo");

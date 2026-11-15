@@ -31,7 +31,7 @@ public:
 
     EnumParameter * targetType;
     IntParameter * targetId;
-    IntParameter * targetLayer;
+    IntParameter * targetCommandLayer;
     StringParameter* customText;
     EnumParameter * cuelistAction;
     EnumParameter * effectAction;

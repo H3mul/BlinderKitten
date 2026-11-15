@@ -73,7 +73,7 @@ Command::Command(var params) :
 
 	moveInBlackDelay = addFloatParameter("MIB Delay", "Delay to wait after light goes off to trigger move in black", -1, -1);
 	useValuesAsPath = addBoolParameter("Use values as path", "If checked, values will not be applied all at once, but one after the other to create a path", false);
-	layers = addStringParameter("Layers", "Cue layers this command plays in, ids separated by commas, e.g. 1,2. The first is its home layer; a value in several layers follows the highest of their levels. Empty = Base. Only meaningful in a cuelist that declares layers", "");
+	addChildControllableContainer(&commandLayers);
 
 	// to add a manager with defined data
 	//selection = new CommandSelectionManager();
@@ -778,8 +778,13 @@ void Command::onControllableFeedbackUpdate(ControllableContainer* cc, Controllab
 	else {
 
 	}
-	String name = getCommandAsTexts(true).joinIntoString(" ");
-	setNiceName(name);
+	updateTitle();
+}
+
+// A collapsed row starts with its command layers: "> Body+Peak | ..." (nothing for the base layer)
+void Command::updateTitle()
+{
+	setNiceName(commandLayers.titlePrefix() + getCommandAsTexts(true).joinIntoString(" "));
 }
 
 void Command::triggerTriggered(Trigger* t)

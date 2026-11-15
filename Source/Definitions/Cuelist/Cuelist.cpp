@@ -204,8 +204,8 @@ Cuelist::Cuelist(var params) :
 	effectSpeed = addFloatParameter("Effect speed master", "Scales the speed of the effects and carousels started by this cuelist's cue tasks that are not on a tempo. Not saved", 1, 0, 2);
 	effectSize->isSavable = false;
 	effectSpeed->isSavable = false;
-	cueLayers.selectItemWhenCreated = false;
-	addChildControllableContainer(&cueLayers);
+	commandLayers.selectItemWhenCreated = false;
+	addChildControllableContainer(&commandLayers);
 
 
 	timecodeSyncInterface = addTargetParameter("Timecode interface", "select an interface you want to use as timecode input", InterfaceManager::getInstance());
@@ -261,8 +261,8 @@ Cuelist::~Cuelist()
 {
 	isDeleting = true;
 	kill(true);
-	for (auto it = layerStacks.begin(); it != layerStacks.end(); it.next()) delete it.getValue();
-	layerStacks.clear();
+	for (auto it = commandLayerStacks.begin(); it != commandLayerStacks.end(); it.next()) delete it.getValue();
+	commandLayerStacks.clear();
 	Brain::getInstance()->unregisterCuelist(this);
 	Brain::getInstance()->usingPools.enter();
 	Brain::getInstance()->cuelistPoolWaiting.removeAllInstancesOf(this);
@@ -318,7 +318,7 @@ void Cuelist::onContainerParameterChangedInternal(Parameter* p) {
 		}
 		pleaseUpdateHTPs = true;
 		lastHTPLevel = p->getValue();
-		if (isLayerStack || !cueLayers.items.isEmpty()) syncLayerLevels();
+		if (isCommandLayerStack || !commandLayers.items.isEmpty()) syncCommandLayerLevels();
 		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(ref());
 		Brain::getInstance()->pleaseUpdate(this);
 	}
@@ -340,7 +340,7 @@ void Cuelist::onContainerParameterChangedInternal(Parameter* p) {
 		}
 		pleaseUpdateLTPs = true;
 		lastLTPLevel = p->getValue();
-		if (isLayerStack || !cueLayers.items.isEmpty()) syncLayerLevels();
+		if (isCommandLayerStack || !commandLayers.items.isEmpty()) syncCommandLayerLevels();
 		if (scaleEffects->boolValue()) Brain::getInstance()->ownedLevelChanged(ref());
 		Brain::getInstance()->pleaseUpdate(this);
 	}
@@ -358,7 +358,7 @@ void Cuelist::onContainerParameterChangedInternal(Parameter* p) {
 		nextFlashLevelController = "";
 	}
 
-	if (p == id && !isLayerStack) {
+	if (p == id && !isCommandLayerStack) {
 		Brain::getInstance()->registerCuelist(this, id->getValue(), true);
 	}
 	if (p == userName || p == id) {
@@ -508,7 +508,8 @@ void Cuelist::afterLoadJSONDataInternal()
 {
 	rebuildTimecode();
 	// layer stacks exist as soon as the show is loaded, so faders bound to their ids work before the first Go
-	if (!isLayerStack && !cueLayers.items.isEmpty()) ensureLayerStacks();
+	if (!isCommandLayerStack && !commandLayers.items.isEmpty()) ensureCommandLayerStacks();
+	if (!isCommandLayerStack) refreshCommandLayerRefs();
 }
 
 
@@ -672,7 +673,7 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 
 	bool retarget = retargetNext; // a press inside the skip window: the cue in flight is abandoned, not finished
 	retargetNext = false;
-	if (!isLayerStack && !cueLayers.items.isEmpty()) ensureLayerStacks(); // before the tasks run: effects they start are owned by the layer stacks
+	if (!isCommandLayerStack && !commandLayers.items.isEmpty()) ensureCommandLayerStacks(); // before the tasks run: effects they start are owned by the layer stacks
 	double now = Time::getMillisecondCounterHiRes();
 	lastGoTS = now;
 	if (TSLateCompensation > 0) {
@@ -735,12 +736,12 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 	}
 
 	bool needRebuildTracking = false;
-	String trackingType = (layerParent != nullptr ? layerParent : this)->tracking->getValue();
-	bool layerHasContent = true;
+	String trackingType = (commandLayerParent != nullptr ? commandLayerParent : this)->tracking->getValue();
+	bool commandLayerHasContent = true;
 
 	int currentIndex = -1;
 	int nextIndex = -1;
-	if (c != nullptr && trackingType == "cuelist" && !isLayerStack) {
+	if (c != nullptr && trackingType == "cuelist" && !isCommandLayerStack) {
 		nextIndex = cues.items.indexOf(c);
 		if (cueA != nullptr) {
 			currentIndex = cues.items.indexOf(cueA);
@@ -754,7 +755,7 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 	Cue* leavingCue = cueA;
 	// Retarget: the abandoned cue's off tasks are skipped when scoped stop (below) cleans up what it started.
 	// Without scoped stop its off tasks are the only thing that stops its effects, so they still run.
-	if (cueA != nullptr && !isLayerStack && !(retarget && scaleEffects->boolValue())) { // a layer stack's tasks are run by its cuelist
+	if (cueA != nullptr && !isCommandLayerStack && !(retarget && scaleEffects->boolValue())) { // a layer stack's tasks are run by its cuelist
 		cueA->off(forcedDelay, forcedFade);
 	}
 
@@ -825,7 +826,7 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 
 	if (c != nullptr) {
 		computeCue(c);
-		layerHasContent = c->computedValues.size() > 0;
+		commandLayerHasContent = c->computedValues.size() > 0;
 		c->csComputing.enter();
 		for (auto it = c->computedValues.begin(); it != c->computedValues.end(); it.next()) {
 			std::shared_ptr<ChannelValue> temp = it.getValue();
@@ -880,7 +881,7 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 			it.getKey()->cuelistOnTopOfStack(this);
 		}
 		c->csComputing.exit();
-		if (!isLayerStack) c->go(forcedDelay, forcedFade); // tasks run once, by the cuelist
+		if (!isCommandLayerStack) c->go(forcedDelay, forcedFade); // tasks run once, by the cuelist
 		// retarget: effects the abandoned cue started and this one does not stop fast (200 ms)
 		scopedStop(leavingCue, c, (retarget && forcedFade < 0) ? 200.f : forcedFade);
 
@@ -891,7 +892,7 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 	}
 	
 	bool releaseTracking = trackingType == "none" || c == nullptr || needRebuildTracking || isChaser->getValue() || c->releaseCurrentTracking->boolValue()
-		|| (isLayerStack && layerRelease && !layerHasContent); // a layer the arriving cue has nothing for fades out
+		|| (isCommandLayerStack && commandLayerRelease && !commandLayerHasContent); // a layer the arriving cue has nothing for fades out
 
 	for (auto it = activeValues.begin(); it != activeValues.end(); it.next()) {
 		if (!newActiveValues.contains(it.getKey())) {
@@ -1042,7 +1043,7 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 		Brain::getInstance()->reconstructVirtuals = true;
 	}
 
-	if (!isChaser->boolValue() && c != nullptr && !isLayerStack) {
+	if (!isChaser->boolValue() && c != nullptr && !isCommandLayerStack) {
 		c->writeTimeStamp();
 	}
 
@@ -1070,7 +1071,7 @@ void Cuelist::go(Cue* c, float forcedDelay, float forcedFade) {
 		MessageManager::callAsync([this, self, pc]() { if (self.wasObjectDeleted()) return; if (pairedCue == pc && cueA == nullptr && cues.items.contains(pc)) nextCue->setValueFromTarget(pc); });
 	}
 	if (!suppressPairs) applyPairs(c, forcedDelay, forcedFade);
-	if (!isLayerStack) driveLayerStacks(c, forcedDelay, forcedFade, retarget);
+	if (!isCommandLayerStack) driveCommandLayerStacks(c, forcedDelay, forcedFade, retarget);
 	if (c == nullptr) Brain::getInstance()->releaseOwner(ref());
 	
 	return ;
@@ -1380,7 +1381,7 @@ float Cuelist::applyToChannel(SubFixtureChannel* fc, float currentVal, double no
 	if (!fc->isHTP) {
 		faderLevel = (float)LTPLevel->getValue();
 	}
-	if (isLayerStack) faderLevel = effectiveLevel(fc->isHTP); // layer master x the cuelist's level
+	if (isCommandLayerStack) faderLevel = effectiveLevel(fc->isHTP); // layer master x the cuelist's level
 	else {
 		if (TSOffFlashEnd > now) {
 			double flashLvl = jmax(faderLevel, (float)flashLevel->getValue());
@@ -1394,7 +1395,7 @@ float Cuelist::applyToChannel(SubFixtureChannel* fc, float currentVal, double no
 
 
 	// a value in several layers follows the highest of their levels (HTP between the layer faders)
-	if (cv->layers.size() > 1) faderLevel = resolvedLayerLevel(cv->layers, fc->isHTP);
+	if (cv->commandLayers.size() > 1) faderLevel = resolvedCommandLayerLevel(cv->commandLayers, fc->isHTP);
 	// the HTP rule between faders also keeps a shared value alive while any of its layers is up
 
 	float valueFrom = currentVal;
@@ -1582,7 +1583,7 @@ void Cuelist::updateAllChannels()
 
 
 void Cuelist::kill(bool forceRefreshChannels) {
-	for (auto it = layerStacks.begin(); it != layerStacks.end(); it.next()) it.getValue()->kill(forceRefreshChannels);
+	for (auto it = commandLayerStacks.begin(); it != commandLayerStacks.end(); it.next()) it.getValue()->kill(forceRefreshChannels);
 	wannaOff = true;
 	scopedStop(cueA, nullptr, 0);
 	applyPairs(nullptr, 0, 0);
@@ -2336,40 +2337,47 @@ void Cuelist::refreshActiveCue() {
 
 // ---------------------------------------------------------------- Cue layers (bk-cue-layers)
 
-CueLayer::CueLayer(var params) :
-	BaseItem(params.getProperty("name", "Layer"))
+CommandLayer::CommandLayer(var params) :
+	BaseItem(params.getProperty("name", "Command layer"))
 {
-	itemDataType = "CueLayer";
-	layerId = addIntParameter("ID", "Id of this layer (1 to 9), used in the Layers field of commands and tasks and as the n of the m.n fader target. 0 is Base (the cuelist itself) and always exists", 1, 1, 9);
+	itemDataType = "CommandLayer";
+	commandLayerId = addIntParameter("ID", "Id of this command layer (1 to 9), the value the Command layers rows of commands and tasks store and the Command layer of a fader or task target. 0 is Base (the cuelist itself) and always exists", 1, 1, 9);
 	releaseWhenAbsent = addBoolParameter("Release when absent", "A cue with no content for this layer fades the layer out. Off: the layer keeps its values (tracking)", true);
-	faderTargetId = addStringParameter("Fader target", "Read only. To drive this layer from a virtual fader, button, task or cuelist action, pick this cuelist as the target and set Layer to this layer's ID. The layer's HTP/LTP master multiplies the cuelist's own levels", "");
+	faderTargetId = addStringParameter("Fader target", "Read only. To drive this layer from a virtual fader, button, task or cuelist action, pick this cuelist as the target and set Command layer to this layer's ID. The layer's HTP/LTP master multiplies the cuelist's own levels", "");
 	faderTargetId->isControllableFeedbackOnly = true;
 	faderTargetId->isSavable = false;
 }
 
-void CueLayer::onContainerParameterChangedInternal(Parameter* p)
+void CommandLayer::onContainerNiceNameChanged()
 {
-	if (p == layerId || p == enabled || p == releaseWhenAbsent) {
+	if (parentContainer != nullptr && !Brain::getInstance()->loadingIsRunning)
+		if (Cuelist* c = dynamic_cast<Cuelist*>(parentContainer->parentContainer.get())) { c->syncCommandLayerLevels(); c->refreshCommandLayerRefs(); }
+}
+
+void CommandLayer::onContainerParameterChangedInternal(Parameter* p)
+{
+	if (p == commandLayerId || p == enabled || p == releaseWhenAbsent) {
 		if (parentContainer != nullptr) {
 			if (Cuelist* c = dynamic_cast<Cuelist*>(parentContainer->parentContainer.get())) {
 				// a new or renamed layer gets its stack now (not while a show loads: ids are still being read, afterLoad does it)
-				if ((p == layerId || p == enabled) && !Brain::getInstance()->loadingIsRunning) c->ensureLayerStacks();
-				else c->syncLayerLevels();
+				if ((p == commandLayerId || p == enabled) && !Brain::getInstance()->loadingIsRunning) c->ensureCommandLayerStacks();
+				else c->syncCommandLayerLevels();
+				c->refreshCommandLayerRefs();
 			}
 		}
 	}
 }
 
-bool Cuelist::hasLayer(int l)
+bool Cuelist::hasCommandLayer(int l)
 {
-	Cuelist* o = layerParent != nullptr ? layerParent : this;
+	Cuelist* o = commandLayerParent != nullptr ? commandLayerParent : this;
 	if (l == 0) return true;
-	for (auto* d : o->cueLayers.items) if (d->layerId->intValue() == l) return true;
+	for (auto* d : o->commandLayers.items) if (d->commandLayerId->intValue() == l) return true;
 	return false;
 }
 
 // "1, 2" -> declared layer ids in order (first = home layer). Anything not declared is dropped; nothing left -> Base.
-Array<int> Cuelist::resolveLayers(const String& str)
+Array<int> Cuelist::resolveCommandLayers(const String& str)
 {
 	Array<int> out;
 	if (str.trim().isNotEmpty()) {
@@ -2378,10 +2386,10 @@ Array<int> Cuelist::resolveLayers(const String& str)
 		for (const String& t : tokens) {
 			if (t.isEmpty()) continue;
 			int l = t.getIntValue();
-			if (hasLayer(l)) { if (!out.contains(l)) out.add(l); }
-			else if (!warnedLayers.contains(l)) { // not declared: plays in the base layer, say so once
-				warnedLayers.add(l);
-				LOGWARNING("Cuelist " << (layerParent != nullptr ? layerParent : this)->id->intValue() << ": layer " << l << " is not in its Layers list, its commands and tasks play in the base layer");
+			if (hasCommandLayer(l)) { if (!out.contains(l)) out.add(l); }
+			else if (!warnedCommandLayers.contains(l)) { // not declared: plays in the base layer, say so once
+				warnedCommandLayers.add(l);
+				LOGWARNING("Cuelist " << (commandLayerParent != nullptr ? commandLayerParent : this)->id->intValue() << ": layer " << l << " is not in its Layers list, its commands and tasks play in the base layer");
 			}
 		}
 	}
@@ -2389,67 +2397,68 @@ Array<int> Cuelist::resolveLayers(const String& str)
 	return out;
 }
 
-LayerRef Cuelist::ownerRefForLayer(int l)
+CommandLayerRef Cuelist::ownerRefForCommandLayer(int l)
 {
-	Cuelist* o = layerParent != nullptr ? layerParent : this;
-	if (l == 0 || o->getLayerStack(l, false) == nullptr) return LayerRef{ o->id->intValue(), 0 };
-	return LayerRef{ o->id->intValue(), l };
+	Cuelist* o = commandLayerParent != nullptr ? commandLayerParent : this;
+	if (l == 0 || o->getCommandLayerStack(l, false) == nullptr) return CommandLayerRef{ o->id->intValue(), 0 };
+	return CommandLayerRef{ o->id->intValue(), l };
 }
 
-LayerRef Cuelist::ref()
+CommandLayerRef Cuelist::ref()
 {
-	if (layerParent != nullptr) return LayerRef{ layerParent->id->intValue(), layerIdx };
-	return LayerRef{ id->intValue(), 0 };
+	if (commandLayerParent != nullptr) return CommandLayerRef{ commandLayerParent->id->intValue(), commandLayerIdx };
+	return CommandLayerRef{ id->intValue(), 0 };
 }
 
-Cuelist* Cuelist::getLayerStack(int l, bool create)
+Cuelist* Cuelist::getCommandLayerStack(int l, bool create)
 {
-	if (layerStacks.contains(l)) return layerStacks[l];
+	if (commandLayerStacks.contains(l)) return commandLayerStacks[l];
 	if (!create) return nullptr;
-	ScopedLock lock(Brain::getInstance()->usingLibraries); // allCuelists walks layerStacks under this lock
-	if (layerStacks.contains(l)) return layerStacks[l];
+	ScopedLock lock(Brain::getInstance()->usingLibraries); // allCuelists walks commandLayerStacks under this lock
+	if (commandLayerStacks.contains(l)) return commandLayerStacks[l];
 	var p(new DynamicObject());
 	p.getDynamicObject()->setProperty("ID", Brain::getInstance()->nextHiddenCuelistId()); // a stack is not in the registry; its cuelist finds it
 	p.getDynamicObject()->setProperty("hidden", true);
 	Cuelist* s = new Cuelist(p);
-	s->isLayerStack = true;
-	s->layerParent = this;
-	s->layerIdx = l;
+	s->isCommandLayerStack = true;
+	s->commandLayerParent = this;
+	s->commandLayerIdx = l;
 	s->suppressPairs = true;
 	s->autoStart->setValue(false);
 	s->autoStop->setValue(false);
 	s->HTPLevel->setValue(1);
 	s->LTPLevel->setValue(1);
-	layerStacks.set(l, s);
+	commandLayerStacks.set(l, s);
 	return s;
 }
 
-void Cuelist::ensureLayerStacks()
+void Cuelist::ensureCommandLayerStacks()
 {
-	for (auto* d : cueLayers.items) getLayerStack(d->layerId->intValue(), true);
-	syncLayerLevels();
+	for (auto* d : commandLayers.items) getCommandLayerStack(d->commandLayerId->intValue(), true);
+	syncCommandLayerLevels();
 }
 
 float Cuelist::effectiveLevel(bool htp)
 {
 	float own = htp ? HTPLevel->floatValue() : LTPLevel->floatValue();
-	if (layerParent == nullptr) return own;
-	if (!layerOn) return 0;
-	return own * (htp ? layerParent->HTPLevel->floatValue() : layerParent->LTPLevel->floatValue());
+	if (commandLayerParent == nullptr) return own;
+	if (!commandLayerOn) return 0;
+	return own * (htp ? commandLayerParent->HTPLevel->floatValue() : commandLayerParent->LTPLevel->floatValue());
 }
 
 // Pushes the layer items' settings to their stacks and refreshes everything: a level of the cuelist or of any layer moves the values
 // of all layers, because a value shared by several layers resolves against all of them.
-void Cuelist::syncLayerLevels()
+void Cuelist::syncCommandLayerLevels()
 {
-	if (layerParent != nullptr) { layerParent->syncLayerLevels(); return; }
-	for (auto* d : cueLayers.items) {
-		Cuelist* s = getLayerStack(d->layerId->intValue(), false);
+	if (commandLayerParent != nullptr) { commandLayerParent->syncCommandLayerLevels(); return; }
+	for (auto* d : commandLayers.items) {
+		Cuelist* s = getCommandLayerStack(d->commandLayerId->intValue(), false);
 		if (s == nullptr) continue;
-		s->layerOn = d->enabled->boolValue();
-		s->layerRelease = d->releaseWhenAbsent->boolValue();
+		s->commandLayerOn = d->enabled->boolValue();
+		s->commandLayerRelease = d->releaseWhenAbsent->boolValue();
+		if (s->userName->stringValue() != d->niceName) s->userName->setValue(d->niceName); // a fader or button on the layer shows the layer name
 		s->scaleEffects->setValue(scaleEffects->boolValue());
-		d->faderTargetId->setValue("Cuelist " + String(id->intValue()) + ", layer " + String(d->layerId->intValue()));
+		d->faderTargetId->setValue("Cuelist " + String(id->intValue()) + ", command layer " + String(d->commandLayerId->intValue()));
 		s->pleaseUpdateHTPs = true;
 		s->pleaseUpdateLTPs = true;
 		Brain::getInstance()->pleaseUpdate(s);
@@ -2460,47 +2469,47 @@ void Cuelist::syncLayerLevels()
 	Brain::getInstance()->pleaseUpdate(this);
 }
 
-float Cuelist::levelOfLayer(int l, bool htp)
+float Cuelist::levelOfCommandLayer(int l, bool htp)
 {
-	Cuelist* o = layerParent != nullptr ? layerParent : this;
-	Cuelist* s = l == 0 ? o : o->getLayerStack(l, false);
+	Cuelist* o = commandLayerParent != nullptr ? commandLayerParent : this;
+	Cuelist* s = l == 0 ? o : o->getCommandLayerStack(l, false);
 	if (s == nullptr) s = o;
 	return s->effectiveLevel(htp);
 }
 
-float Cuelist::resolvedLayerLevel(const Array<int>& set, bool htp)
+float Cuelist::resolvedCommandLayerLevel(const Array<int>& set, bool htp)
 {
 	float f = 0;
-	for (int l : set) f = jmax(f, levelOfLayer(l, htp));
+	for (int l : set) f = jmax(f, levelOfCommandLayer(l, htp));
 	return f;
 }
 
-int Cuelist::layerFilter() const
+int Cuelist::commandLayerFilter() const
 {
-	if (isLayerStack) return layerIdx;
-	return cueLayers.items.isEmpty() ? -1 : 0;
+	if (isCommandLayerStack) return commandLayerIdx;
+	return commandLayers.items.isEmpty() ? -1 : 0;
 }
 
 void Cuelist::computeCue(Cue* c)
 {
 	Array<Cue*> histo;
-	c->computeValues(histo, c, nullptr, layerFilter());
+	c->computeValues(histo, c, nullptr, commandLayerFilter());
 }
 
 // After the cuelist went: every declared layer goes the same cue (or off), lowest layer first so higher layers stack on top.
-void Cuelist::driveLayerStacks(Cue* c, float forcedDelay, float forcedFade, bool retarget)
+void Cuelist::driveCommandLayerStacks(Cue* c, float forcedDelay, float forcedFade, bool retarget)
 {
-	if (layerStacks.size() == 0) return;
+	if (commandLayerStacks.size() == 0) return;
 	Array<int> declared;
-	for (auto* d : cueLayers.items) declared.addIfNotAlreadyThere(d->layerId->intValue());
+	for (auto* d : commandLayers.items) declared.addIfNotAlreadyThere(d->commandLayerId->intValue());
 	declared.sort();
-	syncLayerLevels();
+	syncCommandLayerLevels();
 	for (int l : declared) {
-		Cuelist* s = getLayerStack(l, true);
+		Cuelist* s = getCommandLayerStack(l, true);
 		s->retargetNext = retarget;
 		s->go(c, forcedDelay, forcedFade);
 	}
-	for (auto it = layerStacks.begin(); it != layerStacks.end(); it.next()) { // a layer removed from the list: off
+	for (auto it = commandLayerStacks.begin(); it != commandLayerStacks.end(); it.next()) { // a layer removed from the list: off
 		if (!declared.contains(it.getKey()) && it.getValue()->cueA != nullptr) it.getValue()->off(forcedDelay, forcedFade);
 	}
 }
@@ -2508,14 +2517,14 @@ void Cuelist::driveLayerStacks(Cue* c, float forcedDelay, float forcedFade, bool
 float Cuelist::sizeFactor()
 {
 	float f = effectSize->floatValue();
-	if (layerParent != nullptr) f *= layerParent->effectSize->floatValue();
+	if (commandLayerParent != nullptr) f *= commandLayerParent->effectSize->floatValue();
 	return f;
 }
 
 float Cuelist::speedFactor()
 {
 	float f = effectSpeed->floatValue();
-	if (layerParent != nullptr) f *= layerParent->effectSpeed->floatValue();
+	if (commandLayerParent != nullptr) f *= commandLayerParent->effectSpeed->floatValue();
 	return f;
 }
 
@@ -2524,7 +2533,135 @@ void Cuelist::mastersChanged()
 {
 	Brain* b = Brain::getInstance();
 	b->ownedLevelChanged(ref());
-	if (layerParent == nullptr) {
-		for (auto it = layerStacks.begin(); it != layerStacks.end(); it.next()) b->ownedLevelChanged(it.getValue()->ref());
+	if (commandLayerParent == nullptr) {
+		for (auto it = commandLayerStacks.begin(); it != commandLayerStacks.end(); it.next()) b->ownedLevelChanged(it.getValue()->ref());
+	}
+}
+
+// ---------------------------------------------------------------- Command layer references (bk-command-layers)
+
+static Cuelist* hostOf(ControllableContainer* c)
+{
+	while (c != nullptr) {
+		if (Cue* q = dynamic_cast<Cue*>(c)) return q->parentCuelist;
+		if (Cuelist* l = dynamic_cast<Cuelist*>(c)) return l;
+		c = c->parentContainer.get();
+	}
+	return nullptr;
+}
+
+CommandLayerRefItem::CommandLayerRefItem(var params) :
+	BaseItem(params.getProperty("name", "Command layer"))
+{
+	itemDataType = "CommandLayerRef";
+	refId = addIntParameter("id", "Id of the command layer. This is what is saved, so renaming a layer keeps the attribution", 1, 1, 9);
+	refId->hideInEditor = true;
+	pick = addEnumParameter("Command layer", "The command layer, by name");
+	pick->isSavable = false;
+}
+
+void CommandLayerRefItem::refreshOptions(Cuelist* host)
+{
+	syncing = true;
+	int cur = refId->intValue();
+	pick->clearOptions();
+	String shown;
+	bool found = false; // Base is not a choice: every command is in it anyway, a row with no reference is just that
+	if (host != nullptr) {
+		Cuelist* o = host->commandLayerParent != nullptr ? host->commandLayerParent : host;
+		for (auto* d : o->commandLayers.items) {
+			pick->addOption(d->niceName, d->commandLayerId->intValue(), false);
+			if (d->commandLayerId->intValue() == cur) found = true;
+		}
+	}
+	if (!found) pick->addOption("#" + String(cur) + " (missing)", cur, false);
+	pick->setValueWithData(cur);
+	shown = pick->getValueKey();
+	syncing = false;
+	if (niceName != shown) setNiceName(shown);
+}
+
+void CommandLayerRefItem::onContainerParameterChangedInternal(Parameter* p)
+{
+	if (syncing) return;
+	if (p == pick) {
+		syncing = true;
+		refId->setValue((int)pick->getValueData());
+		syncing = false;
+		setNiceName(pick->getValueKey());
+	}
+	else if (p == refId) {
+		if (CommandLayerRefs* m = dynamic_cast<CommandLayerRefs*>(parentContainer.get())) refreshOptions(m->hostCuelist());
+		else refreshOptions(nullptr);
+	}
+	else return;
+	if (CommandLayerRefs* m = dynamic_cast<CommandLayerRefs*>(parentContainer.get())) m->rowChanged();
+}
+
+CommandLayerRefs::CommandLayerRefs(const String& name) :
+	BaseManager<CommandLayerRefItem>(name)
+{
+	selectItemWhenCreated = false;
+	editorCanBeCollapsed = true;
+}
+
+Cuelist* CommandLayerRefs::hostCuelist() { return hostOf(parentContainer.get()); }
+
+String CommandLayerRefs::ids()
+{
+	StringArray a;
+	for (auto* r : items) if (r->enabled->boolValue()) a.add(String(r->refId->intValue()));
+	return a.joinIntoString(",");
+}
+
+String CommandLayerRefs::names()
+{
+	StringArray a;
+	for (auto* r : items) if (r->enabled->boolValue()) a.add(r->niceName);
+	return a.joinIntoString("+");
+}
+
+String CommandLayerRefs::titlePrefix()
+{
+	String n = names();
+	if (n.isEmpty()) return String();
+	return String::fromUTF8("\xE2\x80\xBA ") + n + String::fromUTF8(" \xE2\x94\x82 ");
+}
+
+void CommandLayerRefs::refreshOptions()
+{
+	Cuelist* host = hostCuelist();
+	for (auto* r : items) r->refreshOptions(host);
+	rowChanged();
+}
+
+void CommandLayerRefs::rowChanged()
+{
+	if (Command* c = dynamic_cast<Command*>(parentContainer.get())) c->updateTitle();
+	else if (Task* t = dynamic_cast<Task*>(parentContainer.get())) t->autoName();
+	Brain::getInstance()->liveEditChanged();
+}
+
+void CommandLayerRefs::addItemInternal(CommandLayerRefItem* o, var)
+{
+	o->refreshOptions(hostCuelist());
+	rowChanged();
+}
+
+void CommandLayerRefs::removeItemInternal(CommandLayerRefItem*) { rowChanged(); }
+
+void CommandLayerRefs::afterLoadJSONDataInternal()
+{
+	BaseManager<CommandLayerRefItem>::afterLoadJSONDataInternal();
+	refreshOptions();
+}
+
+void Cuelist::refreshCommandLayerRefs()
+{
+	for (Cue* q : cues.items) {
+		for (Command* c : q->commands.items) c->commandLayers.refreshOptions();
+		for (Task* t : q->tasks.items) t->commandLayers.refreshOptions();
+		for (Task* t : q->tasksOffCue.items) t->commandLayers.refreshOptions();
+		for (CueReuse* r : q->moreReuse.items) { r->intoCommandLayers.refreshOptions(); r->onlyCommandLayers.refreshOptions(); }
 	}
 }
