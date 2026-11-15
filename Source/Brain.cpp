@@ -2631,6 +2631,7 @@ template<class T> static void refreshOwned(T* o)
     float m = b->ownerFactor(o->owners);
     o->owners.mult = m;
     o->owners.speedMult = b->ownerSpeedFactor(o->owners);
+    if (old != m) LOG("owner: refresh " << (o->owners.ids.isEmpty() ? 0 : o->owners.ids[0]) << " mult " << old << " -> " << m);
     if (!o->autoStartAndStop->boolValue()) { pleaseUpdateSized(o); return; }
     bool running = b->hasRunningOwner(o->owners);
     if (m == 0 && old > 0 && o->isOn && running) {
@@ -2652,6 +2653,7 @@ template<class T> static void noteStarted(T* o, int cuelistId)
     else o->owners.unowned = true;
     o->owners.ownerStopped = false;
     refreshOwned(o);
+    LOG("owner: started by cuelist " << cuelistId << (c != nullptr ? " (known)" : " (UNKNOWN -> unowned)") << ", owners " << o->owners.ids.size() << ", mult " << o->owners.mult);
 }
 
 // A cue task of cuelist `cuelistId` started the object.
