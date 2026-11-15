@@ -502,6 +502,8 @@ void Cuelist::onControllableFeedbackUpdateInternal(ControllableContainer* cc, Co
 void Cuelist::afterLoadJSONDataInternal()
 {
 	rebuildTimecode();
+	// layer stacks exist as soon as the show is loaded, so faders bound to their ids work before the first Go
+	if (!isLayerStack && !cueLayers.items.isEmpty()) ensureLayerStacks();
 }
 
 
@@ -2346,7 +2348,11 @@ void CueLayer::onContainerParameterChangedInternal(Parameter* p)
 {
 	if (p == layerId || p == enabled || p == releaseWhenAbsent || p == sizeMaster) {
 		if (parentContainer != nullptr) {
-			if (Cuelist* c = dynamic_cast<Cuelist*>(parentContainer->parentContainer.get())) c->syncLayerLevels();
+			if (Cuelist* c = dynamic_cast<Cuelist*>(parentContainer->parentContainer.get())) {
+				// a new or renamed layer gets its stack now (not while a show loads: ids are still being read, afterLoad does it)
+				if ((p == layerId || p == enabled) && !Brain::getInstance()->loadingIsRunning) c->ensureLayerStacks();
+				else c->syncLayerLevels();
+			}
 		}
 	}
 }
